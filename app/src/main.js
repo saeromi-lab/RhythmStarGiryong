@@ -1,285 +1,302 @@
 import {
-  JUMP_STEPS,
-  STAR_MOVES,
-  PHASES,
-  STORAGE_KEY,
-  WEEK_KEY,
-  getPhaseForWeek,
+  LEVELS,
+  CURRICULUM,
+  JUDGE,
+  DEMO_CLASSMATES,
+  randomLine,
 } from './data.js';
-import { Metronome } from './metronome.js';
-import { TrainingSession, formatTime } from './session.js';
+import {
+  ensureNickname,
+  saveProfile,
+  checkIn,
+  canCheckInToday,
+  addPlayResult,
+  getLeaderboard,
+  profileSummary,
+} from './storage.js';
+import { RhythmGame } from './game.js';
 
-let currentWeek = Number(localStorage.getItem(WEEK_KEY)) || 1;
-let metronome = null;
-let session = null;
+let profile = null;
+let game = null;
+let selectedLevel = LEVELS[1];
 
 function $(id) {
   return document.getElementById(id);
 }
 
-function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
+function sayGiryong(key, custom) {
+  $('giryongSpeech').textContent = custom ?? randomLine(key);
+  $('giryongChar').classList.add('bounce');
+  setTimeout(() => $('giryongChar').classList.remove('bounce'), 400);
 }
 
-function saveHistory(entry) {
-  const list = loadHistory();
-  list.unshift(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 50)));
+function setGiryongMood(mood) {
+  $('giryongChar').dataset.mood = mood;
 }
 
 function initTabs() {
-  const buttons = document.querySelectorAll('.tab-btn');
-  buttons.forEach((btn) => {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      buttons.forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
       btn.classList.add('active');
       $(`panel-${btn.dataset.tab}`).classList.add('active');
+      if (btn.dataset.tab === 'rank') renderRank();
     });
   });
 }
 
-function renderWeekSelect() {
-  const select = $('weekSelect');
-  select.innerHTML = '';
-  for (let w = 1; w <= 12; w += 1) {
-    const opt = document.createElement('option');
-    opt.value = w;
-    opt.textContent = `${w}주차`;
-    if (w === currentWeek) opt.selected = true;
-    select.appendChild(opt);
-  }
-  select.addEventListener('change', (e) => {
-    currentWeek = Number(e.target.value);
-    localStorage.setItem(WEEK_KEY, String(currentWeek));
-    renderProgram();
-    syncBpmFromWeek();
-    $('starMoveCard').style.display = currentWeek >= 5 ? 'block' : 'none';
-  });
-}
-
-function renderProgram() {
-  const phase = getPhaseForWeek(currentWeek);
-  $('phaseInfo').innerHTML = `
-    <strong>${phase.name}단계 · ${currentWeek}주차</strong><br>
-    ${phase.content}<br>
-    BPM <strong>${phase.bpm}</strong> · HRR <strong>${phase.hrr}%</strong> · 패턴 <strong>${phase.pattern}</strong>
+function renderHeader() {
+  const s = profileSummary(profile);
+  $('headerStats').innerHTML = `
+    <span class="chip">Lv.${s.level}</span>
+    <span class="chip coin">${s.coins} 🪙</span>
+    <span class="chip">${s.nickname || '게스트'}</span>
   `;
-
-  $('phaseTable').innerHTML = PHASES.map((p) => {
-    const active = p.id === phase.id ? 'active' : '';
-    const weeks = `${p.weeks[0]}~${p.weeks[p.weeks.length - 1]}주`;
-    return `
-      <div class="phase-row ${active}">
-        <span>${p.name}</span>
-        <span class="muted">${weeks}</span>
-        <span>${p.content}</span>
-        <span>${p.bpm}</span>
-        <span class="muted">${p.hrr}%</span>
-      </div>
-    `;
-  }).join('');
 }
 
-function renderSteps() {
-  $('stepsList').innerHTML = JUMP_STEPS.map((s) => `
-    <div class="step-card">
-      <div class="num">STEP ${s.id}</div>
-      <div class="en">${s.en}</div>
-      <div class="ko">${s.ko}</div>
+function renderProfile() {
+  const s = profileSummary(profile);
+  const pct = Math.round((s.progress / s.need) * 100);
+  $('profileBar').innerHTML = `
+    <div class="profile-name">${s.nickname}</div>
+    <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
+    <div class="profile-meta">Lv.${s.level} · ${s.progress}/${s.need} XP · 최고점 ${s.bestScore.toLocaleString()}</div>
+  `;
+  $('streakNum').textContent = s.streak;
+  renderHeader();
+  renderMissions();
+  renderMyRank();
+}
+
+function renderMissions() {
+  const checked = !canCheckInToday(profile);
+  const played = profile.totalPlays > 0;
+  $('dailyMissions').innerHTML = `
+    <div class="mission ${checked ? 'done' : ''}">
+      <span>${checked ? '✓' : '○'}</span> 오늘 출석 체크 ${checked ? '(완료)' : ''}
     </div>
-  `).join('');
-
-  $('starMovesGuide').innerHTML = STAR_MOVES.map((m) => `
-    <div class="step-card">
-      <div class="num">${m.weeks}</div>
-      <div class="en">${m.name}</div>
+    <div class="mission">
+      <span>○</span> 아케이드 모드 1회 플레이
     </div>
-  `).join('');
+    <div class="mission">
+      <span>○</span> COMBO 10 이상 달성
+    </div>
+    <div class="mission">
+      <span>○</span> 랭킹 Top 10 진입 도전
+    </div>
+  `;
 }
 
-function renderStarMoves() {
-  $('starMoveList').innerHTML = STAR_MOVES.map((m) => `
-    <span class="star-badge">${m.name}</span>
-  `).join('');
-}
+function initCheckIn() {
+  const btn = $('checkInBtn');
+  const updateBtn = () => {
+    const can = canCheckInToday(profile);
+    btn.disabled = !can;
+    btn.textContent = can ? '출석 체크' : '출석 완료 ✓';
+    btn.classList.toggle('done', !can);
+  };
+  updateBtn();
 
-function renderStepProgress(stepIndex) {
-  $('stepProgress').innerHTML = JUMP_STEPS.map((s, i) => {
-    let cls = 'step-chip';
-    if (i === stepIndex % 10) cls += ' active';
-    else if (i < stepIndex % 10) cls += ' done';
-    return `<span class="${cls}">${s.id}</span>`;
-  }).join('');
-}
-
-function syncBpmFromWeek() {
-  const bpm = getPhaseForWeek(currentWeek).bpm;
-  $('bpmSlider').value = bpm;
-  $('bpmDisplay').textContent = bpm;
-  if (metronome) metronome.setBpm(bpm);
-}
-
-function initMetronome() {
-  metronome = new Metronome({
-    onBeat: (beatInBar) => {
-      const dots = document.querySelectorAll('.beat-dot');
-      dots.forEach((d, i) => d.classList.toggle('active', i === beatInBar));
-    },
+  btn.addEventListener('click', () => {
+    const result = checkIn(profile);
+    profile = result.profile;
+    $('checkInMsg').textContent = result.message;
+    if (result.reward) {
+      sayGiryong(profile.streak >= 7 ? 'streak' : 'checkIn', result.message);
+      setGiryongMood('happy');
+      $('rewardChips').innerHTML = result.reward.bonuses
+        .map((b) => `<span class="bonus-chip">${b}</span>`).join('');
+    }
+    renderProfile();
+    updateBtn();
   });
+}
 
-  const slider = $('bpmSlider');
-  const display = $('bpmDisplay');
+function renderLevels() {
+  $('levelSelect').innerHTML = LEVELS.map((lv) => `
+    <button class="level-btn ${lv.id === selectedLevel.id ? 'active' : ''}" data-id="${lv.id}">
+      <strong>${lv.name}</strong>
+      <span>${lv.bpm} BPM · ${lv.noteCount}박</span>
+    </button>
+  `).join('');
 
-  const setBpm = (val) => {
-    metronome.setBpm(val);
-    slider.value = metronome.bpm;
-    display.textContent = metronome.bpm;
+  $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedLevel = LEVELS.find((l) => l.id === btn.dataset.id);
+      renderLevels();
+    });
+  });
+}
+
+function flashJudge(key, pts) {
+  const el = $('judgeFlash');
+  const j = JUDGE[key];
+  el.textContent = key === 'miss' ? 'MISS' : `${j.label} +${pts}`;
+  el.className = `judge-flash show ${key}`;
+  $('noteRing').classList.add('pulse');
+  setTimeout(() => {
+    el.classList.remove('show');
+    $('noteRing').classList.remove('pulse');
+  }, 350);
+  if (key === 'perfect') {
+    setGiryongMood('happy');
+    sayGiryong('perfect');
+  } else if (key === 'miss') {
+    setGiryongMood('sad');
+    sayGiryong('miss');
+  }
+}
+
+function initGame() {
+  const startBtn = $('gameStart');
+  const tapBtn = $('gameTap');
+
+  const resetUI = () => {
+    $('gameScore').textContent = '0';
+    $('gameCombo').textContent = '0';
+    $('gameBeat').textContent = `0/${selectedLevel.noteCount}`;
+    $('resultCard').style.display = 'none';
+    $('arcadeCard').style.display = 'block';
+    startBtn.disabled = false;
+    tapBtn.disabled = true;
   };
 
-  slider.addEventListener('input', (e) => setBpm(e.target.value));
-  $('bpmDown').addEventListener('click', () => setBpm(metronome.bpm - 5));
-  $('bpmUp').addEventListener('click', () => setBpm(metronome.bpm + 5));
-
-  $('metronomeToggle').addEventListener('click', async () => {
-    const running = await metronome.toggle();
-    $('metronomeToggle').textContent = running ? '정지' : '시작';
-    $('metronomeToggle').classList.toggle('primary', !running);
-  });
-}
-
-function updateSessionUI(state) {
-  if (!state) return;
-  $('sessionPhase').textContent = state.sessionPhase?.label ?? '대기';
-  $('sessionTimer').textContent = formatTime(state.remainingSec ?? 0);
-  $('currentStepName').textContent = state.step
-    ? `${state.step.id}. ${state.step.ko}`
-    : '—';
-  renderStepProgress(state.stepIndex ?? 0);
-  $('starMoveCard').style.display = state.showStarMove ? 'block' : 'none';
-
-  if (state.running && metronome && !metronome.running) {
-    metronome.setBpm(state.bpm);
-    syncBpmFromWeek();
-    metronome.start();
-    $('metronomeToggle').textContent = '정지';
-  }
-}
-
-function initSession() {
-  $('sessionStart').addEventListener('click', async () => {
-    if (!session || (!session.running && session.phaseIndex === 0 && session.elapsedSec === 0)) {
-      session = new TrainingSession({
-        week: currentWeek,
-        onUpdate: updateSessionUI,
-        onComplete: (state) => {
-          metronome?.stop();
-          $('metronomeToggle').textContent = '시작';
-          $('metronomeToggle').classList.add('primary');
-          $('sessionStart').disabled = false;
-          $('sessionPause').disabled = true;
-          $('sessionStop').disabled = true;
-
-          saveHistory({
-            date: new Date().toISOString(),
-            week: currentWeek,
-            phase: state.programPhase.name,
-            duration: '45:00',
-          });
-          renderHistory();
-        },
-      });
+  const doTap = () => {
+    if (!game?.running) return;
+    const key = game.judgeTap();
+    if (key && key !== 'miss') {
+      const j = JUDGE[key];
+      const mult = 1 + Math.floor(game.combo / 10) * 0.5;
+      flashJudge(key, Math.round(j.score * mult));
+    } else if (key === 'miss') {
+      flashJudge('miss', 0);
     }
-    session.start();
-    $('sessionStart').disabled = true;
-    $('sessionPause').disabled = false;
-    $('sessionStop').disabled = false;
-    await metronome?.ensureAudio();
-    metronome?.setBpm(session.bpm);
-    syncBpmFromWeek();
-    metronome?.start();
-    $('metronomeToggle').textContent = '정지';
+    $('gameScore').textContent = game.score.toLocaleString();
+    $('gameCombo').textContent = game.combo;
+  };
+
+  tapBtn.addEventListener('click', doTap);
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && $('panel-play').classList.contains('active')) {
+      e.preventDefault();
+      doTap();
+    }
   });
 
-  $('sessionPause').addEventListener('click', () => {
-    session?.pause();
-    metronome?.stop();
-    $('sessionStart').disabled = false;
-    $('sessionPause').disabled = true;
-    $('metronomeToggle').textContent = '시작';
-    $('metronomeToggle').classList.add('primary');
+  startBtn.addEventListener('click', async () => {
+    game?.stop();
+    resetUI();
+    startBtn.disabled = true;
+    tapBtn.disabled = false;
+    setGiryongMood('focus');
+
+    game = new RhythmGame({
+      bpm: selectedLevel.bpm,
+      noteCount: selectedLevel.noteCount,
+      onBeat: (i, total) => {
+        $('gameBeat').textContent = `${i + 1}/${total}`;
+        $('noteRing').classList.add('beat');
+        setTimeout(() => $('noteRing').classList.remove('beat'), 80);
+      },
+      onJudge: (key, pts, combo) => {
+        $('gameScore').textContent = game.score.toLocaleString();
+        $('gameCombo').textContent = combo;
+      },
+      onEnd: (result) => {
+        tapBtn.disabled = true;
+        const xp = Math.round(result.xp * selectedLevel.xpMultiplier);
+        const coins = result.coins;
+        profile = addPlayResult(profile, { score: result.score, xpGained: xp, coinsGained: coins });
+
+        $('arcadeCard').style.display = 'none';
+        $('resultCard').style.display = 'block';
+        $('resultBody').innerHTML = `
+          <div class="result-score">${result.score.toLocaleString()}</div>
+          <div class="result-grid">
+            <span>PERFECT ${result.perfect}</span>
+            <span>GREAT ${result.great}</span>
+            <span>GOOD ${result.good}</span>
+            <span>MISS ${result.miss}</span>
+            <span>MAX COMBO ${result.maxCombo}</span>
+            <span>+${xp} XP · +${coins} 🪙</span>
+          </div>
+        `;
+        setGiryongMood(result.maxCombo >= 10 ? 'happy' : 'normal');
+        sayGiryong(result.score > profile.bestScore ? 'perfect' : 'welcome', `점수 ${result.score.toLocaleString()}! ${result.maxCombo} COMBO!`);
+        renderProfile();
+        renderRank();
+      },
+    });
+
+    await game.start();
   });
 
-  $('sessionStop').addEventListener('click', () => {
-    session?.reset();
-    metronome?.stop();
-    $('sessionPhase').textContent = '대기';
-    $('sessionTimer').textContent = '00:00';
-    $('currentStepName').textContent = '—';
-    renderStepProgress(0);
-    $('sessionStart').disabled = false;
-    $('sessionPause').disabled = true;
-    $('sessionStop').disabled = true;
-    $('metronomeToggle').textContent = '시작';
-    $('metronomeToggle').classList.add('primary');
-  });
+  $('playAgain').addEventListener('click', resetUI);
+  resetUI();
 }
 
-function renderHistory() {
-  const list = loadHistory();
-  const container = $('historyList');
-  const stats = $('historyStats');
+function renderRank() {
+  const board = getLeaderboard(profile, DEMO_CLASSMATES);
+  $('rankList').innerHTML = board.map((row, i) => `
+    <div class="rank-row ${row.isPlayer ? 'me' : ''} ${i < 3 ? `top-${i + 1}` : ''}">
+      <span class="rank-num">${i + 1}</span>
+      <span class="rank-name">${row.name}${row.isPlayer ? ' (나)' : ''}</span>
+      <span class="rank-major">${row.major ?? '실용음악'}</span>
+      <span class="rank-score">${row.score.toLocaleString()}</span>
+    </div>
+  `).join('') || '<div class="empty-msg">아직 랭킹 데이터가 없습니다. 플레이해 보세요!</div>';
 
-  if (!list.length) {
-    container.innerHTML = '<div class="empty-msg">아직 훈련 기록이 없습니다.</div>';
-    stats.innerHTML = '';
-    return;
-  }
-
-  container.innerHTML = list.map((h) => {
-    const d = new Date(h.date);
-    return `
-      <div class="history-item">
-        <strong>${d.toLocaleDateString('ko-KR')} ${d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</strong><br>
-        ${h.week}주차 · ${h.phase}단계 · ${h.duration}
-      </div>
-    `;
-  }).join('');
-
-  const weeks = new Set(list.map((h) => h.week));
-  stats.innerHTML = `
-    <div class="stat-box"><div class="val">${list.length}</div><div class="lbl">총 세션</div></div>
-    <div class="stat-box"><div class="val">${weeks.size}</div><div class="lbl">진행 주차</div></div>
-    <div class="stat-box"><div class="val">${currentWeek}</div><div class="lbl">현재 주차</div></div>
+  const myIdx = board.findIndex((r) => r.isPlayer);
+  $('myRankStats').innerHTML = `
+    <div class="stat-box"><div class="val">${myIdx >= 0 ? myIdx + 1 : '-'}</div><div class="lbl">내 순위</div></div>
+    <div class="stat-box"><div class="val">${profile.bestScore.toLocaleString()}</div><div class="lbl">최고 점수</div></div>
+    <div class="stat-box"><div class="val">${profile.totalPlays}</div><div class="lbl">총 플레이</div></div>
   `;
 }
 
-function initHistory() {
-  $('clearHistory').addEventListener('click', () => {
-    if (confirm('모든 훈련 기록을 삭제할까요?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      renderHistory();
-    }
-  });
+function renderMyRank() {
+  if ($('panel-rank').classList.contains('active')) renderRank();
+}
+
+function renderCurriculum() {
+  $('curriculumList').innerHTML = CURRICULUM.map((c) => `
+    <div class="curriculum-item">
+      <div class="curriculum-week">${c.week}</div>
+      <div>
+        <strong>${c.title}</strong>
+        <p>${c.desc}</p>
+        <span class="tag">${c.bpm} BPM</span>
+      </div>
+    </div>
+  `).join('');
+
+  $('judgeTable').innerHTML = Object.entries(JUDGE)
+    .filter(([k]) => k !== 'miss')
+    .map(([k, v]) => `
+      <div class="judge-row">
+        <span class="judge-badge ${k}">${v.label}</span>
+        <span>±${v.windowMs}ms</span>
+        <span>${v.score}점</span>
+        <span>+${v.xp} XP</span>
+      </div>
+    `).join('');
 }
 
 function init() {
+  profile = ensureNickname();
+  if (!profile.nickname) {
+    profile.nickname = '기룡친구';
+    saveProfile(profile);
+  }
   initTabs();
-  renderWeekSelect();
-  renderProgram();
-  renderSteps();
-  renderStarMoves();
-  renderStepProgress(0);
-  renderHistory();
-  initMetronome();
-  initSession();
-  initHistory();
-  syncBpmFromWeek();
-  $('starMoveCard').style.display = currentWeek >= 5 ? 'block' : 'none';
+  renderProfile();
+  initCheckIn();
+  renderLevels();
+  initGame();
+  renderCurriculum();
+  renderRank();
+  sayGiryong('welcome');
 }
 
 init();

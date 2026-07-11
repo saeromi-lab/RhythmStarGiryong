@@ -1,43 +1,39 @@
 # RhythmStarGiryong
 
-경기대학교 스포츠리듬트레이닝(STAR) 관련 자료를 정리하는 저장소입니다.
+경기대학교 **실용음악학과** 학생을 위한 아케이드형 리듬 트레이닝 웹앱입니다.
 
-**RhythmStar** = Sports Training Association of Rhythm (스포츠리듬트레이닝협회)  
-**Giryong** = 경기대학교 공식 캐릭터 기룡이
+**기룡이**(경기대 마스코트)가 함께하는 박자·리듬 감각 훈련 프로그램으로, 매일 접속해 출석하고 랭킹에 도전할 수 있습니다.
 
-## 문서 목록
+> 운동부·체육 스포츠와는 무관하며, 실용음악 전공생의 리듬 감각 향상이 목적입니다.
 
-| 문서 | 내용 |
-|------|------|
-| [개요](docs/01-overview.md) | STAR 스포츠리듬트레이닝 소개 |
-| [경기대학교 적용](docs/02-kyonggi-university.md) | 경기대 운동부·현장 적용 사례 |
-| [훈련 프로그램](docs/03-training-program.md) | 리듬점프 10스텝, STAR MOVE, 단계별 프로그램 |
-| [지도자 과정](docs/04-instructor-certification.md) | 자격 과정 및 지역별 교육 |
-| [연구 자료](docs/05-research.md) | 학술 논문 및 효과 |
-| [참고 자료](docs/06-resources.md) | 공식 링크, 연락처, 영상 |
-
-## 프로그램 실행
+## 실행 방법
 
 ```bash
 chmod +x setup.sh
-./setup.sh        # 의존성 설치
-npm run dev       # http://localhost:3000
+./setup.sh
+npm run dev    # http://localhost:3000
 ```
 
-### 앱 기능
+## 주요 기능
 
-- **12주 프로그램** — 단계별 BPM·HRR·패턴 안내
-- **훈련 세션** — 준비(5분) / 본(35분) / 정리(5분) 타이머
-- **메트로놈** — BPM 60~160, 박자 표시
-- **스텝 가이드** — 리듬점프 10스텝 + STAR MOVE
-- **훈련 기록** — 로컬 저장
+| 기능 | 설명 |
+|------|------|
+| **기룡이 캐릭터** | 마스코트가 응원·피드백 제공 |
+| **출석 체크** | 매일 출석, 연속 출석 보상 (코인·XP) |
+| **아케이드 플레이** | BPM 맞춰 TAP! — PERFECT/GREAT/GOOD 판정 |
+| **랭킹** | 주간 학과 랭킹, 동기들과 점수 경쟁 |
+| **커리큘럼** | 12주 단계별 리듬 트레이닝 과정 |
 
-## 빠른 링크
+## 문서
 
-- STAR 공식 홈페이지: https://www.srt-korea.com
-- 경기대 운동부 소개: https://www.kyonggi.ac.kr/www/contents.do?key=5124
-- STAR 공식 유튜브: https://www.youtube.com/@SPORTS_RHYTHM_TRAINING
+| 문서 | 내용 |
+|------|------|
+| [개요](docs/01-overview.md) | 프로젝트 목적 및 게이미피케이션 설계 |
+| [실용음악학과](docs/02-kyonggi-university.md) | 대상 학과 및 커리큘럼 연계 |
+| [훈련 프로그램](docs/03-training-program.md) | 12주 리듬 커리큘럼 |
+| [참고 자료](docs/06-resources.md) | 링크 모음 |
 
-## 자료 추가 안내
+## 기술 스택
 
-개인 문서, 훈련 일지, 영상 링크 등 추가 자료가 있으면 `docs/` 폴더에 넣거나 이슈로 공유해 주세요.
+- Vite + Vanilla JS
+- localStorage (프로필, 출석, 랭킹)

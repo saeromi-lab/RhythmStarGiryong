@@ -3,125 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RhythmStarGiryong — 경기대 리듬훈련</title>
+  <title>RhythmStarGiryong — 경기대 실용음악 리듬 트레이닝</title>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
   <div class="container">
     <header class="app-header">
-      <div class="app-title">RhythmStarGiryong</div>
-      <div class="app-sub">경기대학교 스포츠리듬트레이닝(STAR) · 리듬점프 10스텝 · 12주 프로그램</div>
+      <div class="brand">
+        <span class="brand-badge">KGU</span>
+        <div>
+          <div class="app-title">RhythmStarGiryong</div>
+          <div class="app-sub">경기대학교 실용음악학과 · 아케이드 리듬 트레이닝</div>
+        </div>
+      </div>
+      <div class="header-stats" id="headerStats"></div>
     </header>
 
     <nav class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="program">프로그램</button>
-      <button class="tab-btn" data-tab="training">훈련</button>
-      <button class="tab-btn" data-tab="steps">스텝 가이드</button>
-      <button class="tab-btn" data-tab="history">기록</button>
+      <button class="tab-btn active" data-tab="home">홈</button>
+      <button class="tab-btn" data-tab="play">플레이</button>
+      <button class="tab-btn" data-tab="rank">랭킹</button>
+      <button class="tab-btn" data-tab="curriculum">커리큘럼</button>
     </nav>
 
-    <!-- 프로그램 -->
-    <section class="tab-panel active" id="panel-program">
-      <div class="card">
-        <div class="sec-label">12주 프로그램</div>
-        <div class="row">
-          <label for="weekSelect">현재 주차</label>
-          <select id="weekSelect"></select>
+    <!-- 홈 -->
+    <section class="tab-panel active" id="panel-home">
+      <div class="card giryong-card">
+        <div class="giryong-stage">
+          <div class="giryong-char" id="giryongChar" aria-hidden="true">
+            <div class="giryong-body">
+              <div class="giryong-face">
+                <span class="eye left"></span>
+                <span class="eye right"></span>
+                <span class="mouth"></span>
+              </div>
+              <div class="giryong-horn left"></div>
+              <div class="giryong-horn right"></div>
+            </div>
+            <div class="giryong-tail"></div>
+          </div>
+          <div class="speech-bubble" id="giryongSpeech">안녕! 나 기룡이야!</div>
         </div>
-        <div id="phaseInfo" class="phase-box"></div>
+        <div class="profile-bar" id="profileBar"></div>
       </div>
-      <div class="card">
-        <div class="sec-label">단계별 구성</div>
-        <div id="phaseTable" class="phase-table"></div>
-      </div>
-      <div class="card">
-        <div class="sec-label">수업 구조 (45분)</div>
-        <div class="session-flow">
-          <div class="flow-item"><span>준비운동</span><strong>5분</strong></div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-item"><span>본운동</span><strong>35분</strong></div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-item"><span>정리운동</span><strong>5분</strong></div>
+
+      <div class="card attendance-card">
+        <div class="sec-label">오늘의 출석</div>
+        <div class="attendance-row">
+          <div>
+            <div class="streak-num" id="streakNum">0</div>
+            <div class="streak-lbl">연속 출석일</div>
+          </div>
+          <button id="checkInBtn" class="primary check-in-btn">출석 체크</button>
         </div>
+        <div id="checkInMsg" class="check-in-msg"></div>
+        <div class="reward-chips" id="rewardChips"></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-label">오늘의 미션</div>
+        <div id="dailyMissions" class="mission-list"></div>
       </div>
     </section>
 
-    <!-- 훈련 -->
-    <section class="tab-panel" id="panel-training">
-      <div class="card metronome-card">
-        <div class="sec-label">메트로놈</div>
-        <div class="bpm-display" id="bpmDisplay">100</div>
-        <div class="bpm-label">BPM</div>
-        <div class="beat-indicator" id="beatIndicator">
-          <span class="beat-dot"></span>
-          <span class="beat-dot"></span>
-          <span class="beat-dot"></span>
-          <span class="beat-dot"></span>
-        </div>
-        <div class="row center">
-          <button id="bpmDown">−</button>
-          <input type="range" id="bpmSlider" min="60" max="160" value="100">
-          <button id="bpmUp">+</button>
-        </div>
-        <div class="row center">
-          <button id="metronomeToggle" class="primary">시작</button>
-        </div>
-      </div>
-
+    <!-- 플레이 -->
+    <section class="tab-panel" id="panel-play">
       <div class="card">
-        <div class="sec-label">훈련 세션</div>
-        <div class="row">
-          <label>단계</label>
-          <span id="sessionPhase" class="tag">대기</span>
-        </div>
-        <div class="timer-display" id="sessionTimer">00:00</div>
-        <div class="row">
-          <label>현재 스텝</label>
-          <span id="currentStepName" class="step-name">—</span>
-        </div>
-        <div class="step-progress" id="stepProgress"></div>
-        <div class="row center session-controls">
-          <button id="sessionStart" class="primary">세션 시작</button>
-          <button id="sessionPause" disabled>일시정지</button>
-          <button id="sessionStop" disabled>종료</button>
-        </div>
+        <div class="sec-label">난이도 선택</div>
+        <div id="levelSelect" class="level-grid"></div>
       </div>
 
-      <div class="card" id="starMoveCard" style="display:none">
-        <div class="sec-label">STAR MOVE</div>
-        <div id="starMoveList" class="star-move-list"></div>
+      <div class="card arcade-card" id="arcadeCard">
+        <div class="arcade-hud">
+          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="gameScore">0</span></div>
+          <div><span class="hud-lbl">COMBO</span><span class="hud-val combo" id="gameCombo">0</span></div>
+          <div><span class="hud-lbl">BEAT</span><span class="hud-val" id="gameBeat">0/0</span></div>
+        </div>
+
+        <div class="arcade-lane" id="arcadeLane">
+          <div class="hit-line"></div>
+          <div class="note-ring" id="noteRing"></div>
+        </div>
+
+        <div class="judge-flash" id="judgeFlash"></div>
+
+        <div class="arcade-controls">
+          <button id="gameStart" class="primary arcade-btn">START</button>
+          <button id="gameTap" class="tap-btn" disabled>TAP!</button>
+        </div>
+        <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
+      </div>
+
+      <div class="card" id="resultCard" style="display:none">
+        <div class="sec-label">결과</div>
+        <div id="resultBody" class="result-body"></div>
+        <button id="playAgain" class="primary">다시 하기</button>
       </div>
     </section>
 
-    <!-- 스텝 가이드 -->
-    <section class="tab-panel" id="panel-steps">
+    <!-- 랭킹 -->
+    <section class="tab-panel" id="panel-rank">
       <div class="card">
-        <div class="sec-label">리듬점프 10스텝</div>
-        <div id="stepsList" class="steps-list"></div>
+        <div class="sec-label">이번 주 랭킹 · 실용음악학과</div>
+        <div class="rank-header">
+          <span>#</span><span>이름</span><span>전공</span><span>점수</span>
+        </div>
+        <div id="rankList" class="rank-list"></div>
+        <p class="hint">매주 월요일 랭킹이 갱신됩니다. 매일 플레이해서 1위에 도전하세요!</p>
       </div>
       <div class="card">
-        <div class="sec-label">STAR MOVE (팔 동작)</div>
-        <div id="starMovesGuide" class="steps-list"></div>
+        <div class="sec-label">내 기록</div>
+        <div id="myRankStats" class="stats-grid"></div>
       </div>
     </section>
 
-    <!-- 기록 -->
-    <section class="tab-panel" id="panel-history">
+    <!-- 커리큘럼 -->
+    <section class="tab-panel" id="panel-curriculum">
       <div class="card">
-        <div class="sec-label">훈련 기록</div>
-        <div id="historyList" class="history-list"></div>
-        <div class="row center" style="margin-top:12px">
-          <button id="clearHistory">기록 초기화</button>
-        </div>
+        <div class="sec-label">12주 리듬 트레이닝 커리큘럼</div>
+        <p class="curriculum-intro">실용음악학과 학생을 위한 단계별 박자·리듬 감각 훈련 과정입니다. 매일 아케이드 모드로 연습하고 랭킹에 도전하세요.</p>
+        <div id="curriculumList" class="curriculum-list"></div>
       </div>
       <div class="card">
-        <div class="sec-label">통계</div>
-        <div id="historyStats" class="stats-grid"></div>
+        <div class="sec-label">판정 기준</div>
+        <div class="judge-table" id="judgeTable"></div>
       </div>
     </section>
 
     <footer class="footer">
-      STAR Sports Rhythm Training · 경기대학교 · Change the world through rhythm
+      경기대학교 실용음악학과 · 기룡이와 함께하는 리듬 트레이닝
     </footer>
   </div>
 

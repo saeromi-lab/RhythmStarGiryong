@@ -248,7 +248,124 @@ body {
   color: var(--muted);
 }
 
-/* 출석 */
+/* 출석 · 진주조개 도장 */
+.attendance-card {
+  background: linear-gradient(160deg, #1a1830 0%, #2a1f3d 45%, #1f2a35 100%);
+  border: 1px solid #f8a68f44;
+}
+
+.attendance-scene {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  min-height: 110px;
+  margin-bottom: 12px;
+  padding: 8px 12px 0;
+  background: radial-gradient(ellipse at center bottom, #f8a68f18, transparent 70%);
+  border-radius: 14px;
+}
+
+.attendance-giryong {
+  width: 72px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px #0004);
+}
+
+.attendance-pearl {
+  width: 96px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px #0004);
+}
+
+.stamp-board-wrap {
+  margin-bottom: 12px;
+}
+
+.stamp-board-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.stamp-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.stamp-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-height: 58px;
+}
+
+.stamp-slot.today {
+  border-color: var(--accent2);
+  box-shadow: 0 0 0 1px #ffc85733;
+}
+
+.stamp-slot.stamped {
+  background: linear-gradient(180deg, #f8a68f18, var(--surface));
+  border-color: #f8a68f66;
+}
+
+.stamp-day {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.stamp-slot.today .stamp-day {
+  color: var(--accent2);
+}
+
+.stamp-mark {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stamp-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.stamp-empty {
+  font-size: 18px;
+  color: #ffffff18;
+  line-height: 1;
+}
+
+.stamp-slot.stamp-pop .stamp-img {
+  animation: stampPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pearl-stamp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 148px;
+}
+
+.btn-pearl-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
 .attendance-row {
   display: flex;
   align-items: center;
@@ -1016,6 +1133,12 @@ button:disabled {
 
 .footer a:hover {
   color: var(--accent3);
+}
+
+@keyframes stampPop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 @keyframes bounce {

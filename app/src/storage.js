@@ -20,6 +20,7 @@ const defaultProfile = () => ({
   dailyQuiz: false,
   dailyCombo10: false,
   placement: null,
+  weeklyCheckIns: {},
   badges: [],
   createdAt: new Date().toISOString(),
 });
@@ -54,7 +55,7 @@ export function canCheckInToday(profile) {
 
 export function checkIn(profile) {
   if (!canCheckInToday(profile)) {
-    return { profile, reward: null, message: '오늘은 이미 출석했어요!' };
+    return { profile, reward: null, message: '오늘은 이미 진주조개 도장을 찍었어요!' };
   }
 
   const today = todayKey();
@@ -66,6 +67,12 @@ export function checkIn(profile) {
   profile.streak = continued ? profile.streak + 1 : 1;
   profile.lastCheckIn = today;
   profile.totalCheckIns += 1;
+
+  if (!profile.weeklyCheckIns) profile.weeklyCheckIns = {};
+  const wk = weekKey();
+  const weekList = profile.weeklyCheckIns[wk] ?? [];
+  if (!weekList.includes(today)) weekList.push(today);
+  profile.weeklyCheckIns[wk] = weekList;
 
   let coins = ATTENDANCE_REWARDS.daily.coins;
   let xp = ATTENDANCE_REWARDS.daily.xp;
@@ -145,6 +152,45 @@ export function addQuizResult(profile, { score, xpGained, coinsGained, correct, 
   if (score > profile.bestScore) profile.bestScore = score;
   saveProfile(profile);
   saveWeeklyScore(profile.nickname, score);
+  return profile;
+}
+
+export const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+
+export function getCurrentWeekDates() {
+  const now = new Date();
+  const day = now.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setHours(12, 0, 0, 0);
+  monday.setDate(now.getDate() + mondayOffset);
+
+  return WEEKDAY_LABELS.map((label, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return {
+      label,
+      date: d.toISOString().slice(0, 10),
+      isToday: d.toISOString().slice(0, 10) === todayKey(),
+    };
+  });
+}
+
+export function getWeekCheckIns(profile) {
+  return profile.weeklyCheckIns?.[weekKey()] ?? [];
+}
+
+export function syncTodayStamp(profile) {
+  const today = todayKey();
+  if (profile.lastCheckIn !== today) return profile;
+  if (!profile.weeklyCheckIns) profile.weeklyCheckIns = {};
+  const wk = weekKey();
+  const list = profile.weeklyCheckIns[wk] ?? [];
+  if (!list.includes(today)) {
+    list.push(today);
+    profile.weeklyCheckIns[wk] = list;
+    saveProfile(profile);
+  }
   return profile;
 }
 

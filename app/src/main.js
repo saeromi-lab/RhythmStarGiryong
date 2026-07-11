@@ -4,6 +4,7 @@ import {
   JUDGE,
   DEMO_CLASSMATES,
   GIRYONG_MOOD_IMAGES,
+  GIRYONG_IMAGES,
   randomLine,
 } from './data.js';
 import {
@@ -11,6 +12,9 @@ import {
   saveProfile,
   checkIn,
   canCheckInToday,
+  getCurrentWeekDates,
+  getWeekCheckIns,
+  syncTodayStamp,
   addPlayResult,
   addQuizResult,
   savePlacementResult,
@@ -101,6 +105,7 @@ function renderProfile() {
   renderHeader();
   renderMissions();
   renderPlacementHome();
+  renderStampBoard();
   renderMyRank();
 }
 
@@ -138,7 +143,7 @@ function renderMissions() {
   const checked = !canCheckInToday(profile);
   $('dailyMissions').innerHTML = `
     <div class="mission ${checked ? 'done' : ''}">
-      <span>${checked ? '✓' : '○'}</span> 오늘 출석 체크 ${checked ? '(완료)' : ''}
+      <span>${checked ? '✓' : '○'}</span> 오늘 진주조개 도장 ${checked ? '(완료)' : ''}
     </div>
     <div class="mission ${profile.dailyQuiz ? 'done' : ''}">
       <span>${profile.dailyQuiz ? '✓' : '○'}</span> 리듬 퀴즈 1회 완료
@@ -152,13 +157,38 @@ function renderMissions() {
   `;
 }
 
+function renderStampBoard(animateToday = false) {
+  const board = $('stampBoard');
+  if (!board) return;
+
+  const checkedDates = new Set(getWeekCheckIns(profile));
+  const week = getCurrentWeekDates();
+
+  board.innerHTML = week.map((day) => {
+    const stamped = checkedDates.has(day.date);
+    return `
+      <div class="stamp-slot ${day.isToday ? 'today' : ''} ${stamped ? 'stamped' : ''} ${animateToday && day.isToday && stamped ? 'stamp-pop' : ''}" data-date="${day.date}">
+        <span class="stamp-day">${day.label}</span>
+        <div class="stamp-mark">
+          ${stamped
+            ? `<img src="${GIRYONG_IMAGES.pearlStamp}" alt="출석 도장" class="stamp-img">`
+            : '<span class="stamp-empty">·</span>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function initCheckIn() {
   const btn = $('checkInBtn');
   const updateBtn = () => {
     const can = canCheckInToday(profile);
     btn.disabled = !can;
-    btn.textContent = can ? '출석 체크' : '출석 완료 ✓';
+    btn.innerHTML = can
+      ? `<img src="${GIRYONG_IMAGES.pearlStamp}" alt="" class="btn-pearl-icon" aria-hidden="true">진주조개 도장 찍기`
+      : '오늘 도장 완료 ✓';
     btn.classList.toggle('done', !can);
+    renderStampBoard();
   };
   updateBtn();
 
@@ -171,6 +201,10 @@ function initCheckIn() {
       setGiryongMood(profile.streak >= 7 ? 'streak' : 'happy');
       $('rewardChips').innerHTML = result.reward.bonuses
         .map((b) => `<span class="bonus-chip">${b}</span>`).join('');
+      renderStampBoard(true);
+      setTimeout(() => renderStampBoard(), 700);
+    } else {
+      renderStampBoard();
     }
     renderProfile();
     updateBtn();
@@ -709,6 +743,7 @@ function initPlacementHome() {
 
 function init() {
   profile = ensureNickname();
+  profile = syncTodayStamp(profile);
   if (!profile.nickname) {
     profile.nickname = '기룡친구';
     saveProfile(profile);

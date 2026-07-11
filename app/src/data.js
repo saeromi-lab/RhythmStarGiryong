@@ -9,6 +9,9 @@ export const GIRYONG_IMAGES = {
   sad: '/images/giryong/emote-3.png',
   excited: '/images/giryong/emote-4.png',
   celebrate: '/images/giryong/emote-5.png',
+  pearlCatching: '/images/giryong/pearl-catching.png',
+  pearlStamp: '/images/giryong/pearl-stamp.png',
+  withPearl: '/images/giryong/giryong-main.png',
 };
 
 export const GIRYONG_MOOD_IMAGES = {
@@ -66,9 +69,9 @@ export const GIRYONG_LINES = {
     '매일 조금씩 하면 박자 감각이 확 달라져!',
   ],
   checkIn: [
-    '출석 완료! 오늘의 리듬 에너지 충전됐어!',
-    '연속 출석 중이네? 기룡이가 응원한다!',
-    '꾸준함이 최고의 연습이야. 계속 가보자!',
+    '진주조개 도장 완료! 오늘도 리듬 에너지 충전됐어!',
+    '조개 K가 출석 도장 찍어줬어! 연속 출석 가보자!',
+    '꾸준함이 최고의 연습이야. 내일도 도장 받자!',
   ],
   perfect: ['완벽해! 프로 느낌 나는데?', '그 박자감, 무대에서도 통할 거야!'],
   miss: ['괜찮아, 다시 맞춰보자!', '리듬은 반복이 답이야. 한 번 더!'],

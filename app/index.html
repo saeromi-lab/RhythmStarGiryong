@@ -44,13 +44,35 @@
       </div>
 
       <div class="card attendance-card">
-        <div class="sec-label">오늘의 출석</div>
+        <div class="sec-label">오늘의 출석 · 진주조개 도장</div>
+
+        <div class="attendance-scene">
+          <img
+            class="attendance-giryong"
+            src="/images/giryong/giryong-basic.png"
+            alt="기룡이"
+          >
+          <img
+            class="attendance-pearl"
+            src="/images/giryong/pearl-catching.png"
+            alt="진주조개 K"
+          >
+        </div>
+
+        <div class="stamp-board-wrap">
+          <div class="stamp-board-label">이번 주 도장판</div>
+          <div class="stamp-board" id="stampBoard"></div>
+        </div>
+
         <div class="attendance-row">
           <div>
             <div class="streak-num" id="streakNum">0</div>
             <div class="streak-lbl">연속 출석일</div>
           </div>
-          <button id="checkInBtn" class="primary check-in-btn">출석 체크</button>
+          <button id="checkInBtn" class="primary check-in-btn pearl-stamp-btn">
+            <img src="/images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
+            진주조개 도장 찍기
+          </button>
         </div>
         <div id="checkInMsg" class="check-in-msg"></div>
         <div class="reward-chips" id="rewardChips"></div>

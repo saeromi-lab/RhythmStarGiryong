@@ -1,3 +1,28 @@
+export const GIRYONG_IMAGES = {
+  hero: '/images/giryong/giryong-hero.png',
+  basic: '/images/giryong/giryong-basic.png',
+  main: '/images/giryong/giryong-main.png',
+  logo: '/images/giryong/giryong-logo.png',
+  dressed: '/images/giryong/giryong-dressed.png',
+  happy: '/images/giryong/emote-1.png',
+  cheer: '/images/giryong/emote-2.png',
+  sad: '/images/giryong/emote-3.png',
+  excited: '/images/giryong/emote-4.png',
+  celebrate: '/images/giryong/emote-5.png',
+};
+
+export const GIRYONG_MOOD_IMAGES = {
+  normal: GIRYONG_IMAGES.hero,
+  happy: GIRYONG_IMAGES.happy,
+  sad: GIRYONG_IMAGES.sad,
+  focus: GIRYONG_IMAGES.logo,
+  streak: GIRYONG_IMAGES.dressed,
+  excited: GIRYONG_IMAGES.excited,
+  celebrate: GIRYONG_IMAGES.celebrate,
+};
+
+export const GIRYONG_SOURCE_URL = 'https://www.kyonggi.ac.kr/www/contents.do?key=9819';
+
 export const APP_NAME = 'RhythmStarGiryong';
 export const DEPT_NAME = '경기대학교 실용음악학과';
 

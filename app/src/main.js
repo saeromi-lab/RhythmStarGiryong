@@ -3,6 +3,7 @@ import {
   CURRICULUM,
   JUDGE,
   DEMO_CLASSMATES,
+  GIRYONG_MOOD_IMAGES,
   randomLine,
 } from './data.js';
 import {
@@ -32,6 +33,10 @@ function sayGiryong(key, custom) {
 
 function setGiryongMood(mood) {
   $('giryongChar').dataset.mood = mood;
+  const img = $('giryongImg');
+  if (img) {
+    img.src = GIRYONG_MOOD_IMAGES[mood] ?? GIRYONG_MOOD_IMAGES.normal;
+  }
 }
 
 function initTabs() {
@@ -104,7 +109,7 @@ function initCheckIn() {
     $('checkInMsg').textContent = result.message;
     if (result.reward) {
       sayGiryong(profile.streak >= 7 ? 'streak' : 'checkIn', result.message);
-      setGiryongMood('happy');
+      setGiryongMood(profile.streak >= 7 ? 'streak' : 'happy');
       $('rewardChips').innerHTML = result.reward.bonuses
         .map((b) => `<span class="bonus-chip">${b}</span>`).join('');
     }
@@ -222,7 +227,7 @@ function initGame() {
             <span>+${xp} XP · +${coins} 🪙</span>
           </div>
         `;
-        setGiryongMood(result.maxCombo >= 10 ? 'happy' : 'normal');
+        setGiryongMood(result.maxCombo >= 10 ? 'celebrate' : 'happy');
         sayGiryong(result.score > profile.bestScore ? 'perfect' : 'welcome', `점수 ${result.score.toLocaleString()}! ${result.maxCombo} COMBO!`);
         renderProfile();
         renderRank();

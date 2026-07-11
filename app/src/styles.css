@@ -145,7 +145,7 @@ body {
   margin-bottom: 10px;
 }
 
-/* 기룡이 */
+/* 기룡이 — 경기대 공식 캐릭터 이미지 */
 .giryong-card {
   background: linear-gradient(160deg, #2d1f6e, var(--card));
   overflow: hidden;
@@ -159,10 +159,11 @@ body {
 }
 
 .giryong-char {
-  position: relative;
-  width: 100px;
-  height: 90px;
-  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 180px;
+  width: 100%;
   transition: transform 0.3s;
 }
 
@@ -170,87 +171,38 @@ body {
   animation: bounce 0.4s ease;
 }
 
-.giryong-char[data-mood='happy'] .mouth {
-  border-radius: 0 0 12px 12px;
-  height: 10px;
-  border: none;
-  background: #ff8fab;
+.giryong-img {
+  max-height: 180px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  transition: transform 0.25s ease;
 }
 
-.giryong-char[data-mood='sad'] {
-  transform: rotate(-3deg);
+.giryong-char[data-mood='happy'] .giryong-img,
+.giryong-char[data-mood='celebrate'] .giryong-img {
+  transform: scale(1.05);
 }
 
-.giryong-body {
-  width: 72px;
-  height: 64px;
-  background: linear-gradient(180deg, #5ce1e6, #3a9fd4);
-  border-radius: 40% 40% 35% 35%;
-  margin: 0 auto;
-  position: relative;
-  border: 3px solid #2d7faa;
-  box-shadow: 0 8px 0 #1e5f82;
+.giryong-char[data-mood='sad'] .giryong-img {
+  transform: scale(0.95) rotate(-2deg);
+  opacity: 0.9;
 }
 
-.giryong-face {
+.giryong-char[data-mood='focus'] .giryong-img {
+  transform: scale(0.98);
+}
+
+.arcade-giryong {
   position: absolute;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-}
-
-.eye {
-  display: inline-block;
-  width: 10px;
-  height: 12px;
-  background: #1a1a2e;
-  border-radius: 50%;
-  margin: 0 6px;
-}
-
-.eye::after {
-  content: '';
-  display: block;
-  width: 4px;
-  height: 4px;
-  background: #fff;
-  border-radius: 50%;
-  margin: 2px 0 0 4px;
-}
-
-.mouth {
-  display: block;
-  width: 16px;
-  height: 8px;
-  border: 2px solid #1a1a2e;
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  margin: 6px auto 0;
-}
-
-.giryong-horn {
-  position: absolute;
-  top: -4px;
-  width: 14px;
-  height: 22px;
-  background: var(--accent2);
-  border-radius: 50% 50% 20% 20%;
-  border: 2px solid #e6a800;
-}
-
-.giryong-horn.left { left: 8px; transform: rotate(-25deg); }
-.giryong-horn.right { right: 8px; transform: rotate(25deg); }
-
-.giryong-tail {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 28px;
-  height: 20px;
-  background: #3a9fd4;
-  border-radius: 60% 0 60% 40%;
-  border: 2px solid #2d7faa;
+  right: 12px;
+  bottom: 8px;
+  height: 72px;
+  width: auto;
+  opacity: 0.85;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 .speech-bubble {
@@ -720,6 +672,17 @@ button:disabled {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.footer a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer a:hover {
+  color: var(--accent3);
 }
 
 @keyframes bounce {

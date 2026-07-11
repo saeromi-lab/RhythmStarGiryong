@@ -14,6 +14,11 @@ const defaultProfile = () => ({
   lastCheckIn: null,
   bestScore: 0,
   totalPlays: 0,
+  totalQuizzes: 0,
+  dailyDate: null,
+  dailyArcade: false,
+  dailyQuiz: false,
+  dailyCombo10: false,
   badges: [],
   createdAt: new Date().toISOString(),
 });
@@ -88,10 +93,36 @@ export function checkIn(profile) {
   };
 }
 
-export function addPlayResult(profile, { score, xpGained, coinsGained }) {
+export function resetDailyIfNeeded(profile) {
+  const today = todayKey();
+  if (profile.dailyDate !== today) {
+    profile.dailyDate = today;
+    profile.dailyArcade = false;
+    profile.dailyQuiz = false;
+    profile.dailyCombo10 = false;
+  }
+  return profile;
+}
+
+export function addPlayResult(profile, { score, xpGained, coinsGained, maxCombo = 0 }) {
+  profile = resetDailyIfNeeded(profile);
   profile.xp += xpGained;
   profile.coins += coinsGained;
   profile.totalPlays += 1;
+  profile.dailyArcade = true;
+  if (maxCombo >= 10) profile.dailyCombo10 = true;
+  if (score > profile.bestScore) profile.bestScore = score;
+  saveProfile(profile);
+  saveWeeklyScore(profile.nickname, score);
+  return profile;
+}
+
+export function addQuizResult(profile, { score, xpGained, coinsGained, correct, total }) {
+  profile = resetDailyIfNeeded(profile);
+  profile.xp += xpGained;
+  profile.coins += coinsGained;
+  profile.totalQuizzes += 1;
+  profile.dailyQuiz = true;
   if (score > profile.bestScore) profile.bestScore = score;
   saveProfile(profile);
   saveWeeklyScore(profile.nickname, score);

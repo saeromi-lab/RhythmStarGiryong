@@ -65,7 +65,15 @@
     <!-- 플레이 -->
     <section class="tab-panel" id="panel-play">
       <div class="card">
-        <div class="sec-label">난이도 선택</div>
+        <div class="sec-label">플레이 모드</div>
+        <div class="mode-switch" id="modeSwitch">
+          <button class="mode-btn active" data-mode="arcade">아케이드 TAP</button>
+          <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-label" id="levelLabel">난이도 선택</div>
         <div id="levelSelect" class="level-grid"></div>
       </div>
 
@@ -89,6 +97,33 @@
           <button id="gameTap" class="tap-btn" disabled>TAP!</button>
         </div>
         <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
+      </div>
+
+      <div class="card quiz-card" id="quizCard" style="display:none">
+        <div class="quiz-hud">
+          <div><span class="hud-lbl">문제</span><span class="hud-val" id="quizProgress">0/5</span></div>
+          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="quizScore">0</span></div>
+          <div><span class="hud-lbl">연속</span><span class="hud-val combo" id="quizStreak">0</span></div>
+        </div>
+
+        <div class="quiz-stage" id="quizStage">
+          <div class="quiz-prompt" id="quizPrompt">리듬을 듣고 맞는 채보를 고르세요</div>
+          <div class="quiz-listen-wrap">
+            <button id="quizListen" class="listen-btn" disabled>
+              <span class="listen-icon">🔊</span>
+              <span id="quizListenLabel">듣기</span>
+            </button>
+            <p class="quiz-bpm" id="quizBpmInfo"></p>
+          </div>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+        </div>
+
+        <div class="quiz-controls">
+          <button id="quizStart" class="primary arcade-btn">퀴즈 시작</button>
+          <button id="quizNext" class="primary arcade-btn" style="display:none">다음 문제</button>
+        </div>
+        <p class="hint">1~2마디 리듬을 듣고, 4개의 채보 중 맞는 것을 고르세요</p>
       </div>
 
       <div class="card" id="resultCard" style="display:none">
@@ -118,7 +153,7 @@
     <section class="tab-panel" id="panel-curriculum">
       <div class="card">
         <div class="sec-label">12주 리듬 트레이닝 커리큘럼</div>
-        <p class="curriculum-intro">실용음악학과 학생을 위한 단계별 박자·리듬 감각 훈련 과정입니다. 매일 아케이드 모드로 연습하고 랭킹에 도전하세요.</p>
+        <p class="curriculum-intro">실용음악학과 학생을 위한 단계별 박자·리듬 감각 훈련 과정입니다. 리듬 퀴즈로 귀 훈련하고, 아케이드 모드로 타이밍을 연습하세요.</p>
         <div id="curriculumList" class="curriculum-list"></div>
       </div>
       <div class="card">

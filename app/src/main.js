@@ -12,14 +12,27 @@ import {
   checkIn,
   canCheckInToday,
   addPlayResult,
+  addQuizResult,
+  resetDailyIfNeeded,
   getLeaderboard,
   profileSummary,
 } from './storage.js';
 import { RhythmGame } from './game.js';
+import {
+  QUIZ_LEVELS,
+  QUIZ_ROUND_SIZE,
+  QUIZ_SCORE,
+  buildQuizRound,
+} from './quiz-data.js';
+import { RhythmPlayer } from './rhythm-player.js';
 
 let profile = null;
 let game = null;
+let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
+let selectedQuizLevel = QUIZ_LEVELS[0];
+let playMode = 'arcade';
+let quizState = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -75,20 +88,20 @@ function renderProfile() {
 }
 
 function renderMissions() {
+  profile = resetDailyIfNeeded(profile);
   const checked = !canCheckInToday(profile);
-  const played = profile.totalPlays > 0;
   $('dailyMissions').innerHTML = `
     <div class="mission ${checked ? 'done' : ''}">
       <span>${checked ? '✓' : '○'}</span> 오늘 출석 체크 ${checked ? '(완료)' : ''}
     </div>
-    <div class="mission">
-      <span>○</span> 아케이드 모드 1회 플레이
+    <div class="mission ${profile.dailyQuiz ? 'done' : ''}">
+      <span>${profile.dailyQuiz ? '✓' : '○'}</span> 리듬 퀴즈 1회 완료
     </div>
-    <div class="mission">
-      <span>○</span> COMBO 10 이상 달성
+    <div class="mission ${profile.dailyArcade ? 'done' : ''}">
+      <span>${profile.dailyArcade ? '✓' : '○'}</span> 아케이드 모드 1회 플레이
     </div>
-    <div class="mission">
-      <span>○</span> 랭킹 Top 10 진입 도전
+    <div class="mission ${profile.dailyCombo10 ? 'done' : ''}">
+      <span>${profile.dailyCombo10 ? '✓' : '○'}</span> COMBO 10 이상 달성
     </div>
   `;
 }
@@ -119,6 +132,25 @@ function initCheckIn() {
 }
 
 function renderLevels() {
+  if (playMode === 'quiz') {
+    $('levelLabel').textContent = '퀴즈 난이도';
+    $('levelSelect').innerHTML = QUIZ_LEVELS.map((lv) => `
+      <button class="level-btn ${lv.id === selectedQuizLevel.id ? 'active' : ''}" data-id="${lv.id}">
+        <strong>${lv.name}</strong>
+        <span>${lv.bpm} BPM · ${lv.barsLabel}</span>
+      </button>
+    `).join('');
+
+    $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedQuizLevel = QUIZ_LEVELS.find((l) => l.id === btn.dataset.id);
+        renderLevels();
+      });
+    });
+    return;
+  }
+
+  $('levelLabel').textContent = '난이도 선택';
   $('levelSelect').innerHTML = LEVELS.map((lv) => `
     <button class="level-btn ${lv.id === selectedLevel.id ? 'active' : ''}" data-id="${lv.id}">
       <strong>${lv.name}</strong>
@@ -132,6 +164,20 @@ function renderLevels() {
       renderLevels();
     });
   });
+}
+
+function setPlayMode(mode) {
+  playMode = mode;
+  document.querySelectorAll('.mode-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
+  $('quizCard').style.display = mode === 'quiz' ? 'block' : 'none';
+  $('resultCard').style.display = 'none';
+  game?.stop();
+  rhythmPlayer?.stop();
+  if (mode === 'quiz') resetQuizUI();
+  renderLevels();
 }
 
 function flashJudge(key, pts) {
@@ -212,7 +258,12 @@ function initGame() {
         tapBtn.disabled = true;
         const xp = Math.round(result.xp * selectedLevel.xpMultiplier);
         const coins = result.coins;
-        profile = addPlayResult(profile, { score: result.score, xpGained: xp, coinsGained: coins });
+        profile = addPlayResult(profile, {
+          score: result.score,
+          xpGained: xp,
+          coinsGained: coins,
+          maxCombo: result.maxCombo,
+        });
 
         $('arcadeCard').style.display = 'none';
         $('resultCard').style.display = 'block';
@@ -237,8 +288,191 @@ function initGame() {
     await game.start();
   });
 
-  $('playAgain').addEventListener('click', resetUI);
+  $('playAgain').addEventListener('click', () => {
+    $('resultCard').style.display = 'none';
+    if (playMode === 'arcade') {
+      resetUI();
+    } else {
+      resetQuizUI();
+    }
+  });
   resetUI();
+}
+
+function resetQuizUI() {
+  quizState = null;
+  rhythmPlayer?.stop();
+  $('quizCard').style.display = 'block';
+  $('quizProgress').textContent = `0/${QUIZ_ROUND_SIZE}`;
+  $('quizScore').textContent = '0';
+  $('quizStreak').textContent = '0';
+  $('quizPrompt').textContent = '리듬을 듣고 맞는 채보를 고르세요';
+  $('quizBpmInfo').textContent = '';
+  $('quizOptions').innerHTML = '';
+  $('quizFeedback').textContent = '';
+  $('quizFeedback').className = 'quiz-feedback';
+  $('quizStart').style.display = 'block';
+  $('quizStart').disabled = false;
+  $('quizNext').style.display = 'none';
+  $('quizListen').disabled = true;
+  $('quizListenLabel').textContent = '듣기';
+}
+
+function renderQuizQuestion() {
+  const q = quizState.questions[quizState.index];
+  const bars = q.bars >= 2 ? '2마디' : '1마디';
+  $('quizProgress').textContent = `${quizState.index + 1}/${quizState.questions.length}`;
+  $('quizScore').textContent = quizState.score.toLocaleString();
+  $('quizStreak').textContent = quizState.streak;
+  $('quizPrompt').textContent = `${bars} 리듬 — 맞는 채보를 고르세요`;
+  $('quizBpmInfo').textContent = `${q.bpm} BPM`;
+  $('quizFeedback').textContent = '';
+  $('quizFeedback').className = 'quiz-feedback';
+  $('quizOptions').innerHTML = q.options.map((opt) => `
+    <button class="quiz-option" data-id="${opt.id}" type="button">
+      <span class="opt-id">${opt.id}</span>
+      <span class="opt-notation">${opt.notation}</span>
+    </button>
+  `).join('');
+
+  $('quizOptions').querySelectorAll('.quiz-option').forEach((btn) => {
+    btn.addEventListener('click', () => answerQuiz(btn.dataset.id));
+  });
+
+  $('quizListen').disabled = false;
+  $('quizListenLabel').textContent = '듣기';
+}
+
+async function playCurrentQuestion() {
+  const q = quizState.questions[quizState.index];
+  $('quizListen').disabled = true;
+  $('quizListenLabel').textContent = '재생 중…';
+  if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+  await rhythmPlayer.playPattern(q.correctPattern, q.bpm);
+  if (quizState?.index != null && quizState.questions[quizState.index] === q) {
+    $('quizListen').disabled = quizState.answered;
+    $('quizListenLabel').textContent = '다시 듣기';
+  }
+}
+
+function answerQuiz(choiceId) {
+  if (!quizState || quizState.answered) return;
+  quizState.answered = true;
+
+  const q = quizState.questions[quizState.index];
+  const correct = choiceId === q.answerId;
+  const feedback = $('quizFeedback');
+
+  $('quizOptions').querySelectorAll('.quiz-option').forEach((btn) => {
+    btn.disabled = true;
+    if (btn.dataset.id === q.answerId) btn.classList.add('correct');
+    else if (btn.dataset.id === choiceId) btn.classList.add('wrong');
+  });
+
+  if (correct) {
+    quizState.correct += 1;
+    quizState.streak += 1;
+    const bonus = quizState.streak >= 2 ? QUIZ_SCORE.streakBonus * (quizState.streak - 1) : 0;
+    const pts = QUIZ_SCORE.correct.points + bonus;
+    quizState.score += pts;
+    quizState.xp += QUIZ_SCORE.correct.xp;
+    quizState.coins += QUIZ_SCORE.correct.coins;
+    feedback.textContent = `정답! +${pts}점${bonus ? ` (연속 보너스 +${bonus})` : ''}`;
+    feedback.className = 'quiz-feedback ok';
+    setGiryongMood('happy');
+    sayGiryong('quizCorrect');
+  } else {
+    quizState.streak = 0;
+    quizState.xp += QUIZ_SCORE.wrong.xp;
+    feedback.textContent = `오답. 정답은 ${q.answerId} (${q.correctNotation})`;
+    feedback.className = 'quiz-feedback ng';
+    setGiryongMood('sad');
+    sayGiryong('quizWrong');
+  }
+
+  $('quizScore').textContent = quizState.score.toLocaleString();
+  $('quizStreak').textContent = quizState.streak;
+  $('quizNext').style.display = 'block';
+  $('quizListen').disabled = false;
+  $('quizListenLabel').textContent = '다시 듣기';
+}
+
+function finishQuiz() {
+  const { score, correct, questions, xp, coins } = quizState;
+  profile = addQuizResult(profile, {
+    score,
+    xpGained: xp,
+    coinsGained: coins,
+    correct,
+    total: questions.length,
+  });
+
+  $('quizCard').style.display = 'none';
+  $('resultCard').style.display = 'block';
+  $('resultBody').innerHTML = `
+    <div class="result-score">${score.toLocaleString()}</div>
+    <div class="result-grid">
+      <span>정답 ${correct}/${questions.length}</span>
+      <span>정답률 ${Math.round((correct / questions.length) * 100)}%</span>
+      <span>난이도 ${selectedQuizLevel.name}</span>
+      <span>+${xp} XP · +${coins} 🪙</span>
+    </div>
+  `;
+  setGiryongMood(correct >= 4 ? 'celebrate' : 'happy');
+  sayGiryong('quizDone', `${correct}/${questions.length} 정답! 점수 ${score.toLocaleString()}`);
+  renderProfile();
+  renderRank();
+  quizState = null;
+}
+
+function initQuiz() {
+  const startBtn = $('quizStart');
+  const nextBtn = $('quizNext');
+  const listenBtn = $('quizListen');
+
+  listenBtn.addEventListener('click', () => {
+    if (!quizState || quizState.index >= quizState.questions.length) return;
+    playCurrentQuestion();
+  });
+
+  startBtn.addEventListener('click', async () => {
+    rhythmPlayer?.stop();
+    quizState = {
+      questions: buildQuizRound(selectedQuizLevel.id),
+      index: 0,
+      score: 0,
+      streak: 0,
+      correct: 0,
+      xp: 0,
+      coins: 0,
+      answered: false,
+    };
+    startBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    setGiryongMood('focus');
+    renderQuizQuestion();
+    await playCurrentQuestion();
+  });
+
+  nextBtn.addEventListener('click', async () => {
+    quizState.index += 1;
+    if (quizState.index >= quizState.questions.length) {
+      finishQuiz();
+      return;
+    }
+    quizState.answered = false;
+    nextBtn.style.display = 'none';
+    renderQuizQuestion();
+    await playCurrentQuestion();
+  });
+
+  resetQuizUI();
+}
+
+function initModeSwitch() {
+  document.querySelectorAll('.mode-btn').forEach((btn) => {
+    btn.addEventListener('click', () => setPlayMode(btn.dataset.mode));
+  });
 }
 
 function renderRank() {
@@ -298,7 +532,9 @@ function init() {
   renderProfile();
   initCheckIn();
   renderLevels();
+  initModeSwitch();
   initGame();
+  initQuiz();
   renderCurriculum();
   renderRank();
   sayGiryong('welcome');

@@ -76,6 +76,8 @@ export const GIRYONG_LINES = {
   quizCorrect: ['정답! 귀가 정확하네!', '그 리듬, 바로 잡았어!'],
   quizWrong: ['아쉽다! 다시 들어보면 알 수 있어.', '틀려도 괜찮아, 귀로 익히는 거야!'],
   quizDone: ['퀴즈 완료! 오늘도 리듬 감각 업!', '채보 감각이 점점 좋아지고 있어!'],
+  placementStart: ['10문제만 풀면 네 레벨을 찾아줄게!', '집중해서 들어봐. 맞는 구간을 추천해 줄게!'],
+  placementDone: ['레벨 확인 완료! 이제 맞춤 훈련 가보자!', '결과 나왔어! 추천 구간부터 시작해봐!'],
 };
 
 export const DEMO_CLASSMATES = [

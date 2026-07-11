@@ -13,6 +13,7 @@ import {
   canCheckInToday,
   addPlayResult,
   addQuizResult,
+  savePlacementResult,
   resetDailyIfNeeded,
   getLeaderboard,
   profileSummary,
@@ -24,7 +25,19 @@ import {
   QUIZ_SCORE,
   buildQuizRound,
 } from './quiz-data.js';
+import {
+  PLACEMENT_SIZE,
+  PLACEMENT_REWARD,
+  buildPlacementRound,
+  evaluatePlacement,
+} from './placement-test.js';
 import { RhythmPlayer } from './rhythm-player.js';
+
+const TIER_LABELS = {
+  beginner: '입문',
+  basic: '기초',
+  intermediate: '심화',
+};
 
 let profile = null;
 let game = null;
@@ -76,15 +89,48 @@ function renderHeader() {
 function renderProfile() {
   const s = profileSummary(profile);
   const pct = Math.round((s.progress / s.need) * 100);
+  const placementChip = profile.placement
+    ? `<span class="placement-chip">추천 ${profile.placement.quizLevelName}</span>`
+    : '';
   $('profileBar').innerHTML = `
-    <div class="profile-name">${s.nickname}</div>
+    <div class="profile-name">${s.nickname} ${placementChip}</div>
     <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
     <div class="profile-meta">Lv.${s.level} · ${s.progress}/${s.need} XP · 최고점 ${s.bestScore.toLocaleString()}</div>
   `;
   $('streakNum').textContent = s.streak;
   renderHeader();
   renderMissions();
+  renderPlacementHome();
   renderMyRank();
+}
+
+function renderPlacementHome() {
+  const status = $('placementHomeStatus');
+  const btn = $('placementHomeBtn');
+  if (!status || !btn) return;
+
+  if (profile.placement) {
+    const date = new Date(profile.placement.testedAt).toLocaleDateString('ko-KR');
+    status.innerHTML = `
+      <div class="placement-result-chip">
+        <strong>추천 훈련 구간</strong>
+        <span>퀴즈 ${profile.placement.quizLevelName} · 아케이드 ${profile.placement.arcadeLevelName}</span>
+        <span class="placement-meta">${profile.placement.totalCorrect}/${profile.placement.total} 정답 · 커리큘럼 ${profile.placement.curriculumWeek} · ${date}</span>
+      </div>
+    `;
+    btn.textContent = '레벨 테스트 다시 하기';
+  } else {
+    status.innerHTML = '<p class="placement-empty">아직 테스트를 하지 않았어요. 10문제로 맞는 구간을 찾아보세요!</p>';
+    btn.textContent = '레벨 테스트 시작';
+  }
+}
+
+function goToPlacementTest() {
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+  document.querySelector('[data-tab="play"]').classList.add('active');
+  $('panel-play').classList.add('active');
+  setPlayMode('placement');
 }
 
 function renderMissions() {
@@ -131,15 +177,28 @@ function initCheckIn() {
   });
 }
 
+function applyRecommendedLevels(quizLevelId, arcadeLevelId) {
+  const quiz = QUIZ_LEVELS.find((l) => l.id === quizLevelId);
+  const arcade = LEVELS.find((l) => l.id === arcadeLevelId);
+  if (quiz) selectedQuizLevel = quiz;
+  if (arcade) selectedLevel = arcade;
+  renderLevels();
+}
+
 function renderLevels() {
+  if (playMode === 'placement') return;
+
   if (playMode === 'quiz') {
     $('levelLabel').textContent = '퀴즈 난이도';
-    $('levelSelect').innerHTML = QUIZ_LEVELS.map((lv) => `
-      <button class="level-btn ${lv.id === selectedQuizLevel.id ? 'active' : ''}" data-id="${lv.id}">
-        <strong>${lv.name}</strong>
+    $('levelSelect').innerHTML = QUIZ_LEVELS.map((lv) => {
+      const recommended = profile.placement?.quizLevelId === lv.id;
+      return `
+      <button class="level-btn ${lv.id === selectedQuizLevel.id ? 'active' : ''} ${recommended ? 'recommended' : ''}" data-id="${lv.id}">
+        <strong>${lv.name}${recommended ? ' ★' : ''}</strong>
         <span>${lv.bpm} BPM · ${lv.barsLabel}</span>
       </button>
-    `).join('');
+    `;
+    }).join('');
 
     $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -151,12 +210,15 @@ function renderLevels() {
   }
 
   $('levelLabel').textContent = '난이도 선택';
-  $('levelSelect').innerHTML = LEVELS.map((lv) => `
-    <button class="level-btn ${lv.id === selectedLevel.id ? 'active' : ''}" data-id="${lv.id}">
-      <strong>${lv.name}</strong>
+  $('levelSelect').innerHTML = LEVELS.map((lv) => {
+    const recommended = profile.placement?.arcadeLevelId === lv.id;
+    return `
+    <button class="level-btn ${lv.id === selectedLevel.id ? 'active' : ''} ${recommended ? 'recommended' : ''}" data-id="${lv.id}">
+      <strong>${lv.name}${recommended ? ' ★' : ''}</strong>
       <span>${lv.bpm} BPM · ${lv.noteCount}박</span>
     </button>
-  `).join('');
+  `;
+  }).join('');
 
   $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -172,12 +234,24 @@ function setPlayMode(mode) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
   $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
-  $('quizCard').style.display = mode === 'quiz' ? 'block' : 'none';
+  $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
+  $('levelSelectCard').style.display = mode === 'placement' ? 'none' : 'block';
   $('resultCard').style.display = 'none';
   game?.stop();
   rhythmPlayer?.stop();
-  if (mode === 'quiz') resetQuizUI();
+  if (mode === 'quiz' || mode === 'placement') resetQuizUI();
   renderLevels();
+  updateQuizModeUI();
+}
+
+function updateQuizModeUI() {
+  const isPlacement = playMode === 'placement';
+  $('quizHudMidLbl').textContent = isPlacement ? '정답' : 'SCORE';
+  $('quizHudRightLbl').textContent = isPlacement ? '구간' : '연속';
+  $('quizStart').textContent = isPlacement ? `테스트 시작 (${PLACEMENT_SIZE}문제)` : '퀴즈 시작';
+  $('quizHint').textContent = isPlacement
+    ? '입문→기초→심화 순으로 10문제. 결과에 따라 맞는 훈련 구간을 추천해 드려요'
+    : '1~2마디 리듬을 듣고, 4개의 채보 중 맞는 것을 고르세요';
 }
 
 function flashJudge(key, pts) {
@@ -288,25 +362,46 @@ function initGame() {
     await game.start();
   });
 
-  $('playAgain').addEventListener('click', () => {
-    $('resultCard').style.display = 'none';
-    if (playMode === 'arcade') {
-      resetUI();
-    } else {
-      resetQuizUI();
-    }
-  });
+  $('playAgain').addEventListener('click', handlePlayAgain);
   resetUI();
+}
+
+function isPlacementMode() {
+  return playMode === 'placement';
+}
+
+function getRoundSize() {
+  return isPlacementMode() ? PLACEMENT_SIZE : QUIZ_ROUND_SIZE;
+}
+
+function handlePlayAgain() {
+  $('resultCard').style.display = 'none';
+  $('resultTitle').textContent = '결과';
+  $('resultActions').innerHTML = '<button id="playAgain" class="primary">다시 하기</button>';
+  $('playAgain').addEventListener('click', handlePlayAgain);
+  if (playMode === 'arcade') {
+    $('arcadeCard').style.display = 'block';
+    $('gameScore').textContent = '0';
+    $('gameCombo').textContent = '0';
+    $('gameBeat').textContent = `0/${selectedLevel.noteCount}`;
+    $('gameStart').disabled = false;
+    $('gameTap').disabled = true;
+  } else {
+    resetQuizUI();
+  }
 }
 
 function resetQuizUI() {
   quizState = null;
   rhythmPlayer?.stop();
   $('quizCard').style.display = 'block';
-  $('quizProgress').textContent = `0/${QUIZ_ROUND_SIZE}`;
+  $('quizProgress').textContent = `0/${getRoundSize()}`;
   $('quizScore').textContent = '0';
-  $('quizStreak').textContent = '0';
-  $('quizPrompt').textContent = '리듬을 듣고 맞는 채보를 고르세요';
+  $('quizStreak').textContent = '-';
+  $('quizTier').textContent = '';
+  $('quizPrompt').textContent = isPlacementMode()
+    ? '레벨 테스트 — 리듬을 듣고 맞는 채보를 고르세요'
+    : '리듬을 듣고 맞는 채보를 고르세요';
   $('quizBpmInfo').textContent = '';
   $('quizOptions').innerHTML = '';
   $('quizFeedback').textContent = '';
@@ -316,15 +411,26 @@ function resetQuizUI() {
   $('quizNext').style.display = 'none';
   $('quizListen').disabled = true;
   $('quizListenLabel').textContent = '듣기';
+  updateQuizModeUI();
 }
 
 function renderQuizQuestion() {
   const q = quizState.questions[quizState.index];
   const bars = q.bars >= 2 ? '2마디' : '1마디';
   $('quizProgress').textContent = `${quizState.index + 1}/${quizState.questions.length}`;
-  $('quizScore').textContent = quizState.score.toLocaleString();
-  $('quizStreak').textContent = quizState.streak;
-  $('quizPrompt').textContent = `${bars} 리듬 — 맞는 채보를 고르세요`;
+
+  if (isPlacementMode()) {
+    $('quizScore').textContent = String(quizState.correct);
+    $('quizStreak').textContent = TIER_LABELS[q.levelId] ?? q.levelId;
+    $('quizTier').textContent = `${TIER_LABELS[q.levelId] ?? ''} 구간 · ${quizState.index + 1}번째`;
+    $('quizPrompt').textContent = `${bars} 리듬 — 이 구간 실력을 확인해요`;
+  } else {
+    $('quizScore').textContent = quizState.score.toLocaleString();
+    $('quizStreak').textContent = quizState.streak;
+    $('quizTier').textContent = '';
+    $('quizPrompt').textContent = `${bars} 리듬 — 맞는 채보를 고르세요`;
+  }
+
   $('quizBpmInfo').textContent = `${q.bpm} BPM`;
   $('quizFeedback').textContent = '';
   $('quizFeedback').className = 'quiz-feedback';
@@ -371,33 +477,47 @@ function answerQuiz(choiceId) {
 
   if (correct) {
     quizState.correct += 1;
-    quizState.streak += 1;
-    const bonus = quizState.streak >= 2 ? QUIZ_SCORE.streakBonus * (quizState.streak - 1) : 0;
-    const pts = QUIZ_SCORE.correct.points + bonus;
-    quizState.score += pts;
-    quizState.xp += QUIZ_SCORE.correct.xp;
-    quizState.coins += QUIZ_SCORE.correct.coins;
-    feedback.textContent = `정답! +${pts}점${bonus ? ` (연속 보너스 +${bonus})` : ''}`;
+    if (!isPlacementMode()) {
+      quizState.streak += 1;
+      const bonus = quizState.streak >= 2 ? QUIZ_SCORE.streakBonus * (quizState.streak - 1) : 0;
+      const pts = QUIZ_SCORE.correct.points + bonus;
+      quizState.score += pts;
+      quizState.xp += QUIZ_SCORE.correct.xp;
+      quizState.coins += QUIZ_SCORE.correct.coins;
+      feedback.textContent = `정답! +${pts}점${bonus ? ` (연속 보너스 +${bonus})` : ''}`;
+    } else {
+      feedback.textContent = '정답!';
+    }
     feedback.className = 'quiz-feedback ok';
     setGiryongMood('happy');
     sayGiryong('quizCorrect');
   } else {
-    quizState.streak = 0;
-    quizState.xp += QUIZ_SCORE.wrong.xp;
+    if (!isPlacementMode()) quizState.streak = 0;
+    if (!isPlacementMode()) quizState.xp += QUIZ_SCORE.wrong.xp;
     feedback.textContent = `오답. 정답은 ${q.answerId} (${q.correctNotation})`;
     feedback.className = 'quiz-feedback ng';
     setGiryongMood('sad');
     sayGiryong('quizWrong');
   }
 
-  $('quizScore').textContent = quizState.score.toLocaleString();
-  $('quizStreak').textContent = quizState.streak;
+  if (isPlacementMode()) {
+    quizState.answers.push({ levelId: q.levelId, correct });
+    $('quizScore').textContent = String(quizState.correct);
+  } else {
+    $('quizScore').textContent = quizState.score.toLocaleString();
+    $('quizStreak').textContent = quizState.streak;
+  }
   $('quizNext').style.display = 'block';
   $('quizListen').disabled = false;
   $('quizListenLabel').textContent = '다시 듣기';
 }
 
 function finishQuiz() {
+  if (isPlacementMode()) {
+    finishPlacement();
+    return;
+  }
+
   const { score, correct, questions, xp, coins } = quizState;
   profile = addQuizResult(profile, {
     score,
@@ -409,6 +529,7 @@ function finishQuiz() {
 
   $('quizCard').style.display = 'none';
   $('resultCard').style.display = 'block';
+  $('resultTitle').textContent = '퀴즈 결과';
   $('resultBody').innerHTML = `
     <div class="result-score">${score.toLocaleString()}</div>
     <div class="result-grid">
@@ -425,6 +546,63 @@ function finishQuiz() {
   quizState = null;
 }
 
+function finishPlacement() {
+  const result = evaluatePlacement(quizState.answers);
+  profile = savePlacementResult(profile, {
+    ...result,
+    xpGained: PLACEMENT_REWARD.xp,
+    coinsGained: PLACEMENT_REWARD.coins,
+  });
+  applyRecommendedLevels(result.quizLevelId, result.arcadeLevelId);
+
+  $('quizCard').style.display = 'none';
+  $('resultCard').style.display = 'block';
+  $('resultTitle').textContent = '레벨 테스트 결과';
+  $('resultBody').innerHTML = `
+    <div class="placement-result-title">${result.message}</div>
+    <div class="placement-result-main">
+      <div class="placement-level-box">
+        <span class="lbl">추천 퀴즈</span>
+        <strong>${result.quizLevelName}</strong>
+      </div>
+      <div class="placement-level-box">
+        <span class="lbl">추천 아케이드</span>
+        <strong>${result.arcadeLevelName}</strong>
+      </div>
+    </div>
+    <p class="placement-detail">${result.detail}</p>
+    <div class="placement-tier-grid">
+      ${result.tierStats.map((t) => `
+        <div class="placement-tier-item">
+          <span>${t.label}</span>
+          <strong>${t.correct}/${t.total}</strong>
+        </div>
+      `).join('')}
+    </div>
+    <div class="result-grid">
+      <span>총 정답 ${result.totalCorrect}/${result.total}</span>
+      <span>정답률 ${Math.round(result.accuracy * 100)}%</span>
+      <span>커리큘럼 ${result.curriculumWeek}</span>
+      <span>+${PLACEMENT_REWARD.xp} XP · +${PLACEMENT_REWARD.coins} 🪙</span>
+    </div>
+  `;
+  $('resultActions').innerHTML = `
+    <button id="startTrainingBtn" class="primary">이 레벨로 훈련 시작</button>
+    <button id="playAgain" class="secondary-btn">다시 테스트</button>
+  `;
+  $('startTrainingBtn').addEventListener('click', () => {
+    $('resultCard').style.display = 'none';
+    setPlayMode('quiz');
+    sayGiryong('welcome', `${result.quizLevelName} 구간부터 시작해보자!`);
+  });
+  $('playAgain').addEventListener('click', handlePlayAgain);
+
+  setGiryongMood(result.accuracy >= 0.7 ? 'celebrate' : 'happy');
+  sayGiryong('placementDone', `추천 구간: ${result.quizLevelName}!`);
+  renderProfile();
+  quizState = null;
+}
+
 function initQuiz() {
   const startBtn = $('quizStart');
   const nextBtn = $('quizNext');
@@ -437,19 +615,22 @@ function initQuiz() {
 
   startBtn.addEventListener('click', async () => {
     rhythmPlayer?.stop();
+    const placement = isPlacementMode();
     quizState = {
-      questions: buildQuizRound(selectedQuizLevel.id),
+      questions: placement ? buildPlacementRound() : buildQuizRound(selectedQuizLevel.id),
       index: 0,
       score: 0,
       streak: 0,
       correct: 0,
       xp: 0,
       coins: 0,
+      answers: [],
       answered: false,
     };
     startBtn.style.display = 'none';
     nextBtn.style.display = 'none';
     setGiryongMood('focus');
+    sayGiryong(placement ? 'placementStart' : 'welcome');
     renderQuizQuestion();
     await playCurrentQuestion();
   });
@@ -522,22 +703,30 @@ function renderCurriculum() {
     `).join('');
 }
 
+function initPlacementHome() {
+  $('placementHomeBtn')?.addEventListener('click', goToPlacementTest);
+}
+
 function init() {
   profile = ensureNickname();
   if (!profile.nickname) {
     profile.nickname = '기룡친구';
     saveProfile(profile);
   }
+  if (profile.placement) {
+    applyRecommendedLevels(profile.placement.quizLevelId, profile.placement.arcadeLevelId);
+  }
   initTabs();
   renderProfile();
   initCheckIn();
+  initPlacementHome();
   renderLevels();
   initModeSwitch();
   initGame();
   initQuiz();
   renderCurriculum();
   renderRank();
-  sayGiryong('welcome');
+  sayGiryong(profile.placement ? 'welcome' : 'placementStart', profile.placement ? undefined : '처음이면 레벨 테스트부터 해볼까?');
 }
 
 init();

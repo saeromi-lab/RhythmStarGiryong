@@ -19,6 +19,7 @@ const defaultProfile = () => ({
   dailyArcade: false,
   dailyQuiz: false,
   dailyCombo10: false,
+  placement: null,
   badges: [],
   createdAt: new Date().toISOString(),
 });
@@ -114,6 +115,24 @@ export function addPlayResult(profile, { score, xpGained, coinsGained, maxCombo 
   if (score > profile.bestScore) profile.bestScore = score;
   saveProfile(profile);
   saveWeeklyScore(profile.nickname, score);
+  return profile;
+}
+
+export function savePlacementResult(profile, result) {
+  profile.placement = {
+    quizLevelId: result.quizLevelId,
+    arcadeLevelId: result.arcadeLevelId,
+    quizLevelName: result.quizLevelName,
+    arcadeLevelName: result.arcadeLevelName,
+    totalCorrect: result.totalCorrect,
+    total: result.total,
+    accuracy: result.accuracy,
+    curriculumWeek: result.curriculumWeek,
+    testedAt: new Date().toISOString(),
+  };
+  profile.xp += result.xpGained ?? 0;
+  profile.coins += result.coinsGained ?? 0;
+  saveProfile(profile);
   return profile;
 }
 

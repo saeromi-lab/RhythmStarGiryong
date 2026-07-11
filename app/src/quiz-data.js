@@ -62,9 +62,9 @@ export function getPatternsForLevel(levelId) {
   return QUIZ_PATTERNS.filter((p) => p.level === levelId);
 }
 
-export function buildQuizQuestion(levelId) {
+export function buildQuizQuestion(levelId, patternOverride = null) {
   const pool = getPatternsForLevel(levelId);
-  const correct = pool[Math.floor(Math.random() * pool.length)];
+  const correct = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
   const correctKey = patternKey(correct.pattern);
 
   const distractors = pool
@@ -92,6 +92,7 @@ export function buildQuizQuestion(levelId) {
   const level = QUIZ_LEVELS.find((l) => l.id === levelId);
 
   return {
+    levelId,
     bpm: level.bpm,
     bars: correct.pattern.reduce((s, d) => s + d, 0) / 4,
     correctPattern: correct.pattern,

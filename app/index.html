@@ -56,6 +56,13 @@
         <div class="reward-chips" id="rewardChips"></div>
       </div>
 
+      <div class="card placement-home-card" id="placementHomeCard">
+        <div class="sec-label">레벨 테스트</div>
+        <p class="placement-home-desc">10문제로 나에게 맞는 훈련 구간을 찾아보세요 (약 3~4분)</p>
+        <div id="placementHomeStatus" class="placement-home-status"></div>
+        <button id="placementHomeBtn" class="primary placement-home-btn">레벨 테스트 시작</button>
+      </div>
+
       <div class="card">
         <div class="sec-label">오늘의 미션</div>
         <div id="dailyMissions" class="mission-list"></div>
@@ -66,13 +73,14 @@
     <section class="tab-panel" id="panel-play">
       <div class="card">
         <div class="sec-label">플레이 모드</div>
-        <div class="mode-switch" id="modeSwitch">
-          <button class="mode-btn active" data-mode="arcade">아케이드 TAP</button>
+        <div class="mode-switch mode-switch-3" id="modeSwitch">
+          <button class="mode-btn active" data-mode="arcade">아케이드</button>
           <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
+          <button class="mode-btn" data-mode="placement">레벨 테스트</button>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="levelSelectCard">
         <div class="sec-label" id="levelLabel">난이도 선택</div>
         <div id="levelSelect" class="level-grid"></div>
       </div>
@@ -102,12 +110,13 @@
       <div class="card quiz-card" id="quizCard" style="display:none">
         <div class="quiz-hud">
           <div><span class="hud-lbl">문제</span><span class="hud-val" id="quizProgress">0/5</span></div>
-          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="quizScore">0</span></div>
-          <div><span class="hud-lbl">연속</span><span class="hud-val combo" id="quizStreak">0</span></div>
+          <div><span class="hud-lbl" id="quizHudMidLbl">SCORE</span><span class="hud-val" id="quizScore">0</span></div>
+          <div><span class="hud-lbl" id="quizHudRightLbl">연속</span><span class="hud-val combo" id="quizStreak">0</span></div>
         </div>
 
         <div class="quiz-stage" id="quizStage">
           <div class="quiz-prompt" id="quizPrompt">리듬을 듣고 맞는 채보를 고르세요</div>
+          <div class="quiz-tier" id="quizTier"></div>
           <div class="quiz-listen-wrap">
             <button id="quizListen" class="listen-btn" disabled>
               <span class="listen-icon">🔊</span>
@@ -123,13 +132,15 @@
           <button id="quizStart" class="primary arcade-btn">퀴즈 시작</button>
           <button id="quizNext" class="primary arcade-btn" style="display:none">다음 문제</button>
         </div>
-        <p class="hint">1~2마디 리듬을 듣고, 4개의 채보 중 맞는 것을 고르세요</p>
+        <p class="hint" id="quizHint">1~2마디 리듬을 듣고, 4개의 채보 중 맞는 것을 고르세요</p>
       </div>
 
       <div class="card" id="resultCard" style="display:none">
-        <div class="sec-label">결과</div>
+        <div class="sec-label" id="resultTitle">결과</div>
         <div id="resultBody" class="result-body"></div>
-        <button id="playAgain" class="primary">다시 하기</button>
+        <div class="result-actions" id="resultActions">
+          <button id="playAgain" class="primary">다시 하기</button>
+        </div>
       </div>
     </section>
 

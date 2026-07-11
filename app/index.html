@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RhythmStarGiryong — 경기대 리듬훈련</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="app-title">RhythmStarGiryong</div>
+      <div class="app-sub">경기대학교 스포츠리듬트레이닝(STAR) · 리듬점프 10스텝 · 12주 프로그램</div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="program">프로그램</button>
+      <button class="tab-btn" data-tab="training">훈련</button>
+      <button class="tab-btn" data-tab="steps">스텝 가이드</button>
+      <button class="tab-btn" data-tab="history">기록</button>
+    </nav>
+
+    <!-- 프로그램 -->
+    <section class="tab-panel active" id="panel-program">
+      <div class="card">
+        <div class="sec-label">12주 프로그램</div>
+        <div class="row">
+          <label for="weekSelect">현재 주차</label>
+          <select id="weekSelect"></select>
+        </div>
+        <div id="phaseInfo" class="phase-box"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">단계별 구성</div>
+        <div id="phaseTable" class="phase-table"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">수업 구조 (45분)</div>
+        <div class="session-flow">
+          <div class="flow-item"><span>준비운동</span><strong>5분</strong></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item"><span>본운동</span><strong>35분</strong></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item"><span>정리운동</span><strong>5분</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 훈련 -->
+    <section class="tab-panel" id="panel-training">
+      <div class="card metronome-card">
+        <div class="sec-label">메트로놈</div>
+        <div class="bpm-display" id="bpmDisplay">100</div>
+        <div class="bpm-label">BPM</div>
+        <div class="beat-indicator" id="beatIndicator">
+          <span class="beat-dot"></span>
+          <span class="beat-dot"></span>
+          <span class="beat-dot"></span>
+          <span class="beat-dot"></span>
+        </div>
+        <div class="row center">
+          <button id="bpmDown">−</button>
+          <input type="range" id="bpmSlider" min="60" max="160" value="100">
+          <button id="bpmUp">+</button>
+        </div>
+        <div class="row center">
+          <button id="metronomeToggle" class="primary">시작</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-label">훈련 세션</div>
+        <div class="row">
+          <label>단계</label>
+          <span id="sessionPhase" class="tag">대기</span>
+        </div>
+        <div class="timer-display" id="sessionTimer">00:00</div>
+        <div class="row">
+          <label>현재 스텝</label>
+          <span id="currentStepName" class="step-name">—</span>
+        </div>
+        <div class="step-progress" id="stepProgress"></div>
+        <div class="row center session-controls">
+          <button id="sessionStart" class="primary">세션 시작</button>
+          <button id="sessionPause" disabled>일시정지</button>
+          <button id="sessionStop" disabled>종료</button>
+        </div>
+      </div>
+
+      <div class="card" id="starMoveCard" style="display:none">
+        <div class="sec-label">STAR MOVE</div>
+        <div id="starMoveList" class="star-move-list"></div>
+      </div>
+    </section>
+
+    <!-- 스텝 가이드 -->
+    <section class="tab-panel" id="panel-steps">
+      <div class="card">
+        <div class="sec-label">리듬점프 10스텝</div>
+        <div id="stepsList" class="steps-list"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">STAR MOVE (팔 동작)</div>
+        <div id="starMovesGuide" class="steps-list"></div>
+      </div>
+    </section>
+
+    <!-- 기록 -->
+    <section class="tab-panel" id="panel-history">
+      <div class="card">
+        <div class="sec-label">훈련 기록</div>
+        <div id="historyList" class="history-list"></div>
+        <div class="row center" style="margin-top:12px">
+          <button id="clearHistory">기록 초기화</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-label">통계</div>
+        <div id="historyStats" class="stats-grid"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      STAR Sports Rhythm Training · 경기대학교 · Change the world through rhythm
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

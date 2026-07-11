@@ -1,0 +1,16 @@
+{
+  "name": "rhythm-star-giryong",
+  "version": "1.0.0",
+  "description": "경기대학교 스포츠리듬트레이닝(STAR) 훈련 프로그램",
+  "type": "module",
+  "scripts": {
+    "setup": "bash setup.sh",
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}

@@ -1,14 +1,35 @@
-/** 리듬 패턴: 각 숫자 = 음표 길이(박 단위). 1=4분, 0.5=8분, 2=2분 */
+/** 리듬 패턴: 각 숫자 = 음표 길이(4분음표 1박 단위). 1=4분, 0.5=8분, 1.5=점4분, 2=2분 */
+
+import { buildFillQuestion } from './fill-quiz.js';
+
+export function noteSymbol(d) {
+  if (d === 2) return '𝅗𝅥';
+  if (d === 1.5) return '♩.';
+  if (d === 1) return '♩';
+  if (d === 0.5) return '♪';
+  return '♩';
+}
 
 export function patternToNotation(pattern) {
-  return pattern
-    .map((d) => {
-      if (d === 2) return '𝅗𝅥';
-      if (d === 1) return '♩';
-      if (d === 0.5) return '♪';
-      return '♩';
-    })
-    .join(' ');
+  const beats = patternBeats(pattern);
+  if (beats <= 4) {
+    return pattern.map(noteSymbol).join(' ');
+  }
+
+  const parts = [];
+  let bar = [];
+  let barSum = 0;
+  for (const d of pattern) {
+    bar.push(noteSymbol(d));
+    barSum += d;
+    if (barSum >= 4 - 0.001) {
+      parts.push(bar.join(' '));
+      bar = [];
+      barSum = 0;
+    }
+  }
+  if (bar.length) parts.push(bar.join(' '));
+  return parts.join(' │ ');
 }
 
 export function patternKey(pattern) {
@@ -21,32 +42,38 @@ export const QUIZ_LEVELS = [
   { id: 'intermediate', name: '심화', bpm: 112, barsLabel: '2마디' },
 ];
 
-/** @type {{ level: string, pattern: number[], title?: string }[]} */
+/** @type {{ level: string, pattern: number[], title: string }[]} */
 export const QUIZ_PATTERNS = [
-  // 입문 — 1마디 (4/4)
+  // 입문 — 1마디 (4박)
   { level: 'beginner', pattern: [1, 1, 1, 1], title: '기본 4분음표' },
   { level: 'beginner', pattern: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], title: '8분음표 8개' },
-  { level: 'beginner', pattern: [1, 0.5, 0.5, 0.5, 0.5], title: '점8분 리듬' },
+  { level: 'beginner', pattern: [1.5, 1, 0.5, 1], title: '점4분 리듬' },
   { level: 'beginner', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1], title: '앞 8분 4개' },
   { level: 'beginner', pattern: [1, 1, 0.5, 0.5, 0.5, 0.5], title: '뒤 8분 4개' },
   { level: 'beginner', pattern: [2, 2], title: '2분음표 2개' },
 
-  // 기초 — 1마디 (4박)
+  // 기초 — 1마디
   { level: 'basic', pattern: [0.5, 1, 0.5, 0.5, 0.5, 1], title: '싱코페이션 A' },
   { level: 'basic', pattern: [1, 0.5, 0.5, 1, 0.5, 0.5], title: '싱코페이션 B' },
   { level: 'basic', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1], title: '앞 8분 4개' },
-  { level: 'basic', pattern: [1, 0.5, 0.5, 0.5, 0.5], title: '뒤 8분 4개' },
+  { level: 'basic', pattern: [1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], title: '4분 + 8분 6개' },
   { level: 'basic', pattern: [1, 1, 1, 1], title: '4분 4개' },
+  { level: 'basic', pattern: [1.5, 0.5, 1, 1], title: '점4분·8분 혼합' },
   // 기초 — 2마디 (8박)
-  { level: 'basic', pattern: [1, 1, 1, 1, 1, 0.5, 0.5, 1], title: '2마디 기본' },
-  { level: 'basic', pattern: [0.5, 0.5, 1, 1, 1, 1, 1, 1], title: '2마디 8분 시작' },
+  { level: 'basic', pattern: [1, 1, 1, 1, 1, 1, 1, 1], title: '2마디 4분 8개' },
+  { level: 'basic', pattern: [1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], title: '2마디 4분+8분' },
+  { level: 'basic', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 1, 1], title: '2마디 8분 시작' },
+  { level: 'basic', pattern: [1, 1, 0.5, 0.5, 1, 1, 0.5, 0.5, 1, 1], title: '2마디 교대 패턴' },
 
-  // 심화 — 2마디
-  { level: 'intermediate', pattern: [1, 0.5, 0.5, 1, 0.5, 0.5, 1, 1], title: '2마디 싱코페이션' },
-  { level: 'intermediate', pattern: [0.5, 1, 0.5, 1, 1, 0.5, 0.5, 1], title: '2마디 혼합 A' },
-  { level: 'intermediate', pattern: [1, 1, 0.5, 0.5, 0.5, 0.5, 1, 1], title: '2마디 혼합 B' },
-  { level: 'intermediate', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1], title: '2마디 8분 그루브' },
-  { level: 'intermediate', pattern: [1, 0.5, 0.5, 0.5, 0.5, 1, 0.5, 1], title: '2마디 팝 그루브' },
+  // 심화 — 2마디 (8박)
+  { level: 'intermediate', pattern: [1, 0.5, 0.5, 1, 0.5, 0.5, 1, 1, 1, 1], title: '2마디 싱코페이션' },
+  { level: 'intermediate', pattern: [0.5, 1, 0.5, 1, 1, 0.5, 0.5, 1, 1, 1], title: '2마디 혼합 A' },
+  { level: 'intermediate', pattern: [1, 1, 0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1], title: '2마디 혼합 B' },
+  { level: 'intermediate', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 1, 1], title: '2마디 8분 그루브' },
+  { level: 'intermediate', pattern: [1, 1, 1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5], title: '2마디 후반 8분' },
+  { level: 'intermediate', pattern: [0.5, 0.5, 1, 1, 0.5, 0.5, 1, 1, 1, 1], title: '2마디 팝 그루브' },
+  { level: 'intermediate', pattern: [1, 0.5, 0.5, 0.5, 0.5, 1, 1, 0.5, 0.5, 1, 0.5, 0.5], title: '2마디 타이 밀도' },
+  { level: 'intermediate', pattern: [2, 2, 2, 2], title: '2마디 2분음표' },
 ];
 
 export const QUIZ_ROUND_SIZE = 5;
@@ -61,17 +88,31 @@ export function patternBeats(pattern) {
   return pattern.reduce((s, d) => s + d, 0);
 }
 
+export function getMeterLabel(pattern) {
+  const beats = patternBeats(pattern);
+  if (beats === 4) return '4/4 · 1마디 (4박)';
+  if (beats === 8) return '4/4 · 2마디 (8박)';
+  return `4/4 · ${beats / 4}마디 (${beats}박)`;
+}
+
 export function getPatternsForLevel(levelId) {
-  return QUIZ_PATTERNS.filter((p) => p.level === levelId);
+  return QUIZ_PATTERNS.filter((p) => p.level === levelId && isValidListenPattern(p.pattern));
+}
+
+function isValidListenPattern(pattern) {
+  const beats = patternBeats(pattern);
+  return beats === 4 || beats === 8;
 }
 
 function getPatternsWithSameBeats(beats, excludeKey) {
   return QUIZ_PATTERNS.filter(
-    (p) => patternBeats(p.pattern) === beats && patternKey(p.pattern) !== excludeKey,
+    (p) => isValidListenPattern(p.pattern)
+      && patternBeats(p.pattern) === beats
+      && patternKey(p.pattern) !== excludeKey,
   );
 }
 
-function pickDistractors(correct, levelId) {
+function pickListenDistractors(correct, levelId) {
   const correctKey = patternKey(correct.pattern);
   const beats = patternBeats(correct.pattern);
 
@@ -88,38 +129,45 @@ function pickDistractors(correct, levelId) {
     ];
   }
 
-  const seenNotation = new Set([patternToNotation(correct.pattern)]);
+  const seenKeys = new Set([correctKey]);
   const picked = [];
 
   for (const p of pool.sort(() => Math.random() - 0.5)) {
     if (picked.length >= 3) break;
-    const notation = patternToNotation(p.pattern);
-    if (seenNotation.has(notation)) continue;
-    seenNotation.add(notation);
+    const key = patternKey(p.pattern);
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
     picked.push(p);
   }
 
   return picked;
 }
 
-export function buildQuizQuestion(levelId, patternOverride = null) {
+export function buildListenQuestion(levelId, patternOverride = null) {
   const pool = getPatternsForLevel(levelId);
-  const correct = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
-  const correctKey = patternKey(correct.pattern);
-
-  const distractors = pickDistractors(correct, levelId);
-
-  while (distractors.length < 3) {
-    const beats = patternBeats(correct.pattern);
-    const extra = getPatternsWithSameBeats(beats, correctKey).find(
-      (p) => !distractors.some((d) => patternKey(d.pattern) === patternKey(p.pattern))
-        && patternToNotation(p.pattern) !== patternToNotation(correct.pattern),
-    );
-    if (extra) distractors.push(extra);
-    else break;
+  if (!pool.length) {
+    throw new Error(`청음 패턴 없음: ${levelId}`);
   }
 
-  const options = [correct, ...distractors]
+  const correct = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
+  const correctKey = patternKey(correct.pattern);
+  const distractors = pickListenDistractors(correct, levelId);
+
+  const beats = patternBeats(correct.pattern);
+  const fallbackPool = getPatternsWithSameBeats(beats, correctKey);
+  let fi = 0;
+  while (distractors.length < 3 && fi < fallbackPool.length) {
+    const extra = fallbackPool[fi];
+    fi += 1;
+    if (distractors.some((d) => patternKey(d.pattern) === patternKey(extra.pattern))) continue;
+    distractors.push(extra);
+  }
+
+  if (distractors.length < 3) {
+    throw new Error(`보기 부족 (${distractors.length + 1}개): ${correctKey}`);
+  }
+
+  const options = [correct, ...distractors.slice(0, 3)]
     .map((p, i) => ({
       id: String.fromCharCode(65 + i),
       notation: patternToNotation(p.pattern),
@@ -129,16 +177,17 @@ export function buildQuizQuestion(levelId, patternOverride = null) {
     .sort(() => Math.random() - 0.5);
 
   const level = QUIZ_LEVELS.find((l) => l.id === levelId);
-
   const answerOption = options.find((o) => patternKey(o.pattern) === correctKey);
   if (!answerOption) {
     throw new Error(`퀴즈 정답 누락: ${correctKey}`);
   }
 
   return {
+    type: 'listen',
     levelId,
     bpm: level.bpm,
-    bars: patternBeats(correct.pattern) / 4,
+    bars: beats / 4,
+    meterLabel: getMeterLabel(correct.pattern),
     correctPattern: correct.pattern,
     correctNotation: patternToNotation(correct.pattern),
     options,
@@ -147,6 +196,44 @@ export function buildQuizQuestion(levelId, patternOverride = null) {
   };
 }
 
+export function buildQuizQuestion(levelId, patternOverride = null, questionType = null) {
+  const type = questionType ?? (Math.random() < 0.5 ? 'listen' : 'fill');
+  if (type === 'fill') {
+    try {
+      return buildFillQuestion(levelId);
+    } catch {
+      return buildListenQuestion(levelId, patternOverride);
+    }
+  }
+  return buildListenQuestion(levelId, patternOverride);
+}
+
 export function buildQuizRound(levelId, count = QUIZ_ROUND_SIZE) {
-  return Array.from({ length: count }, () => buildQuizQuestion(levelId));
+  const questions = [];
+  const listenPool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
+  let listenIdx = 0;
+
+  for (let i = 0; i < count; i += 1) {
+    const preferFill = i % 2 === 1;
+    if (preferFill) {
+      try {
+        questions.push(buildFillQuestion(levelId));
+        continue;
+      } catch {
+        // fall through to listen
+      }
+    }
+    const override = listenPool[listenIdx % listenPool.length];
+    listenIdx += 1;
+    questions.push(buildListenQuestion(levelId, override));
+  }
+
+  return questions;
+}
+
+// 개발 시 패턴 검증
+for (const p of QUIZ_PATTERNS) {
+  if (!isValidListenPattern(p.pattern)) {
+    console.warn(`잘못된 청음 패턴 박자(${patternBeats(p.pattern)}): ${patternKey(p.pattern)}`);
+  }
 }

@@ -1518,6 +1518,71 @@ body.lesson-open {
   font-size: 26px;
 }
 
+.lesson-measure {
+  margin: 8px 0 16px;
+}
+
+.measure-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid var(--duo-border);
+  border-radius: 14px;
+  background: #f9f9f9;
+}
+
+.measure-sig {
+  flex-shrink: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--duo-text);
+  min-width: 48px;
+}
+
+.measure-slots {
+  display: grid;
+  grid-template-columns: repeat(var(--slots), minmax(0, 1fr));
+  gap: 4px;
+  flex: 1;
+}
+
+.measure-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.measure-slot.filled {
+  background: #fff;
+  border-color: #ccc;
+}
+
+.measure-slot.blank {
+  background: #fff8e6;
+  border: 2px dashed var(--duo-orange);
+  color: var(--duo-orange);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.measure-slot.tie {
+  background: transparent;
+  border-color: transparent;
+}
+
+.choice-prefix {
+  display: block;
+  font-size: 12px;
+  color: var(--duo-muted);
+  margin-bottom: 4px;
+}
+
 .lesson-options {
   display: grid;
   gap: 10px;

@@ -135,10 +135,10 @@
       <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
         <div class="duo-path-giryong">
           <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
-          <div class="duo-path-bubble">듣기 → 고르기 → 확인! 리듬 감각을 키워요</div>
+          <div class="duo-path-bubble">청음 + 마디 채우기로 리듬 감각을 키워요</div>
         </div>
         <button id="quizStart" class="duo-btn duo-btn-green">리듬 퀴즈 시작</button>
-        <p class="hint" id="quizHint" style="margin-top:10px">듣기 → 선택 → 확인! 리듬 퀴즈 레슨</p>
+        <p class="hint" id="quizHint" style="margin-top:10px">청음 + 마디 채우기 · 듣기 → 선택 → 확인!</p>
       </div>
 
       <div class="card" id="resultCard" style="display:none">
@@ -201,8 +201,9 @@
     <main class="lesson-main" id="lessonMain">
       <h2 class="lesson-instruction" id="lessonInstruction">들은 리듬을 탭하세요</h2>
       <p class="lesson-sub" id="lessonSub"></p>
+      <div id="lessonMeasure" class="lesson-measure" hidden></div>
 
-      <div class="lesson-audio-row">
+      <div class="lesson-audio-row" id="lessonAudioRow">
         <button type="button" id="lessonListen" class="lesson-audio-btn" aria-label="리듬 듣기">
           <span class="audio-icon">🔊</span>
         </button>

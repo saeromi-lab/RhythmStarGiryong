@@ -310,8 +310,8 @@ function updateQuizModeUI() {
   const hint = $('quizHint');
   if (hint) {
     hint.textContent = isPlacement
-      ? '듣기 → 고르기 → 확인! 10문제 레벨 테스트'
-      : '듣기 → 선택 → 확인! 리듬 퀴즈 레슨';
+      ? '듣기·마디 채우기 → 확인! 10문제 레벨 테스트'
+      : '청음 + 마디 채우기 · 듣기 → 선택 → 확인!';
   }
   const startBtn = $('quizStart');
   if (startBtn) {
@@ -346,21 +346,37 @@ function updateLessonProgress() {
 
 function renderLessonQuestion() {
   const q = quizState.questions[quizState.index];
-  const bars = q.bars >= 2 ? '2마디' : '1마디';
+  const isFill = q.type === 'fill';
   lessonSelectedId = null;
   quizState.answered = false;
   $('lessonCheckBtn').disabled = true;
   $('lessonFeedback').hidden = true;
 
-  $('lessonInstruction').textContent = '들은 리듬을 탭하세요';
-  if (isPlacementMode()) {
-    $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} 구간 · ${bars} · ${quizState.index + 1}/${quizState.questions.length}문제`;
+  const measureEl = $('lessonMeasure');
+  if (isFill) {
+    $('lessonInstruction').textContent = '빈칸(□)에 들어갈 리듬을 고르세요';
+    measureEl.hidden = false;
+    measureEl.innerHTML = q.measureHtml;
+    $('lessonAudioRow').hidden = false;
   } else {
-    $('lessonSub').textContent = `${bars} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
+    $('lessonInstruction').textContent = '들은 리듬과 같은 보기를 고르세요';
+    measureEl.hidden = true;
+    measureEl.innerHTML = '';
+    $('lessonAudioRow').hidden = false;
+  }
+
+  const meterText = q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)');
+  const typeLabel = isFill ? '마디 채우기' : '청음';
+  if (isPlacementMode()) {
+    $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel} · ${meterText} · ${quizState.index + 1}/${quizState.questions.length}`;
+  } else {
+    $('lessonSub').textContent = `${typeLabel} · ${meterText} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
   }
 
   $('lessonOptions').innerHTML = q.options.map((opt) => `
-    <button type="button" class="duo-choice" data-id="${opt.id}">${opt.notation}</button>
+    <button type="button" class="duo-choice" data-id="${opt.id}">
+      ${isFill ? `<span class="choice-prefix">□ →</span>` : ''}${opt.notation}
+    </button>
   `).join('');
 
   $('lessonOptions').querySelectorAll('.duo-choice').forEach((btn) => {
@@ -434,7 +450,7 @@ function submitLessonAnswer() {
   $('lessonFeedbackTitle').textContent = correct ? '참 잘했어요!' : '정답이 아니에요';
   $('lessonFeedbackDetail').textContent = correct
     ? (isPlacementMode() ? '' : `+${QUIZ_SCORE.correct.points}점`)
-    : `정답: ${q.answerId} · ${q.correctNotation}`;
+    : `정답: ${q.answerId} · ${q.type === 'fill' ? q.options.find((o) => o.id === q.answerId)?.notation : q.correctNotation}`;
   updateLessonProgress();
 }
 

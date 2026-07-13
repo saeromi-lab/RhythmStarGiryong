@@ -1,11 +1,12 @@
 import {
   QUIZ_LEVELS,
-  buildQuizQuestion,
+  buildListenQuestion,
   getPatternsForLevel,
 } from './quiz-data.js';
+import { buildFillQuestion, getFillPatternsForLevel } from './fill-quiz.js';
 import { LEVELS } from './data.js';
 
-/** 입문 3 + 기초 3 + 심화 4 = 10문제 (약 3~4분) */
+/** 입문 3 + 기초 3 + 심화 4 = 10문제 (청음 + 빈칸 혼합) */
 export const PLACEMENT_SIZE = 10;
 
 const PLACEMENT_TIERS = [
@@ -20,9 +21,24 @@ export function buildPlacementRound() {
   const questions = [];
 
   PLACEMENT_TIERS.forEach(({ levelId, count }) => {
-    const pool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
+    const listenPool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
+    const fillPool = [...getFillPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
+    let listenIdx = 0;
+    let fillIdx = 0;
+
     for (let i = 0; i < count; i += 1) {
-      questions.push(buildQuizQuestion(levelId, pool[i % pool.length]));
+      const useFill = i % 2 === 1 && fillPool.length > 0;
+      if (useFill) {
+        try {
+          questions.push(buildFillQuestion(levelId, fillPool[fillIdx % fillPool.length]));
+          fillIdx += 1;
+          continue;
+        } catch {
+          // listen으로 대체
+        }
+      }
+      questions.push(buildListenQuestion(levelId, listenPool[listenIdx % listenPool.length]));
+      listenIdx += 1;
     }
   });
 

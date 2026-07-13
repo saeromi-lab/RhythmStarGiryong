@@ -1139,7 +1139,7 @@ button:disabled {
   color: var(--accent3);
 }
 
-/* ── 듀오링고 스타일 (기룡이 + 진주조개) ── */
+/* ── 레슨·홈 UI (기룡이 + 진주조개) ── */
 :root {
   --duo-green: #58cc02;
   --duo-green-dark: #46a302;

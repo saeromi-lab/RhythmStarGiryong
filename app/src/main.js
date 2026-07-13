@@ -310,7 +310,7 @@ function updateQuizModeUI() {
   const hint = $('quizHint');
   if (hint) {
     hint.textContent = isPlacement
-      ? '듀오링고처럼 듣고 고르기! 10문제 레벨 테스트'
+      ? '듣기 → 고르기 → 확인! 10문제 레벨 테스트'
       : '듣기 → 선택 → 확인! 리듬 퀴즈 레슨';
   }
   const startBtn = $('quizStart');

@@ -26,12 +26,13 @@ export class RhythmPlayer {
    * 패턴 재생. pattern = 박 단위 음표 길이 배열
    * countdown: 시작 전 1박 예비박
    */
-  async playPattern(pattern, bpm, { countdown = true, onHit } = {}) {
+  async playPattern(pattern, bpm, { countdown = true, onHit, slow = false } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;
 
-    const beatSec = 60 / bpm;
+    const effectiveBpm = slow ? bpm * 0.65 : bpm;
+    const beatSec = 60 / effectiveBpm;
     const start = this.audioCtx.currentTime + 0.15;
     let t = start;
 

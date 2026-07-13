@@ -43,51 +43,54 @@
         <div class="profile-bar" id="profileBar"></div>
       </div>
 
-      <div class="card attendance-card">
-        <div class="sec-label">오늘의 출석 · 진주조개 도장</div>
-
-        <div class="attendance-scene">
-          <img
-            class="attendance-giryong"
-            src="/images/giryong/giryong-basic.png"
-            alt="기룡이"
-          >
-          <img
-            class="attendance-pearl"
-            src="/images/giryong/pearl-catching.png"
-            alt="진주조개 K"
-          >
+      <div class="card attendance-card duo-streak-card">
+        <div class="duo-streak-hero">
+          <img src="/images/giryong/pearl-stamp.png" alt="" class="duo-streak-pearl" aria-hidden="true">
+          <div class="duo-streak-num" id="streakNum">0</div>
+          <div class="duo-streak-lbl">일 연속 출석</div>
         </div>
 
-        <div class="stamp-board-wrap">
-          <div class="stamp-board-label">이번 주 도장판</div>
+        <div class="duo-week-card">
           <div class="stamp-board" id="stampBoard"></div>
+          <p class="duo-week-msg">매일 연습하여 진주조개를 모아 연속 출석 기록을 지켜내세요!</p>
         </div>
 
-        <div class="attendance-row">
-          <div>
-            <div class="streak-num" id="streakNum">0</div>
-            <div class="streak-lbl">연속 출석일</div>
-          </div>
-          <button id="checkInBtn" class="primary check-in-btn pearl-stamp-btn">
-            <img src="/images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
-            진주조개 도장 찍기
-          </button>
-        </div>
+        <button id="checkInBtn" class="duo-btn duo-btn-green pearl-stamp-btn">
+          <img src="/images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
+          진주조개 도장 찍기
+        </button>
         <div id="checkInMsg" class="check-in-msg"></div>
         <div class="reward-chips" id="rewardChips"></div>
       </div>
 
-      <div class="card placement-home-card" id="placementHomeCard">
-        <div class="sec-label">레벨 테스트</div>
-        <p class="placement-home-desc">10문제로 나에게 맞는 훈련 구간을 찾아보세요 (약 3~4분)</p>
+      <div class="card duo-path-card" id="placementHomeCard">
+        <div class="duo-path-giryong">
+          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <div class="duo-path-bubble" id="pathBubble">이제 가장 알맞은 시작점을 찾아보아요!</div>
+        </div>
         <div id="placementHomeStatus" class="placement-home-status"></div>
-        <button id="placementHomeBtn" class="primary placement-home-btn">레벨 테스트 시작</button>
+        <div class="duo-path-options" id="pathOptions">
+          <button type="button" class="duo-path-option" data-path="basics">
+            <span class="duo-path-icon">📘</span>
+            <span class="duo-path-text">
+              <strong>기초부터 시작하기</strong>
+              <small>입문 레슨부터 차근차근 훈련합니다</small>
+            </span>
+          </button>
+          <button type="button" class="duo-path-option selected" data-path="placement">
+            <span class="duo-path-icon">🧭</span>
+            <span class="duo-path-text">
+              <strong>내 레벨 찾기</strong>
+              <small>10문제 테스트 후 맞는 구간을 기룡이가 추천해요</small>
+            </span>
+          </button>
+        </div>
+        <button id="placementHomeBtn" class="duo-btn duo-btn-green placement-home-btn">계속하기</button>
       </div>
 
       <div class="card">
-        <div class="sec-label">오늘의 미션</div>
-        <div id="dailyMissions" class="mission-list"></div>
+        <div class="sec-label">오늘의 퀘스트</div>
+        <div id="dailyMissions" class="mission-list duo-quest-list"></div>
       </div>
     </section>
 
@@ -129,32 +132,13 @@
         <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
       </div>
 
-      <div class="card quiz-card" id="quizCard" style="display:none">
-        <div class="quiz-hud">
-          <div><span class="hud-lbl">문제</span><span class="hud-val" id="quizProgress">0/5</span></div>
-          <div><span class="hud-lbl" id="quizHudMidLbl">SCORE</span><span class="hud-val" id="quizScore">0</span></div>
-          <div><span class="hud-lbl" id="quizHudRightLbl">연속</span><span class="hud-val combo" id="quizStreak">0</span></div>
+      <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
+        <div class="duo-path-giryong">
+          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <div class="duo-path-bubble">듣기 → 고르기 → 확인! 듀오링고처럼 리듬을 배워요</div>
         </div>
-
-        <div class="quiz-stage" id="quizStage">
-          <div class="quiz-prompt" id="quizPrompt">리듬을 듣고 맞는 채보를 고르세요</div>
-          <div class="quiz-tier" id="quizTier"></div>
-          <div class="quiz-listen-wrap">
-            <button id="quizListen" class="listen-btn" disabled>
-              <span class="listen-icon">🔊</span>
-              <span id="quizListenLabel">듣기</span>
-            </button>
-            <p class="quiz-bpm" id="quizBpmInfo"></p>
-          </div>
-          <div class="quiz-options" id="quizOptions"></div>
-          <div class="quiz-feedback" id="quizFeedback"></div>
-        </div>
-
-        <div class="quiz-controls">
-          <button id="quizStart" class="primary arcade-btn">퀴즈 시작</button>
-          <button id="quizNext" class="primary arcade-btn" style="display:none">다음 문제</button>
-        </div>
-        <p class="hint" id="quizHint">1~2마디 리듬을 듣고, 4개의 채보 중 맞는 것을 고르세요</p>
+        <button id="quizStart" class="duo-btn duo-btn-green">리듬 퀴즈 시작</button>
+        <p class="hint" id="quizHint" style="margin-top:10px">듣기 → 선택 → 확인! 리듬 퀴즈 레슨</p>
       </div>
 
       <div class="card" id="resultCard" style="display:none">
@@ -199,6 +183,58 @@
       경기대학교 실용음악학과 · 기룡이와 함께하는 리듬 트레이닝<br>
       <a href="https://www.kyonggi.ac.kr/www/contents.do?key=9819" target="_blank" rel="noopener">기룡이 캐릭터 출처: 경기대학교 공식 홈페이지</a>
     </footer>
+  </div>
+
+  <!-- 듀오링고 스타일 레슨 화면 (퀴즈·레벨테스트) -->
+  <div id="lessonOverlay" class="lesson-overlay" hidden>
+    <header class="lesson-top">
+      <button type="button" id="lessonClose" class="lesson-close" aria-label="닫기">×</button>
+      <div class="lesson-top-center">
+        <div id="lessonStreakLbl" class="lesson-streak-lbl"></div>
+        <div class="lesson-progress-track">
+          <div id="lessonProgressFill" class="lesson-progress-fill"></div>
+        </div>
+      </div>
+      <img src="/images/giryong/giryong-logo.png" alt="" class="lesson-giryong-mini" aria-hidden="true">
+    </header>
+
+    <main class="lesson-main" id="lessonMain">
+      <h2 class="lesson-instruction" id="lessonInstruction">들은 리듬을 탭하세요</h2>
+      <p class="lesson-sub" id="lessonSub"></p>
+
+      <div class="lesson-audio-row">
+        <button type="button" id="lessonListen" class="lesson-audio-btn" aria-label="리듬 듣기">
+          <span class="audio-icon">🔊</span>
+        </button>
+        <button type="button" id="lessonListenSlow" class="lesson-audio-btn lesson-audio-slow" aria-label="느리게 듣기">
+          <span class="audio-icon">🐢</span>
+        </button>
+      </div>
+
+      <div class="lesson-options" id="lessonOptions"></div>
+    </main>
+
+    <footer class="lesson-footer">
+      <button type="button" id="lessonCheckBtn" class="lesson-check-btn" disabled>확인</button>
+    </footer>
+
+    <div id="lessonFeedback" class="lesson-feedback" hidden>
+      <div class="lesson-feedback-inner">
+        <p class="lesson-feedback-title" id="lessonFeedbackTitle">참 잘했어요!</p>
+        <p class="lesson-feedback-detail" id="lessonFeedbackDetail"></p>
+        <button type="button" id="lessonContinueBtn" class="lesson-continue-btn">계속하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 레슨 완료 화면 -->
+  <div id="lessonCompleteOverlay" class="lesson-overlay lesson-complete-overlay" hidden>
+    <div class="lesson-complete-body">
+      <img src="/images/giryong/emote-5.png" alt="기룡이" class="lesson-complete-giryong">
+      <h2 class="lesson-complete-title">레슨 완료!</h2>
+      <div class="lesson-complete-cards" id="lessonCompleteCards"></div>
+      <button type="button" id="lessonCompleteBtn" class="duo-btn duo-btn-green">계속하기</button>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

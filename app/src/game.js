@@ -78,9 +78,9 @@ export class RhythmGame {
 
     for (const b of this.beats) {
       if (b.hit) continue;
-      const delta = Math.abs(now - b.time);
-      if (delta < bestDelta) {
-        bestDelta = delta;
+      const deltaMs = Math.abs(now - b.time) * 1000;
+      if (deltaMs < bestDelta) {
+        bestDelta = deltaMs;
         best = b;
       }
     }

@@ -64,7 +64,9 @@ export class MetronomeTrainer {
   }
 
   schedule() {
-    const start = this.audioCtx.currentTime + 0.6;
+    const base = this.audioCtx.currentTime;
+    const leadIn = 0.6;
+    const start = base + leadIn;
     let targetIdx = 0;
 
     for (let bar = 0; bar < this.bars; bar += 1) {
@@ -72,11 +74,12 @@ export class MetronomeTrainer {
 
       for (let beat = 0; beat < 4; beat += 1) {
         const t = barStart + beat * this.beatSec;
+        const delayMs = Math.max(0, (t - base) * 1000);
         const timer = setTimeout(() => {
           if (!this.running) return;
           this.playClick(this.audioCtx.currentTime, beat === 0);
           this.onMetro(bar * 4 + beat + 1, this.bars * 4);
-        }, Math.max(0, (t - this.audioCtx.currentTime) * 1000));
+        }, delayMs);
         this.timers.push(timer);
       }
 
@@ -88,21 +91,22 @@ export class MetronomeTrainer {
         targetIdx += 1;
         this.targets.push({ time: hitTime, hit: false, index: idx });
 
+        const delayMs = Math.max(0, (hitTime - base) * 1000);
         const timer = setTimeout(() => {
           if (!this.running) return;
           this.playClick(this.audioCtx.currentTime, i === 0);
-          this.onNote(idx, targetIdx);
+          this.onNote(idx, this.targets.length);
           const tgt = this.targets[idx];
           if (tgt && !tgt.hit) this.registerMiss(tgt);
-        }, Math.max(0, (hitTime - this.audioCtx.currentTime) * 1000));
+        }, delayMs);
         this.timers.push(timer);
 
         noteT += dur * this.beatSec;
       }
     }
 
-    const endMs = (start + this.bars * 4 * this.beatSec + 1) * 1000 - Date.now();
-    const endTimer = setTimeout(() => this.finish(), Math.max(500, endMs));
+    const totalMs = (leadIn + this.bars * 4 * this.beatSec + 0.8) * 1000;
+    const endTimer = setTimeout(() => this.finish(), totalMs);
     this.timers.push(endTimer);
   }
 
@@ -122,9 +126,9 @@ export class MetronomeTrainer {
 
     for (const t of this.targets) {
       if (t.hit) continue;
-      const delta = Math.abs(now - t.time);
-      if (delta < bestDelta) {
-        bestDelta = delta;
+      const deltaMs = Math.abs(now - t.time) * 1000;
+      if (deltaMs < bestDelta) {
+        bestDelta = deltaMs;
         best = t;
       }
     }

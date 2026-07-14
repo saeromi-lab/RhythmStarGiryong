@@ -1,6 +1,7 @@
 /** 리듬 패턴: 각 숫자 = 음표 길이(4분음표 1박 단위). 1=4분, 0.5=8분, 1.5=점4분, 2=2분 */
 
 import { buildFillQuestion } from './fill-quiz.js';
+import { renderPatternGridHtml, listenAnswerInOptions } from './rhythm-display.js';
 
 export function noteSymbol(d) {
   if (d === 2) return '𝅗𝅥';
@@ -171,8 +172,9 @@ export function buildListenQuestion(levelId, patternOverride = null) {
     .map((p, i) => ({
       id: String.fromCharCode(65 + i),
       notation: patternToNotation(p.pattern),
-      pattern: p.pattern,
+      pattern: [...p.pattern],
       title: p.title,
+      gridHtml: renderPatternGridHtml(p.pattern, '4/4'),
     }))
     .sort(() => Math.random() - 0.5);
 
@@ -182,18 +184,24 @@ export function buildListenQuestion(levelId, patternOverride = null) {
     throw new Error(`퀴즈 정답 누락: ${correctKey}`);
   }
 
-  return {
+  const question = {
     type: 'listen',
     levelId,
     bpm: level.bpm,
     bars: beats / 4,
     meterLabel: getMeterLabel(correct.pattern),
-    correctPattern: correct.pattern,
+    correctPattern: [...correct.pattern],
     correctNotation: patternToNotation(correct.pattern),
     options,
     answerId: answerOption.id,
     hint: correct.title,
   };
+
+  if (!listenAnswerInOptions(question)) {
+    throw new Error(`청음 정답 보기 불일치: ${correctKey}`);
+  }
+
+  return question;
 }
 
 export function buildQuizQuestion(levelId, patternOverride = null, questionType = null) {

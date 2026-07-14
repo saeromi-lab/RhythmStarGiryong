@@ -1583,6 +1583,46 @@ body.lesson-open {
   margin-bottom: 4px;
 }
 
+.duo-choice-grid {
+  padding: 12px 14px;
+}
+
+.rhythm-grid-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.rhythm-grid-wrap .measure-sig {
+  font-size: 16px;
+  font-weight: 800;
+  min-width: 36px;
+}
+
+.rhythm-grid-multi .rhythm-grid-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.rhythm-grid-option {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.rhythm-grid-option .measure-slots {
+  width: 100%;
+}
+
+.lesson-measure-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--duo-muted);
+  text-align: center;
+}
+
 .lesson-options {
   display: grid;
   gap: 10px;

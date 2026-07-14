@@ -352,21 +352,25 @@ function renderLessonQuestion() {
   $('lessonCheckBtn').disabled = true;
   $('lessonFeedback').hidden = true;
 
+  const meterText = q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)');
+  const typeLabel = isFill ? '마디 채우기' : '청음';
+
   const measureEl = $('lessonMeasure');
   if (isFill) {
-    $('lessonInstruction').textContent = '빈칸(□)에 들어갈 리듬을 고르세요';
+    $('lessonInstruction').textContent = '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요';
     measureEl.hidden = false;
     measureEl.innerHTML = q.measureHtml;
     $('lessonAudioRow').hidden = false;
+    $('lessonListen').setAttribute('aria-label', '전체 마디 듣기 (힌트)');
+    $('lessonListenSlow').setAttribute('aria-label', '전체 마디 느리게 (힌트)');
   } else {
-    $('lessonInstruction').textContent = '들은 리듬과 같은 보기를 고르세요';
-    measureEl.hidden = true;
-    measureEl.innerHTML = '';
+    $('lessonInstruction').textContent = '🔊로 듣고, 같은 리듬 칸을 고르세요';
+    measureEl.hidden = false;
+    measureEl.innerHTML = `<p class="lesson-measure-hint">${meterText} · 아래 보기 중 같은 패턴을 찾으세요</p>`;
     $('lessonAudioRow').hidden = false;
+    $('lessonListen').setAttribute('aria-label', '리듬 듣기');
+    $('lessonListenSlow').setAttribute('aria-label', '느리게 듣기');
   }
-
-  const meterText = q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)');
-  const typeLabel = isFill ? '마디 채우기' : '청음';
   if (isPlacementMode()) {
     $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel} · ${meterText} · ${quizState.index + 1}/${quizState.questions.length}`;
   } else {
@@ -374,8 +378,8 @@ function renderLessonQuestion() {
   }
 
   $('lessonOptions').innerHTML = q.options.map((opt) => `
-    <button type="button" class="duo-choice" data-id="${opt.id}">
-      ${isFill ? `<span class="choice-prefix">□ →</span>` : ''}${opt.notation}
+    <button type="button" class="duo-choice duo-choice-grid" data-id="${opt.id}">
+      ${opt.gridHtml || opt.notation}
     </button>
   `).join('');
 
@@ -467,7 +471,8 @@ async function continueLesson() {
   }
 
   renderLessonQuestion();
-  await playLessonAudio();
+  const q = quizState.questions[quizState.index];
+  if (q.type === 'listen') await playLessonAudio();
 }
 
 async function startLesson(mode) {
@@ -489,7 +494,8 @@ async function startLesson(mode) {
   setGiryongMood('focus');
   openLessonOverlay();
   renderLessonQuestion();
-  await playLessonAudio();
+  const q = quizState.questions[0];
+  if (q.type === 'listen') await playLessonAudio();
 }
 
 function showLessonComplete(cardsHtml) {

@@ -61,6 +61,28 @@ export function slotsToNotation(slots) {
   return slots.map((s) => slotGroupSymbol(s)).join(' ');
 }
 
+export function renderFillOptionHtml(fillSlots) {
+  const cells = fillSlots.map((len) => {
+    const sym = slotGroupSymbol(len);
+    if (len === 1) {
+      return `<span class="measure-slot filled">${sym}</span>`;
+    }
+    let html = `<span class="measure-slot filled">${sym}</span>`;
+    for (let i = 1; i < len; i += 1) {
+      html += '<span class="measure-slot tie"></span>';
+    }
+    return html;
+  }).join('');
+
+  const total = fillSlots.reduce((s, d) => s + d, 0);
+  return `
+    <div class="rhythm-grid-wrap rhythm-grid-option">
+      <span class="choice-prefix">□ →</span>
+      <div class="measure-slots" style="--slots:${total}">${cells}</div>
+    </div>
+  `;
+}
+
 export function slotsKey(slots) {
   return slots.join(',');
 }
@@ -207,6 +229,7 @@ export function buildFillQuestion(levelId, patternOverride = null) {
       id: String.fromCharCode(65 + i),
       fillSlots: fill,
       notation: slotsToNotation(fill),
+      gridHtml: renderFillOptionHtml(fill),
     }))
     .sort(() => Math.random() - 0.5);
 

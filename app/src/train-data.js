@@ -1,9 +1,9 @@
 /** 메트로놈 훈련 — 커리큘럼 연동 */
 
 export { N, R } from './rhythm-groups.js';
-export { trainPatternsFromCurriculum as TRAIN_EXERCISES } from './rhythm-curriculum.js';
-
 import { trainPatternsFromCurriculum } from './rhythm-curriculum.js';
+
+export const TRAIN_EXERCISES = trainPatternsFromCurriculum();
 
 export const TRAIN_TIERS = [
   { id: 1, bars: 1, label: '1마디', hint: '기본 박·8분 리듬' },

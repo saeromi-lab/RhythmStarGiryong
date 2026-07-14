@@ -22,7 +22,7 @@ export class RhythmPlayer {
     osc.stop(time + 0.07);
   }
 
-  async playTimeline(timeline, bpm, { countdown = true, slow = false } = {}) {
+  async playTimeline(timeline, bpm, { countdown = false, slow = false } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;
@@ -58,7 +58,7 @@ export class RhythmPlayer {
    * 패턴 재생. pattern = 박 단위 음표 길이 배열
    * countdown: 시작 전 1박 예비박
    */
-  async playPattern(pattern, bpm, { countdown = true, onHit, slow = false } = {}) {
+  async playPattern(pattern, bpm, { countdown = false, onHit, slow = false } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;

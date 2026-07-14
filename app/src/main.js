@@ -497,9 +497,9 @@ async function playOddOption(optionId, slow = false) {
   rhythmPlayer?.stop();
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
   if (opt.timeline?.length) {
-    await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: true });
+    await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: false });
   } else if (opt.pattern?.length) {
-    await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+    await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: false });
   }
 }
 
@@ -518,9 +518,9 @@ async function playOddSequence(slow = false) {
       btn.classList.toggle('odd-playing', btn.dataset.id === opt.id);
     });
     if (opt.timeline?.length) {
-      await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: true });
+      await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: false });
     } else {
-      await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+      await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: false });
     }
     await new Promise((resolve) => setTimeout(resolve, gapMs));
   }
@@ -545,9 +545,9 @@ async function playLessonAudio(slow = false) {
   $('lessonListenSlow').disabled = true;
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
   if (q.playTimeline?.length) {
-    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow });
+    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow, countdown: false });
   } else {
-    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow });
+    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow, countdown: false });
   }
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
     $('lessonListen').disabled = false;

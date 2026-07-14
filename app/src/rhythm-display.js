@@ -174,6 +174,9 @@ export function renderTrainScoreHtml(measures, meterId = '4/4') {
 
 /** 패턴 선택용 미리보기 (1마디) */
 export function renderPatternPickerHtml(measure, meterId = '4/4') {
+  if (Array.isArray(measure) && measure[0]?.t) {
+    return renderGroupsGridHtml(measure, meterId, { compact: true });
+  }
   const meter = METERS[meterId] ?? METERS['4/4'];
   const rendered = renderMeasureGroups(measure, meter, { compact: true });
   return `
@@ -182,6 +185,23 @@ export function renderPatternPickerHtml(measure, meterId = '4/4') {
       <div class="measure-slots measure-slots-compact" style="--slots:${meter.eighthsPerBar}">${rendered.html}</div>
     </div>
   `;
+}
+
+/** 그룹(음표·쉼표) 1마디 그리드 */
+export function renderGroupsGridHtml(groups, meterId = '4/4', { compact = false } = {}) {
+  const meter = METERS[meterId] ?? METERS['4/4'];
+  const rendered = renderMeasureGroups(groups, meter, { compact });
+  return `
+    <div class="rhythm-grid-wrap ${compact ? 'rhythm-grid-option' : ''}">
+      <div class="measure-sig">${meter.shortLabel}</div>
+      <div class="measure-slots ${compact ? 'measure-slots-compact' : ''}" style="--slots:${meter.eighthsPerBar}">${rendered.html}</div>
+    </div>
+  `;
+}
+
+/** 패턴 선택용 미리보기 (1마디) — 레거시 */
+export function renderPatternPickerFromPattern(pattern, meterId = '4/4') {
+  return renderPatternGridHtml(pattern, meterId);
 }
 
 /** @deprecated pattern 배열용 — 호환 */

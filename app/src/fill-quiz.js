@@ -1,5 +1,12 @@
 /** 8분음표 칸(슬롯) 단위 마디 빈칸 채우기 퀴즈 */
 
+import {
+  fillPatternsForLevel as curriculumFillForLevel,
+  patternsForUnit,
+  fillSlotsNoteOnly,
+  getUnit,
+} from './rhythm-curriculum.js';
+
 export const METERS = {
   '4/4': {
     id: '4/4',
@@ -17,29 +24,8 @@ export const METERS = {
   },
 };
 
-/** 슬롯 값 = 8분음표 칸 수. [2,2,2,2]=4분 4개, [4,4]=2분 2개 */
-export const FILL_PATTERNS = [
-  // 4/4 — 8칸(= 4박)
-  { level: 'beginner', meter: '4/4', slots: [2, 2, 2, 2], title: '4분음표 4개' },
-  { level: 'beginner', meter: '4/4', slots: [1, 1, 1, 1, 1, 1, 1, 1], title: '8분음표 8개' },
-  { level: 'beginner', meter: '4/4', slots: [2, 2, 1, 1, 1, 1], title: '4분 2개 + 8분 4개' },
-  { level: 'beginner', meter: '4/4', slots: [1, 1, 1, 1, 2, 2], title: '8분 4개 + 4분 2개' },
-  { level: 'beginner', meter: '4/4', slots: [4, 4], title: '2분음표 2개' },
-
-  { level: 'basic', meter: '4/4', slots: [3, 1, 2, 2], title: '점4분 + 8분 + 4분 2개' },
-  { level: 'basic', meter: '4/4', slots: [2, 1, 1, 2, 2], title: '4분·8분 혼합 A' },
-  { level: 'basic', meter: '4/4', slots: [1, 1, 2, 2, 2], title: '8분 2개 + 4분 3개' },
-  { level: 'basic', meter: '6/8', slots: [3, 3], title: '점8분음표 2개' },
-  { level: 'basic', meter: '6/8', slots: [1, 1, 1, 3], title: '8분 3개 + 점8분' },
-  { level: 'basic', meter: '6/8', slots: [3, 1, 1, 1], title: '점8분 + 8분 3개' },
-  { level: 'basic', meter: '6/8', slots: [2, 2, 2], title: '4분음표 3개(6/8)' },
-
-  { level: 'intermediate', meter: '4/4', slots: [3, 1, 1, 1, 2], title: '점4분 싱코페이션' },
-  { level: 'intermediate', meter: '4/4', slots: [2, 1, 1, 1, 1, 2], title: '4분·8분 싱코페이션' },
-  { level: 'intermediate', meter: '6/8', slots: [2, 1, 1, 2], title: '6/8 혼합 A' },
-  { level: 'intermediate', meter: '6/8', slots: [1, 2, 1, 2], title: '6/8 혼합 B' },
-  { level: 'intermediate', meter: '6/8', slots: [1, 1, 2, 2], title: '6/8 혼합 C' },
-];
+/** @deprecated — rhythm-curriculum.js 사용 */
+export const FILL_PATTERNS = [];
 
 export function slotSum(slots) {
   return slots.reduce((s, d) => s + d, 0);
@@ -231,12 +217,23 @@ function pickDistractorFills(correctFill, blankLen) {
   return picked;
 }
 
-export function getFillPatternsForLevel(levelId) {
-  return FILL_PATTERNS.filter((p) => p.level === levelId);
+export function getFillPatternsForLevel(levelId, unitId = null) {
+  const raw = unitId
+    ? patternsForUnit(unitId).filter((p) => p.slots && p.slots.every((s) => s > 0))
+    : curriculumFillForLevel(levelId);
+  return raw.map((p) => ({
+    level: p.level,
+    meter: p.meter,
+    slots: fillSlotsNoteOnly(p.slots),
+    title: p.focus,
+    unitId: p.unitId,
+    focus: p.focus,
+    bpm: p.bpm,
+  }));
 }
 
-export function buildFillQuestion(levelId, patternOverride = null) {
-  const pool = getFillPatternsForLevel(levelId);
+export function buildFillQuestion(levelId, patternOverride = null, unitId = null) {
+  const pool = getFillPatternsForLevel(levelId, unitId);
   const source = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
   const meter = METERS[source.meter];
 
@@ -280,10 +277,13 @@ export function buildFillQuestion(levelId, patternOverride = null) {
     throw new Error(`빈칸 정답 누락: ${correctKey}`);
   }
 
+  const unit = getUnit(source.unitId);
   return {
     type: 'fill',
     levelId,
-    bpm: meter.bpm,
+    unitId: source.unitId ?? unitId,
+    unitTitle: unit?.title,
+    bpm: source.bpm ?? meter.bpm,
     meterId: source.meter,
     meterLabel: getMeterLabel(source.meter, source.slots),
     bars: 1,
@@ -296,13 +296,8 @@ export function buildFillQuestion(levelId, patternOverride = null) {
     correctNotation: slotsToNotation(source.slots),
     options,
     answerId: answerOption.id,
-    hint: source.title,
+    focus: source.focus,
   };
 }
 
-for (const p of FILL_PATTERNS) {
-  const meter = METERS[p.meter];
-  if (slotSum(p.slots) !== meter.eighthsPerBar) {
-    console.warn(`잘못된 마디 패턴: ${p.title} (${slotSum(p.slots)}칸)`);
-  }
-}
+// 레거시 검증 제거 — 커리큘럼에서 검증

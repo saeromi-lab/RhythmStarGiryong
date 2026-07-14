@@ -1,22 +1,19 @@
 /** 추가 퀴즈 유형: 박자표·칸 세기·다른 리듬 찾기 */
 
-import { QUIZ_PATTERNS, QUIZ_LEVELS, patternKey, patternBeats } from './quiz-data.js';
+import { QUIZ_LEVELS, patternKey, patternBeats } from './rhythm-notation.js';
 import {
-  FILL_PATTERNS,
-  METERS,
-  getFillPatternsForLevel,
-  slotSum,
-  slotsToPlayPattern,
-  slotsKey,
-} from './fill-quiz.js';
-import { renderPatternGridHtml, patternToSlots, renderSlotsGridHtml } from './rhythm-display.js';
-
-function patternsForLevel(levelId) {
-  return QUIZ_PATTERNS.filter((p) => {
-    const b = patternBeats(p.pattern);
-    return p.level === levelId && (b === 4 || b === 8);
-  });
-}
+  fillPatternsForLevel,
+  patternsForUnit,
+  listenPatternsForLevel,
+  playPatternForEntry,
+  playTimelineForEntry,
+  getUnit,
+  slotSumValid,
+  fillSlotsNoteOnly,
+} from './rhythm-curriculum.js';
+import { slotSum, slotsToPlayPattern, slotsToNotation, slotsKey } from './fill-quiz.js';
+import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml } from './rhythm-display.js';
+import { patternToSlots } from './rhythm-display.js';
 
 export const QUIZ_TYPE_LABELS = {
   listen: '청음',
@@ -29,7 +26,6 @@ export const QUIZ_TYPE_LABELS = {
 const METER_OPTIONS = [
   { id: '4/4', label: '4분의 4박자 (4/4)' },
   { id: '6/8', label: '8분의 6박자 (6/8)' },
-  { id: '3/4', label: '3분의 4박자 (3/4)' },
 ];
 
 function pickOptions(correct, pool, labelFn) {
@@ -50,67 +46,94 @@ function pickOptions(correct, pool, labelFn) {
     .sort(() => Math.random() - 0.5);
 }
 
-export function buildMeterQuestion(levelId) {
-  const pool = getFillPatternsForLevel(levelId);
-  const source = pool[Math.floor(Math.random() * pool.length)];
-  const meter = METERS[source.meter];
-  const level = QUIZ_LEVELS.find((l) => l.id === levelId);
+function poolForUnit(levelId, unitId) {
+  if (unitId) return patternsForUnit(unitId);
+  return listenPatternsForLevel(levelId);
+}
 
-  const correct = { value: source.meter, label: METER_OPTIONS.find((m) => m.id === source.meter)?.label };
-  const distractors = METER_OPTIONS.filter((m) => m.id !== source.meter).map((m) => ({
+export function buildMeterQuestion(levelId, unitId = null) {
+  const fillPool = unitId
+    ? patternsForUnit(unitId).filter((p) => p.slots && p.slots.every((s) => s > 0))
+    : fillPatternsForLevel(levelId);
+
+  if (!fillPool.length) {
+    throw new Error('박자표 문제용 패턴 없음');
+  }
+
+  const source = fillPool[Math.floor(Math.random() * fillPool.length)];
+  const meter = source.meter;
+  const slots = fillSlotsNoteOnly(source.slots);
+  const unit = getUnit(source.unitId ?? unitId);
+
+  const correct = { value: meter, label: METER_OPTIONS.find((m) => m.id === meter)?.label };
+  const distractors = METER_OPTIONS.filter((m) => m.id !== meter).map((m) => ({
     value: m.id,
     label: m.label,
   }));
 
   const options = pickOptions(correct, distractors, (o) => o.label);
-  const answerOption = options.find((o) => o.value === source.meter);
+  const answerOption = options.find((o) => o.value === meter);
 
   return {
     type: 'meter',
     levelId,
-    bpm: meter.bpm,
-    meterLabel: `${meter.label} · 1마디`,
+    unitId: source.unitId ?? unitId,
+    unitTitle: unit?.title,
+    bpm: source.bpm,
+    meterLabel: `${METER_OPTIONS.find((m) => m.id === meter)?.label} · 1마디`,
     bars: 1,
-    measureHtml: renderSlotsGridHtml(source.slots, source.meter),
-    correctPattern: slotsToPlayPattern(source.slots),
+    measureHtml: renderSlotsGridHtml(slots, meter),
+    correctPattern: slotsToPlayPattern(slots),
     options,
     answerId: answerOption.id,
-    hint: source.title,
+    focus: source.focus,
   };
 }
 
-export function buildCountQuestion(levelId) {
-  const useSlots = Math.random() < 0.5;
+export function buildCountQuestion(levelId, unitId = null) {
+  const unitPool = poolForUnit(levelId, unitId);
+  const withSlots = unitPool.filter((p) => p.slots && slotSumValid(p));
+  const withPattern = unitPool.filter((p) => p.pattern);
+
   let slotCount;
   let measureHtml;
   let playPattern;
   let meterId = '4/4';
-  let title;
+  let focus;
+  let bpm = QUIZ_LEVELS.find((l) => l.id === levelId)?.bpm ?? 88;
+  let unitTitle;
 
-  if (useSlots) {
-    const pool = getFillPatternsForLevel(levelId);
-    const source = pool[Math.floor(Math.random() * pool.length)];
-    slotCount = slotSum(source.slots);
+  if (withSlots.length && (withPattern.length === 0 || Math.random() < 0.6)) {
+    const source = withSlots[Math.floor(Math.random() * withSlots.length)];
+    const slots = fillSlotsNoteOnly(source.slots);
+    slotCount = slotSum(slots);
     meterId = source.meter;
-    title = source.title;
-    measureHtml = renderSlotsGridHtml(source.slots, source.meter);
-    playPattern = slotsToPlayPattern(source.slots);
-  } else {
-    const pool = patternsForLevel(levelId).filter((p) => patternKey(p.pattern).split(',').length <= 8);
-    const source = pool[Math.floor(Math.random() * pool.length)] ?? patternsForLevel(levelId)[0];
+    focus = source.focus;
+    bpm = source.bpm;
+    unitTitle = getUnit(source.unitId)?.title;
+    measureHtml = source.measure
+      ? renderGroupsGridHtml(source.measure, meterId)
+      : renderSlotsGridHtml(slots, meterId);
+    playPattern = slotsToPlayPattern(slots);
+  } else if (withPattern.length) {
+    const source = withPattern[Math.floor(Math.random() * withPattern.length)];
     slotCount = patternToSlots(source.pattern).reduce((s, d) => s + d, 0);
-    title = source.title;
-    measureHtml = renderPatternGridHtml(source.pattern, '4/4');
-    playPattern = source.pattern;
+    focus = source.focus;
+    bpm = source.bpm;
+    meterId = source.meter ?? '4/4';
+    unitTitle = getUnit(source.unitId)?.title;
+    measureHtml = source.measure
+      ? renderGroupsGridHtml(source.measure, meterId)
+      : renderPatternGridHtml(source.pattern, meterId);
+    playPattern = playPatternForEntry(source);
+  } else {
+    throw new Error('칸세기 문제용 패턴 없음');
   }
 
-  const meter = METERS[meterId] ?? METERS['4/4'];
-  const level = QUIZ_LEVELS.find((l) => l.id === levelId);
   const correct = { value: slotCount, label: `${slotCount}칸` };
-
-  const candidates = [slotCount - 2, slotCount - 1, slotCount + 1, slotCount + 2, 6, 8, 10, 12]
-    .filter((n) => n > 0 && n !== slotCount);
-  const distractors = [...new Set(candidates)].slice(0, 6).map((n) => ({
+  const candidates = [slotCount - 2, slotCount - 1, slotCount + 1, slotCount + 2]
+    .filter((n) => n > 0 && n !== slotCount && n <= 16);
+  const distractors = [...new Set(candidates)].map((n) => ({
     value: n,
     label: `${n}칸`,
   }));
@@ -121,77 +144,79 @@ export function buildCountQuestion(levelId) {
   return {
     type: 'count',
     levelId,
-    bpm: level.bpm,
-    meterLabel: `${meter.label} · 8분음표 칸 세기`,
+    unitId,
+    unitTitle,
+    bpm,
+    meterLabel: `8분음표 ${slotCount}칸 · ${meterId}`,
     bars: 1,
     measureHtml,
     correctPattern: playPattern,
     options,
     answerId: answerOption.id,
-    hint: title,
+    focus,
   };
 }
 
-export function buildOddQuestion(levelId) {
-  const slotPool = getFillPatternsForLevel(levelId);
-  const listenPool = patternsForLevel(levelId);
+export function buildOddQuestion(levelId, unitId = null) {
+  const pool = poolForUnit(levelId, unitId).filter((p) => p.pattern || p.slots);
+  if (pool.length < 2) throw new Error('다른리듬 문제용 패턴 부족');
 
-  let commonPattern;
-  let oddPattern;
-  let title;
-
-  if (slotPool.length >= 2 && Math.random() < 0.6) {
-    const a = slotPool[Math.floor(Math.random() * slotPool.length)];
-    let b = slotPool[Math.floor(Math.random() * slotPool.length)];
-    while (slotSum(b.slots) === slotSum(a.slots) && slotsKey(b.slots) === slotsKey(a.slots)) {
-      b = slotPool[Math.floor(Math.random() * slotPool.length)];
-    }
-    commonPattern = slotsToPlayPattern(a.slots);
-    oddPattern = slotsToPlayPattern(b.slots);
-    title = `${a.title} vs ${b.title}`;
-  } else {
-    const a = listenPool[Math.floor(Math.random() * listenPool.length)];
-    let b = listenPool[Math.floor(Math.random() * listenPool.length)];
-    while (patternKey(b.pattern) === patternKey(a.pattern)) {
-      b = listenPool[Math.floor(Math.random() * listenPool.length)];
-    }
-    commonPattern = a.pattern;
-    oddPattern = b.pattern;
-    title = `${a.title} vs ${b.title}`;
+  const a = pool[Math.floor(Math.random() * pool.length)];
+  let b = pool[Math.floor(Math.random() * pool.length)];
+  let guard = 0;
+  while (guard < 20 && samePattern(a, b)) {
+    b = pool[Math.floor(Math.random() * pool.length)];
+    guard += 1;
   }
+  if (samePattern(a, b)) throw new Error('다른리듬 쌍을 찾지 못함');
+
+  const commonPattern = playPatternForEntry(a);
+  const oddPattern = playPatternForEntry(b);
+  const commonTimeline = playTimelineForEntry(a);
+  const oddTimeline = playTimelineForEntry(b);
 
   const sameCount = 2 + Math.floor(Math.random() * 2);
   const raw = [
-    ...Array(sameCount).fill({ pattern: commonPattern, isOdd: false }),
-    { pattern: oddPattern, isOdd: true },
+    ...Array(sameCount).fill({ pattern: commonPattern, timeline: commonTimeline, isOdd: false }),
+    { pattern: oddPattern, timeline: oddTimeline, isOdd: true },
   ].sort(() => Math.random() - 0.5);
 
   const options = raw.map((item, i) => ({
     id: String.fromCharCode(65 + i),
     label: String.fromCharCode(65 + i),
-    pattern: item.pattern,
+    pattern: [...item.pattern],
+    timeline: item.timeline,
     isOdd: item.isOdd,
   }));
 
   const answerOption = options.find((o) => o.isOdd);
+  const unit = getUnit(unitId ?? a.unitId);
   const level = QUIZ_LEVELS.find((l) => l.id === levelId);
 
   return {
     type: 'odd',
     levelId,
-    bpm: level.bpm,
+    unitId: unitId ?? a.unitId,
+    unitTitle: unit?.title,
+    bpm: a.bpm ?? level.bpm,
     meterLabel: '청음 · 다른 리듬 1개 찾기',
     bars: 1,
     measureHtml: '',
     options,
     answerId: answerOption.id,
-    hint: title,
+    focus: '3번 같고 1번 다름 — 귀로만 구분',
   };
 }
 
-export function buildExtraQuestion(type, levelId) {
-  if (type === 'meter') return buildMeterQuestion(levelId);
-  if (type === 'count') return buildCountQuestion(levelId);
-  if (type === 'odd') return buildOddQuestion(levelId);
+function samePattern(a, b) {
+  if (a.pattern && b.pattern) return patternKey(a.pattern) === patternKey(b.pattern);
+  if (a.slots && b.slots) return slotsKey(fillSlotsNoteOnly(a.slots)) === slotsKey(fillSlotsNoteOnly(b.slots));
+  return false;
+}
+
+export function buildExtraQuestion(type, levelId, unitId = null) {
+  if (type === 'meter') return buildMeterQuestion(levelId, unitId);
+  if (type === 'count') return buildCountQuestion(levelId, unitId);
+  if (type === 'odd') return buildOddQuestion(levelId, unitId);
   throw new Error(`알 수 없는 유형: ${type}`);
 }

@@ -1,6 +1,5 @@
 import {
   LEVELS,
-  CURRICULUM,
   JUDGE,
   DEMO_CLASSMATES,
   GIRYONG_MOOD_IMAGES,
@@ -29,7 +28,8 @@ import {
   QUIZ_ROUND_SIZE,
   QUIZ_SCORE,
 } from './quiz-data.js';
-import { buildQuizRound } from './quiz-round.js';
+import { buildQuizRound, buildUnitQuizRound } from './quiz-round.js';
+import { CURRICULUM_UNITS, unitsForLevel } from './rhythm-curriculum.js';
 import { QUIZ_TYPE_LABELS } from './quiz-extra.js';
 import {
   PLACEMENT_SIZE,
@@ -62,6 +62,7 @@ let selectedLevel = LEVELS[1];
 let selectedTrainExerciseId = TRAIN_EXERCISES[0].id;
 let selectedTrainTier = 1;
 let selectedQuizLevel = QUIZ_LEVELS[0];
+let selectedQuizUnitId = 'u1-even8';
 let playMode = 'arcade';
 let quizState = null;
 let lessonSelectedId = null;
@@ -276,6 +277,7 @@ function renderLevels() {
       btn.addEventListener('click', () => {
         selectedQuizLevel = QUIZ_LEVELS.find((l) => l.id === btn.dataset.id);
         renderLevels();
+        renderQuizUnitList();
       });
     });
     return;
@@ -322,6 +324,7 @@ function setPlayMode(mode) {
     renderTrainTierRow();
     renderTrainPatternPicker();
   }
+  if (mode === 'quiz') renderQuizUnitList();
   updateTrainPreview();
   updateQuizModeUI();
 }
@@ -332,12 +335,35 @@ function updateQuizModeUI() {
   if (hint) {
     hint.textContent = isPlacement
       ? '청음·박자표·칸세기 등 10문제 레벨 테스트'
-      : '청음 / 빈칸 / 박자표 / 칸세기 / 다른리듬 — 5유형';
+      : '단원을 고르고 5문제 집중 훈련 (청음·빈칸·박자표·칸세기·다른리듬)';
   }
   const startBtn = $('quizStart');
   if (startBtn) {
-    startBtn.textContent = isPlacement ? '레벨 테스트 시작' : '리듬 퀴즈 시작';
+    startBtn.textContent = isPlacement ? '레벨 테스트 시작' : '단원 퀴즈 시작';
   }
+  if (!isPlacement) renderQuizUnitList();
+}
+
+function renderQuizUnitList() {
+  const list = $('quizUnitList');
+  if (!list) return;
+  const units = unitsForLevel(selectedQuizLevel.id);
+  if (!units.some((u) => u.id === selectedQuizUnitId)) {
+    selectedQuizUnitId = units[0]?.id ?? 'u1-even8';
+  }
+  list.innerHTML = units.map((u) => `
+    <button type="button" class="quiz-unit-card ${u.id === selectedQuizUnitId ? 'active' : ''}" data-unit="${u.id}">
+      <strong>${u.title}</strong>
+      <span>${u.subtitle}</span>
+      <span class="quiz-unit-skills">${u.skills.slice(0, 2).join(' · ')}</span>
+    </button>
+  `).join('');
+  list.querySelectorAll('.quiz-unit-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedQuizUnitId = btn.dataset.unit;
+      renderQuizUnitList();
+    });
+  });
 }
 
 function openLessonOverlay() {
@@ -414,7 +440,8 @@ function renderLessonQuestion() {
   if (isPlacementMode()) {
     $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel} · ${meterText} · ${quizState.index + 1}/${quizState.questions.length}`;
   } else {
-    $('lessonSub').textContent = `${typeLabel} · ${meterText} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
+    const unitPart = q.unitTitle ? `${q.unitTitle} · ` : '';
+    $('lessonSub').textContent = `${unitPart}${typeLabel} · ${meterText} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
   }
 
   $('lessonOptions').innerHTML = q.options.map((opt) => {
@@ -466,10 +493,14 @@ async function playOddOption(optionId, slow = false) {
   const q = quizState?.questions[quizState.index];
   if (!q || q.type !== 'odd') return;
   const opt = q.options.find((o) => o.id === optionId);
-  if (!opt?.pattern?.length) return;
+  if (!opt) return;
   rhythmPlayer?.stop();
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
-  await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+  if (opt.timeline?.length) {
+    await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: true });
+  } else if (opt.pattern?.length) {
+    await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+  }
 }
 
 async function playOddSequence(slow = false) {
@@ -486,7 +517,11 @@ async function playOddSequence(slow = false) {
     $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
       btn.classList.toggle('odd-playing', btn.dataset.id === opt.id);
     });
-    await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+    if (opt.timeline?.length) {
+      await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: true });
+    } else {
+      await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+    }
     await new Promise((resolve) => setTimeout(resolve, gapMs));
   }
 
@@ -505,11 +540,15 @@ async function playLessonAudio(slow = false) {
     await playOddSequence(slow);
     return;
   }
-  if (!q.correctPattern?.length) return;
+  if (!q.playTimeline?.length && !q.correctPattern?.length) return;
   $('lessonListen').disabled = true;
   $('lessonListenSlow').disabled = true;
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
-  await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow });
+  if (q.playTimeline?.length) {
+    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow });
+  } else {
+    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow });
+  }
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
     $('lessonListen').disabled = false;
     $('lessonListenSlow').disabled = false;
@@ -595,10 +634,18 @@ async function continueLesson() {
 async function startLesson(mode) {
   playMode = mode;
   rhythmPlayer?.stop();
+  let questions;
+  let unitMeta = null;
+  if (mode === 'placement') {
+    questions = buildPlacementRound();
+  } else {
+    const round = buildUnitQuizRound(selectedQuizUnitId);
+    questions = round.questions;
+    unitMeta = round.unit;
+  }
   quizState = {
-    questions: mode === 'placement'
-      ? buildPlacementRound()
-      : buildQuizRound(selectedQuizLevel.id),
+    questions,
+    unitMeta,
     index: 0,
     score: 0,
     streak: 0,
@@ -1144,13 +1191,14 @@ function renderMyRank() {
 }
 
 function renderCurriculum() {
-  $('curriculumList').innerHTML = CURRICULUM.map((c) => `
+  $('curriculumList').innerHTML = CURRICULUM_UNITS.map((u) => `
     <div class="curriculum-item">
-      <div class="curriculum-week">${c.week}</div>
+      <div class="curriculum-week">${u.order}단원</div>
       <div>
-        <strong>${c.title}</strong>
-        <p>${c.desc}</p>
-        <span class="tag">${c.bpm} BPM</span>
+        <strong>${u.title}</strong>
+        <p>${u.subtitle}</p>
+        <p class="curriculum-skills">${u.skills.join(' · ')}</p>
+        <span class="tag">${u.bpm} BPM · ${u.meter}</span>
       </div>
     </div>
   `).join('');
@@ -1186,6 +1234,7 @@ function init() {
   initGame();
   initTrain();
   initLesson();
+  renderQuizUnitList();
   renderCurriculum();
   renderRank();
   sayGiryong(profile.placement ? 'welcome' : 'placementStart', profile.placement ? undefined : '처음이면 레벨 테스트부터 해볼까?');

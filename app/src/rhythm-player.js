@@ -22,6 +22,38 @@ export class RhythmPlayer {
     osc.stop(time + 0.07);
   }
 
+  async playTimeline(timeline, bpm, { countdown = true, slow = false } = {}) {
+    await this.ensureAudio();
+    this.stop();
+    this.playing = true;
+
+    const effectiveBpm = slow ? bpm * 0.65 : bpm;
+    const beatSec = 60 / effectiveBpm;
+    const start = this.audioCtx.currentTime + 0.15;
+    let t = start;
+
+    if (countdown) {
+      this.playClick(t, true);
+      t += beatSec;
+    }
+
+    timeline.forEach((ev, i) => {
+      if (!this.playing) return;
+      if (ev.kind === 'n') {
+        this.playClick(t, i === 0);
+      }
+      t += ev.beats * beatSec;
+    });
+
+    const totalMs = (t - start) * 1000 + 200;
+    await new Promise((resolve) => {
+      this._timer = setTimeout(() => {
+        this.playing = false;
+        resolve();
+      }, totalMs);
+    });
+  }
+
   /**
    * 패턴 재생. pattern = 박 단위 음표 길이 배열
    * countdown: 시작 전 1박 예비박

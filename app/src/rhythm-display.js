@@ -165,9 +165,12 @@ export function renderTrainScoreHtml(measures, meterId = '4/4') {
       <div class="train-score-label">연습 악보 · ${meter.shortLabel} · ${bars}마디</div>
       <div class="train-score-body">
         <div class="measure-sig train-score-sig">${meter.shortLabel}</div>
-        <div class="train-score-bars">${barsHtml.join('')}</div>
+        <div class="train-score-track" id="trainScoreTrack">
+          <div class="train-cursor" id="trainCursor" aria-hidden="true"></div>
+          <div class="train-score-bars">${barsHtml.join('')}</div>
+        </div>
       </div>
-      <p class="train-score-hint">쉼표는 TAP 없이 지나가요 · 음표에서만 TAP! · 한 번이라도 MISS면 처음부터</p>
+      <p class="train-score-hint">훈련 시작 → 예비박 4번(♩♩♩♩) → 커서 따라 TAP! · PERFECT / MISS</p>
     </div>
   `;
 }

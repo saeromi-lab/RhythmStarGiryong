@@ -703,19 +703,46 @@ function getTrainMaxTier() {
 }
 
 function resetTrainScoreHighlights() {
+  const cursor = $('trainCursor');
+  if (cursor) {
+    cursor.style.left = '0%';
+    cursor.classList.remove('active', 'count-in');
+  }
   $('trainPatternPreview')?.querySelectorAll('[data-pos]').forEach((el) => {
     el.classList.remove('playhead', 'active', 'hit', 'miss');
   });
 }
 
-function setTrainPlayhead(posIdx) {
+function setTrainCursor({ phase, progress, activePos }) {
+  const cursor = $('trainCursor');
+  const track = $('trainScoreTrack');
+  if (cursor) {
+    const pct = phase === 'play'
+      ? Math.max(0, Math.min(100, progress * 100))
+      : 0;
+    cursor.style.left = `${pct}%`;
+    cursor.classList.toggle('active', phase === 'play');
+    cursor.classList.toggle('count-in', phase === 'count-in');
+    cursor.hidden = phase === 'ready' || phase === 'end';
+  }
+  if (track) {
+    track.classList.toggle('train-count-in', phase === 'count-in');
+    track.classList.toggle('train-playing', phase === 'play');
+  }
   $('trainPatternPreview')?.querySelectorAll('[data-pos]').forEach((el) => {
-    if (posIdx < 0) {
+    if (phase === 'play' && activePos >= 0) {
+      el.classList.toggle('playhead', Number(el.dataset.pos) === activePos);
+    } else {
       el.classList.remove('playhead');
-      return;
     }
-    el.classList.toggle('playhead', Number(el.dataset.pos) === posIdx);
   });
+}
+
+function showTrainCountIn(beat, total) {
+  const el = $('trainJudgeFlash');
+  el.textContent = `예비박 ${beat} / ${total}`;
+  el.className = 'judge-flash show';
+  setTimeout(() => el.classList.remove('show'), 200);
 }
 
 function setTrainScoreActive(hitIdx) {
@@ -733,17 +760,18 @@ function markTrainScoreHit(hitIdx, key) {
 
 function flashTrainJudge(key, pts, combo, hitIdx, posIdx) {
   const el = $('trainJudgeFlash');
-  const j = JUDGE[key];
-  el.textContent = key === 'miss' ? 'MISS — 처음부터!' : `${j.label} +${pts}`;
+  if (key === 'miss') {
+    el.textContent = 'MISS';
+  } else if (key === 'perfect') {
+    el.textContent = `PERFECT +${pts}`;
+  } else {
+    el.textContent = `${JUDGE[key]?.label ?? key} +${pts}`;
+  }
   el.className = `judge-flash show ${key}`;
   setTimeout(() => el.classList.remove('show'), 380);
   $('trainScore').textContent = (trainer?.score ?? 0).toLocaleString();
   $('trainCombo').textContent = combo;
   if (hitIdx != null) markTrainScoreHit(hitIdx, key);
-  if (posIdx != null && key !== 'miss') {
-    const posEl = $('trainPatternPreview')?.querySelector(`[data-pos="${posIdx}"]`);
-    posEl?.classList.remove('playhead');
-  }
 }
 
 function updateTrainPreview() {
@@ -795,7 +823,7 @@ function renderTrainTierRow() {
 
 function lockedTierHint(maxTier, current) {
   if (current.id <= maxTier) {
-    return `${current.label} 연습 — 음표가 지나갈 때 표시를 보고 TAP! · MISS 없이 끝까지`;
+    return `${current.label} — 예비박 4번 후 커서가 지나갈 때 TAP! (PERFECT / MISS)`;
   }
   return '이전 단계를 무실수로 클리어하면 해제됩니다';
 }
@@ -929,8 +957,9 @@ function initTrain() {
       bpm,
       measures,
       strict: true,
-      onMetro: () => {},
-      onPlayhead: (pos) => setTrainPlayhead(pos),
+      binaryJudge: true,
+      onCountIn: showTrainCountIn,
+      onCursor: setTrainCursor,
       onNote: (idx) => setTrainScoreActive(idx),
       onJudge: flashTrainJudge,
       onProgress: (hit, total) => {

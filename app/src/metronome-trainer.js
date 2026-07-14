@@ -1,17 +1,20 @@
 import { JUDGE } from './data.js';
 import { countTrainNotes } from './train-data.js';
 
-/** 메트로놈 박자에 맞춰 악보 리듬을 탭하는 훈련 (쉼표·무실수 모드) */
+/** 메트로놈 박자에 맞춰 악보 리듬을 탭하는 훈련 */
 
 export { TRAIN_EXERCISES, TRAIN_PATTERNS, TRAIN_TIERS } from './train-data.js';
+
+const COUNT_IN_BEATS = 4;
 
 export class MetronomeTrainer {
   constructor({
     bpm,
     measures,
     strict = true,
-    onMetro,
-    onPlayhead,
+    binaryJudge = true,
+    onCountIn,
+    onCursor,
     onNote,
     onJudge,
     onProgress,
@@ -21,8 +24,9 @@ export class MetronomeTrainer {
     this.bpm = bpm;
     this.measures = measures;
     this.strict = strict;
-    this.onMetro = onMetro ?? (() => {});
-    this.onPlayhead = onPlayhead ?? (() => {});
+    this.binaryJudge = binaryJudge;
+    this.onCountIn = onCountIn ?? (() => {});
+    this.onCursor = onCursor ?? (() => {});
     this.onNote = onNote ?? (() => {});
     this.onJudge = onJudge ?? (() => {});
     this.onProgress = onProgress ?? (() => {});
@@ -34,6 +38,7 @@ export class MetronomeTrainer {
     this.audioCtx = null;
     this.timers = [];
     this.targets = [];
+    this.segments = [];
     this.score = 0;
     this.combo = 0;
     this.maxCombo = 0;
@@ -44,6 +49,7 @@ export class MetronomeTrainer {
     this.xp = 0;
     this.coins = 0;
     this.totalNotes = countTrainNotes(measures);
+    this._cursorRaf = null;
   }
 
   async ensureAudio() {
@@ -57,89 +63,115 @@ export class MetronomeTrainer {
     osc.frequency.value = accent ? 720 : 480;
     osc.connect(gain);
     gain.connect(this.audioCtx.destination);
-    gain.gain.setValueAtTime(accent ? 0.16 : 0.1, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+    gain.gain.setValueAtTime(accent ? 0.18 : 0.11, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
     osc.start(time);
-    osc.stop(time + 0.06);
+    osc.stop(time + 0.07);
+  }
+
+  scheduleAt(when, fn) {
+    const base = this.audioCtx.currentTime;
+    const delayMs = Math.max(0, (when - base) * 1000);
+    const timer = setTimeout(() => {
+      if (!this.running) return;
+      fn();
+    }, delayMs);
+    this.timers.push(timer);
+  }
+
+  buildSegments() {
+    const segments = [];
+    let beat = 0;
+    for (let bar = 0; bar < this.measures.length; bar += 1) {
+      for (const group of this.measures[bar]) {
+        segments.push({
+          pos: segments.length,
+          startBeat: beat,
+          durBeat: group.e * 0.5,
+          isNote: group.t === 'n',
+        });
+        beat += group.e * 0.5;
+      }
+    }
+    return segments;
+  }
+
+  startCursorLoop() {
+    const loop = () => {
+      if (!this.running || this.failed || !this.audioCtx) return;
+      const now = this.audioCtx.currentTime;
+
+      if (now < this.rhythmStart) {
+        const p = Math.max(0, (now - this.countInStart) / (COUNT_IN_BEATS * this.beatSec));
+        this.onCursor({ phase: 'count-in', progress: p, activePos: -1 });
+      } else {
+        const elapsed = now - this.rhythmStart;
+        const totalSec = this.totalBeats * this.beatSec;
+        const progress = Math.min(1, elapsed / totalSec);
+        const currentBeat = elapsed / this.beatSec;
+        let activePos = -1;
+        for (const seg of this.segments) {
+          if (currentBeat >= seg.startBeat - 0.001 && currentBeat < seg.startBeat + seg.durBeat) {
+            activePos = seg.pos;
+            break;
+          }
+        }
+        this.onCursor({ phase: 'play', progress, activePos, currentBeat });
+      }
+
+      if (now < this.rhythmStart + this.totalBeats * this.beatSec + 0.4) {
+        this._cursorRaf = requestAnimationFrame(loop);
+      }
+    };
+    this._cursorRaf = requestAnimationFrame(loop);
   }
 
   schedule() {
     const base = this.audioCtx.currentTime;
-    const leadIn = 0.8;
-    const start = base + leadIn;
-    let hitIdx = 0;
-    let posIdx = 0;
+    this.countInStart = base;
+    this.rhythmStart = base + COUNT_IN_BEATS * this.beatSec;
+    this.totalBeats = this.measures.length * 4;
+    this.segments = this.buildSegments();
 
-    for (let bar = 0; bar < this.measures.length; bar += 1) {
-      const barStart = start + bar * 4 * this.beatSec;
-
-      for (let beat = 0; beat < 4; beat += 1) {
-        const t = barStart + beat * this.beatSec;
-        const delayMs = Math.max(0, (t - base) * 1000);
-        const timer = setTimeout(() => {
-          if (!this.running) return;
-          this.playClick(this.audioCtx.currentTime, beat === 0);
-          this.onMetro(bar * 4 + beat + 1, this.measures.length * 4);
-        }, delayMs);
-        this.timers.push(timer);
-      }
-
-      let noteT = barStart;
-      for (const group of this.measures[bar]) {
-        const eventTime = noteT;
-        const durSec = group.e * 0.5 * this.beatSec;
-        const pos = posIdx;
-        const isNote = group.t === 'n';
-        let noteIndex = null;
-
-        if (isNote) {
-          noteIndex = hitIdx;
-          this.targets.push({
-            time: eventTime,
-            hit: false,
-            index: hitIndex,
-            pos,
-          });
-          hitIdx += 1;
-        }
-
-        const playheadMs = Math.max(0, (eventTime - base) * 1000);
-        const playheadTimer = setTimeout(() => {
-          if (!this.running) return;
-          this.onPlayhead(pos, isNote ? noteIndex : null);
-          if (isNote) {
-            this.playClick(this.audioCtx.currentTime, true);
-            this.onNote(noteIndex, this.totalNotes);
-          }
-        }, playheadMs);
-        this.timers.push(playheadTimer);
-
-        if (isNote) {
-          const missAt = eventTime + JUDGE.good.windowMs / 1000;
-          const missMs = Math.max(0, (missAt - base) * 1000);
-          const missTimer = setTimeout(() => {
-            if (!this.running) return;
-            const tgt = this.targets[noteIndex];
-            if (tgt && !tgt.hit) this.registerMiss(tgt);
-          }, missMs);
-          this.timers.push(missTimer);
-        }
-
-        const clearMs = Math.max(0, (eventTime + durSec - base) * 1000);
-        const clearTimer = setTimeout(() => {
-          if (!this.running) return;
-          this.onPlayhead(-1, null);
-        }, clearMs);
-        this.timers.push(clearTimer);
-
-        noteT += durSec;
-        posIdx += 1;
-      }
+    for (let b = 0; b < COUNT_IN_BEATS; b += 1) {
+      const t = base + b * this.beatSec;
+      this.scheduleAt(t, () => {
+        this.playClick(this.audioCtx.currentTime, b === 0);
+        this.onCountIn(b + 1, COUNT_IN_BEATS);
+      });
     }
 
-    const totalMs = (leadIn + this.measures.length * 4 * this.beatSec + 0.6) * 1000;
-    const endTimer = setTimeout(() => this.finish(), totalMs);
-    this.timers.push(endTimer);
+    let hitIdx = 0;
+    for (const seg of this.segments) {
+      if (!seg.isNote) continue;
+      const hitTime = this.rhythmStart + seg.startBeat * this.beatSec;
+      const idx = hitIdx;
+      hitIdx += 1;
+      this.targets.push({
+        time: hitTime,
+        hit: false,
+        index: idx,
+        pos: seg.pos,
+      });
+
+      this.scheduleAt(hitTime, () => {
+        this.onNote(idx, this.totalNotes);
+      });
+
+      const missWindow = this.binaryJudge
+        ? JUDGE.perfect.windowMs
+        : JUDGE.good.windowMs;
+      const missAt = hitTime + missWindow / 1000;
+      this.scheduleAt(missAt, () => {
+        const tgt = this.targets[idx];
+        if (tgt && !tgt.hit) this.registerMiss(tgt);
+      });
+    }
+
+    const endAt = this.rhythmStart + this.totalBeats * this.beatSec + 0.5;
+    this.scheduleAt(endAt, () => this.finish());
+
+    this.startCursorLoop();
   }
 
   registerMiss(target) {
@@ -154,6 +186,8 @@ export class MetronomeTrainer {
 
   judgeTap() {
     if (!this.running || !this.audioCtx || this.failed) return null;
+    if (this.audioCtx.currentTime < this.rhythmStart) return null;
+
     const now = this.audioCtx.currentTime;
     let best = null;
     let bestDelta = Infinity;
@@ -167,7 +201,9 @@ export class MetronomeTrainer {
       }
     }
 
-    if (!best || bestDelta > JUDGE.good.windowMs) {
+    const windowMs = this.binaryJudge ? JUDGE.perfect.windowMs : JUDGE.good.windowMs;
+
+    if (!best || bestDelta > windowMs) {
       this.combo = 0;
       this.miss += 1;
       this.onJudge('miss', 0, this.combo, best?.index ?? null, best?.pos ?? null);
@@ -177,9 +213,19 @@ export class MetronomeTrainer {
 
     best.hit = true;
     let key = 'miss';
-    if (bestDelta <= JUDGE.perfect.windowMs) key = 'perfect';
+    if (this.binaryJudge) {
+      key = bestDelta <= JUDGE.perfect.windowMs ? 'perfect' : 'miss';
+    } else if (bestDelta <= JUDGE.perfect.windowMs) key = 'perfect';
     else if (bestDelta <= JUDGE.great.windowMs) key = 'great';
     else if (bestDelta <= JUDGE.good.windowMs) key = 'good';
+
+    if (key === 'miss') {
+      this.combo = 0;
+      this.miss += 1;
+      this.onJudge('miss', 0, this.combo, best.index, best.pos);
+      if (this.strict) this.fail();
+      return 'miss';
+    }
 
     const j = JUDGE[key];
     this.combo += 1;
@@ -201,6 +247,8 @@ export class MetronomeTrainer {
     this.running = false;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];
+    if (this._cursorRaf) cancelAnimationFrame(this._cursorRaf);
+    this.onCursor({ phase: 'end', progress: 1, activePos: -1 });
     this.onFail({
       score: this.score,
       xp: this.xp,
@@ -219,6 +267,7 @@ export class MetronomeTrainer {
     this.running = true;
     this.failed = false;
     this.targets = [];
+    this.onCursor({ phase: 'ready', progress: 0, activePos: -1 });
     this.schedule();
   }
 
@@ -227,6 +276,8 @@ export class MetronomeTrainer {
     this.running = false;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];
+    if (this._cursorRaf) cancelAnimationFrame(this._cursorRaf);
+    this.onCursor({ phase: 'end', progress: 1, activePos: -1 });
 
     const remaining = this.targets.filter((t) => !t.hit);
     if (remaining.length) {
@@ -270,5 +321,7 @@ export class MetronomeTrainer {
     this.failed = true;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];
+    if (this._cursorRaf) cancelAnimationFrame(this._cursorRaf);
+    this.onCursor({ phase: 'end', progress: 0, activePos: -1 });
   }
 }

@@ -1946,6 +1946,39 @@ body.lesson-open {
   cursor: default;
 }
 
+.odd-option-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.odd-play-mini {
+  border: 2px solid var(--duo-border);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.odd-play-mini:hover:not(:disabled) {
+  background: #e8f7fe;
+  border-color: var(--duo-blue);
+}
+
+.odd-select {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.odd-select.odd-playing {
+  border-color: var(--accent2);
+  background: #fff8e0;
+  box-shadow: 0 0 0 2px #ffc85755;
+}
+
 .lesson-footer {
   position: fixed;
   bottom: 0;

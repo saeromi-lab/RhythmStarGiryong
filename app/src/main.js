@@ -383,7 +383,7 @@ function renderLessonQuestion() {
     fill: '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요',
     meter: '이 마디의 박자표는 무엇일까요?',
     count: '8분음표 칸은 모두 몇 칸일까요?',
-    odd: '다른 리듬 1개를 고르세요 (소리 없음)',
+    odd: '🔊 A→B→C→D 순서로 듣고, 다른 리듬 1개를 고르세요',
   };
 
   $('lessonInstruction').textContent = instructions[qType] ?? '정답을 고르세요';
@@ -395,8 +395,10 @@ function renderLessonQuestion() {
     $('lessonListen').setAttribute('aria-label', '전체 마디 듣기 (힌트)');
   } else if (qType === 'odd') {
     measureEl.hidden = false;
-    measureEl.innerHTML = '<p class="lesson-measure-hint">4개 중 3개는 같고 1개만 달라요</p>';
-    audioRow.hidden = true;
+    measureEl.innerHTML = '<p class="lesson-measure-hint">악보 없이 귀로만! 3개는 같고 1개만 달라요 · 🔊로 전체 또는 각 보기를 들어보세요</p>';
+    audioRow.hidden = false;
+    $('lessonListen').setAttribute('aria-label', 'A부터 D까지 순서대로 듣기');
+    $('lessonListenSlow').setAttribute('aria-label', '느리게 순서대로 듣기');
   } else if (qType === 'meter' || qType === 'count') {
     measureEl.hidden = false;
     measureEl.innerHTML = q.measureHtml;
@@ -416,12 +418,29 @@ function renderLessonQuestion() {
   }
 
   $('lessonOptions').innerHTML = q.options.map((opt) => {
+    if (qType === 'odd') {
+      return `
+        <div class="odd-option-row">
+          <button type="button" class="odd-play-mini" data-play-id="${opt.id}" aria-label="${opt.label} 리듬 듣기">🔊</button>
+          <button type="button" class="duo-choice duo-choice-text odd-select" data-id="${opt.id}">${opt.label}</button>
+        </div>
+      `;
+    }
     const inner = opt.gridHtml || opt.label || opt.notation;
     const cls = opt.gridHtml ? 'duo-choice duo-choice-grid' : 'duo-choice duo-choice-text';
     return `<button type="button" class="${cls}" data-id="${opt.id}">${inner}</button>`;
   }).join('');
 
-  $('lessonOptions').querySelectorAll('.duo-choice').forEach((btn) => {
+  $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
+    btn.addEventListener('click', () => selectLessonOption(btn.dataset.id));
+  });
+  $('lessonOptions').querySelectorAll('.odd-play-mini').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playOddOption(btn.dataset.playId, false);
+    });
+  });
+  $('lessonOptions').querySelectorAll('.duo-choice:not(.odd-select)').forEach((btn) => {
     btn.addEventListener('click', () => selectLessonOption(btn.dataset.id));
   });
 
@@ -443,8 +462,49 @@ function selectLessonOption(choiceId) {
   $('lessonCheckBtn').disabled = false;
 }
 
+async function playOddOption(optionId, slow = false) {
+  const q = quizState?.questions[quizState.index];
+  if (!q || q.type !== 'odd') return;
+  const opt = q.options.find((o) => o.id === optionId);
+  if (!opt?.pattern?.length) return;
+  rhythmPlayer?.stop();
+  if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+  await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+}
+
+async function playOddSequence(slow = false) {
+  const q = quizState?.questions[quizState.index];
+  if (!q || q.type !== 'odd') return;
+  $('lessonListen').disabled = true;
+  $('lessonListenSlow').disabled = true;
+  rhythmPlayer?.stop();
+  if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+
+  const gapMs = slow ? 700 : 500;
+  for (const opt of q.options) {
+    if (!quizState || quizState.questions[quizState.index] !== q) break;
+    $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
+      btn.classList.toggle('odd-playing', btn.dataset.id === opt.id);
+    });
+    await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: true });
+    await new Promise((resolve) => setTimeout(resolve, gapMs));
+  }
+
+  $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
+    btn.classList.remove('odd-playing');
+  });
+  if (quizState?.questions[quizState.index] === q && !quizState.answered) {
+    $('lessonListen').disabled = false;
+    $('lessonListenSlow').disabled = false;
+  }
+}
+
 async function playLessonAudio(slow = false) {
   const q = quizState.questions[quizState.index];
+  if (q.type === 'odd') {
+    await playOddSequence(slow);
+    return;
+  }
   if (!q.correctPattern?.length) return;
   $('lessonListen').disabled = true;
   $('lessonListenSlow').disabled = true;
@@ -512,7 +572,7 @@ async function goBackLesson() {
   renderLessonQuestion();
   updateLessonProgress();
   const q = quizState.questions[quizState.index];
-  if (q.type === 'listen') await playLessonAudio();
+  if (q.type === 'listen' || q.type === 'odd') await playLessonAudio();
 }
 
 async function continueLesson() {
@@ -529,7 +589,7 @@ async function continueLesson() {
 
   renderLessonQuestion();
   const q = quizState.questions[quizState.index];
-  if (q.type === 'listen') await playLessonAudio();
+  if (q.type === 'listen' || q.type === 'odd') await playLessonAudio();
 }
 
 async function startLesson(mode) {
@@ -552,7 +612,7 @@ async function startLesson(mode) {
   openLessonOverlay();
   renderLessonQuestion();
   const q = quizState.questions[0];
-  if (q.type === 'listen') await playLessonAudio();
+  if (q.type === 'listen' || q.type === 'odd') await playLessonAudio();
 }
 
 function showLessonComplete(cardsHtml) {

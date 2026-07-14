@@ -136,8 +136,9 @@ export function buildOddQuestion(levelId) {
   const slotPool = getFillPatternsForLevel(levelId);
   const listenPool = patternsForLevel(levelId);
 
-  let correctGrid;
-  let oddGrid;
+  let commonPattern;
+  let oddPattern;
+  let title;
 
   if (slotPool.length >= 2 && Math.random() < 0.6) {
     const a = slotPool[Math.floor(Math.random() * slotPool.length)];
@@ -145,27 +146,31 @@ export function buildOddQuestion(levelId) {
     while (slotSum(b.slots) === slotSum(a.slots) && slotsKey(b.slots) === slotsKey(a.slots)) {
       b = slotPool[Math.floor(Math.random() * slotPool.length)];
     }
-    correctGrid = { html: renderSlotsGridHtml(a.slots, a.meter) };
-    oddGrid = { html: renderSlotsGridHtml(b.slots, b.meter) };
+    commonPattern = slotsToPlayPattern(a.slots);
+    oddPattern = slotsToPlayPattern(b.slots);
+    title = `${a.title} vs ${b.title}`;
   } else {
     const a = listenPool[Math.floor(Math.random() * listenPool.length)];
     let b = listenPool[Math.floor(Math.random() * listenPool.length)];
     while (patternKey(b.pattern) === patternKey(a.pattern)) {
       b = listenPool[Math.floor(Math.random() * listenPool.length)];
     }
-    correctGrid = { pattern: a.pattern, html: renderPatternGridHtml(a.pattern, '4/4') };
-    oddGrid = { pattern: b.pattern, html: renderPatternGridHtml(b.pattern, '4/4') };
+    commonPattern = a.pattern;
+    oddPattern = b.pattern;
+    title = `${a.title} vs ${b.title}`;
   }
 
   const sameCount = 2 + Math.floor(Math.random() * 2);
-  const grids = Array(sameCount).fill(correctGrid.html);
-  grids.push(oddGrid.html);
-  grids.sort(() => Math.random() - 0.5);
+  const raw = [
+    ...Array(sameCount).fill({ pattern: commonPattern, isOdd: false }),
+    { pattern: oddPattern, isOdd: true },
+  ].sort(() => Math.random() - 0.5);
 
-  const options = grids.map((html, i) => ({
+  const options = raw.map((item, i) => ({
     id: String.fromCharCode(65 + i),
-    gridHtml: html,
-    isOdd: html === oddGrid.html,
+    label: String.fromCharCode(65 + i),
+    pattern: item.pattern,
+    isOdd: item.isOdd,
   }));
 
   const answerOption = options.find((o) => o.isOdd);
@@ -175,12 +180,12 @@ export function buildOddQuestion(levelId) {
     type: 'odd',
     levelId,
     bpm: level.bpm,
-    meterLabel: '4/4 · 다른 패턴 1개 찾기',
+    meterLabel: '청음 · 다른 리듬 1개 찾기',
     bars: 1,
     measureHtml: '',
     options,
     answerId: answerOption.id,
-    hint: '3개는 같고 1개만 달라요',
+    hint: title,
   };
 }
 

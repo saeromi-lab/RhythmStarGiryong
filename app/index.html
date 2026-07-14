@@ -135,26 +135,18 @@
 
       <div class="card train-card" id="trainCard" style="display:none">
         <div class="sec-label">메트로놈 리듬 탭 훈련</div>
-        <p class="hint">메트로놈 박자를 듣고, 아래 리듬 패턴 타이밍에 맞춰 TAP! 하세요</p>
+        <p class="hint">악보를 보고 메트로놈에 맞춰 같은 리듬으로 TAP! 하세요</p>
 
         <div class="train-settings">
-          <label class="train-setting">
+          <label class="train-setting train-setting-bpm">
             <span>BPM</span>
             <input type="range" id="trainBpm" min="60" max="140" value="88" step="2">
             <strong id="trainBpmVal">88</strong>
           </label>
-          <label class="train-setting">
-            <span>패턴</span>
-            <select id="trainPattern" class="train-select"></select>
-          </label>
-          <label class="train-setting">
-            <span>마디</span>
-            <select id="trainBars" class="train-select">
-              <option value="1">1마디</option>
-              <option value="2" selected>2마디</option>
-            </select>
-          </label>
         </div>
+
+        <div class="sec-label sec-label-sm">리듬 악보 선택</div>
+        <div id="trainPatternPicker" class="train-pattern-picker"></div>
 
         <div id="trainPatternPreview" class="train-pattern-preview"></div>
 

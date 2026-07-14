@@ -115,7 +115,8 @@ export class MetronomeTrainer {
     target.hit = true;
     this.combo = 0;
     this.miss += 1;
-    this.onJudge('miss', 0, this.combo);
+    this.onJudge('miss', 0, this.combo, target.index);
+    this.onProgress(this.targets.filter((t) => t.hit).length, this.targets.length);
   }
 
   judgeTap() {
@@ -136,7 +137,7 @@ export class MetronomeTrainer {
     if (!best || bestDelta > JUDGE.good.windowMs) {
       this.combo = 0;
       this.miss += 1;
-      this.onJudge('miss', 0, this.combo);
+      this.onJudge('miss', 0, this.combo, best?.index);
       return 'miss';
     }
 
@@ -155,7 +156,7 @@ export class MetronomeTrainer {
     this.xp += j.xp;
     this.coins += key === 'perfect' ? 2 : 1;
     this[key] += 1;
-    this.onJudge(key, pts, this.combo);
+    this.onJudge(key, pts, this.combo, best.index);
     this.onProgress(this.targets.filter((t) => t.hit).length, this.targets.length);
     return key;
   }

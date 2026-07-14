@@ -38,7 +38,7 @@ import {
 } from './placement-test.js';
 import { RhythmPlayer } from './rhythm-player.js';
 import { MetronomeTrainer, TRAIN_PATTERNS } from './metronome-trainer.js';
-import { renderPatternGridHtml } from './rhythm-display.js';
+import { renderPatternGridHtml, renderTrainScoreHtml, renderPatternPickerHtml } from './rhythm-display.js';
 
 const TIER_LABELS = {
   beginner: '입문',
@@ -51,6 +51,8 @@ let game = null;
 let trainer = null;
 let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
+let selectedTrainPatternId = TRAIN_PATTERNS[0].id;
+const TRAIN_BARS = 2;
 let selectedQuizLevel = QUIZ_LEVELS[0];
 let playMode = 'arcade';
 let quizState = null;
@@ -250,28 +252,6 @@ function applyRecommendedLevels(quizLevelId, arcadeLevelId) {
 function renderLevels() {
   if (playMode === 'placement') return;
 
-  if (playMode === 'train') {
-    $('levelLabel').textContent = '훈련 프리셋';
-    $('levelSelect').innerHTML = TRAIN_PATTERNS.map((p, i) => `
-      <button class="level-btn ${i === 0 ? 'active' : ''}" data-train-id="${p.id}">
-        <strong>${p.name}</strong>
-        <span>메트로놈 탭 연습</span>
-      </button>
-    `).join('');
-    $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        $('levelSelect').querySelectorAll('.level-btn').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const pat = TRAIN_PATTERNS.find((p) => p.id === btn.dataset.trainId);
-        if (pat) {
-          $('trainPattern').value = pat.id;
-          updateTrainPreview();
-        }
-      });
-    });
-    return;
-  }
-
   if (playMode === 'quiz') {
     $('levelLabel').textContent = '퀴즈 난이도';
     $('levelSelect').innerHTML = QUIZ_LEVELS.map((lv) => {
@@ -320,7 +300,7 @@ function setPlayMode(mode) {
   $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
   $('trainCard').style.display = mode === 'train' ? 'block' : 'none';
   $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
-  $('levelSelectCard').style.display = mode === 'placement' ? 'none' : 'block';
+  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train') ? 'none' : 'block';
   $('resultCard').style.display = 'none';
   game?.stop();
   trainer?.stop();
@@ -591,7 +571,30 @@ function flashJudge(key, pts) {
   }
 }
 
-function flashTrainJudge(key, pts) {
+function getTrainPattern() {
+  return TRAIN_PATTERNS.find((p) => p.id === selectedTrainPatternId) ?? TRAIN_PATTERNS[0];
+}
+
+function resetTrainScoreHighlights() {
+  $('trainPatternPreview')?.querySelectorAll('.train-hit-slot').forEach((el) => {
+    el.classList.remove('active', 'hit', 'miss');
+  });
+}
+
+function setTrainScoreActive(hitIdx) {
+  $('trainPatternPreview')?.querySelectorAll('.train-hit-slot').forEach((el) => {
+    el.classList.toggle('active', Number(el.dataset.hit) === hitIdx);
+  });
+}
+
+function markTrainScoreHit(hitIdx, key) {
+  const slot = $('trainPatternPreview')?.querySelector(`[data-hit="${hitIdx}"]`);
+  if (!slot) return;
+  slot.classList.remove('active');
+  slot.classList.add(key === 'miss' ? 'miss' : 'hit');
+}
+
+function flashTrainJudge(key, pts, _combo, hitIdx) {
   const el = $('trainJudgeFlash');
   const j = JUDGE[key];
   el.textContent = key === 'miss' ? 'MISS' : `${j.label} +${pts}`;
@@ -599,31 +602,44 @@ function flashTrainJudge(key, pts) {
   setTimeout(() => el.classList.remove('show'), 380);
   $('trainScore').textContent = (trainer?.score ?? 0).toLocaleString();
   $('trainCombo').textContent = trainer?.combo ?? 0;
+  if (hitIdx != null) markTrainScoreHit(hitIdx, key);
 }
 
 function updateTrainPreview() {
-  const patId = $('trainPattern')?.value;
-  const pat = TRAIN_PATTERNS.find((p) => p.id === patId) ?? TRAIN_PATTERNS[0];
+  const pat = getTrainPattern();
   const preview = $('trainPatternPreview');
   if (preview && pat) {
-    preview.innerHTML = renderPatternGridHtml(pat.pattern, '4/4');
+    preview.innerHTML = renderTrainScoreHtml(pat.pattern, TRAIN_BARS);
+    resetTrainScoreHighlights();
   }
 }
 
+function renderTrainPatternPicker() {
+  const picker = $('trainPatternPicker');
+  if (!picker) return;
+  picker.innerHTML = TRAIN_PATTERNS.map((p) => `
+    <button type="button" class="train-pattern-card ${p.id === selectedTrainPatternId ? 'active' : ''}" data-id="${p.id}" aria-label="리듬 패턴 선택">
+      ${renderPatternPickerHtml(p.pattern)}
+    </button>
+  `).join('');
+  picker.querySelectorAll('.train-pattern-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedTrainPatternId = btn.dataset.id;
+      renderTrainPatternPicker();
+      updateTrainPreview();
+    });
+  });
+}
+
 function initTrain() {
-  const patternSelect = $('trainPattern');
-  if (!patternSelect) return;
-
-  patternSelect.innerHTML = TRAIN_PATTERNS.map((p) => (
-    `<option value="${p.id}">${p.name}</option>`
-  )).join('');
-
   const bpmInput = $('trainBpm');
   const bpmVal = $('trainBpmVal');
+  if (!bpmInput) return;
+
   bpmInput.addEventListener('input', () => {
     bpmVal.textContent = bpmInput.value;
   });
-  patternSelect.addEventListener('change', updateTrainPreview);
+  renderTrainPatternPicker();
   updateTrainPreview();
 
   const startBtn = $('trainStart');
@@ -636,7 +652,7 @@ function initTrain() {
   tapBtn.addEventListener('click', doTrainTap);
 
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || ! $('panel-play').classList.contains('active')) return;
+    if (e.code !== 'Space' || !$('panel-play').classList.contains('active')) return;
     if (playMode !== 'train' || !trainer?.running) return;
     e.preventDefault();
     doTrainTap();
@@ -644,9 +660,9 @@ function initTrain() {
 
   startBtn.addEventListener('click', async () => {
     trainer?.stop();
-    const pat = TRAIN_PATTERNS.find((p) => p.id === patternSelect.value) ?? TRAIN_PATTERNS[0];
+    const pat = getTrainPattern();
     const bpm = Number(bpmInput.value);
-    const bars = Number($('trainBars').value);
+    const bars = TRAIN_BARS;
     const totalTaps = pat.pattern.length * bars;
 
     startBtn.disabled = true;
@@ -654,6 +670,7 @@ function initTrain() {
     $('trainScore').textContent = '0';
     $('trainCombo').textContent = '0';
     $('trainProgress').textContent = `0/${totalTaps}`;
+    resetTrainScoreHighlights();
     setGiryongMood('focus');
 
     trainer = new MetronomeTrainer({
@@ -661,7 +678,7 @@ function initTrain() {
       pattern: pat.pattern,
       bars,
       onMetro: () => {},
-      onNote: () => {},
+      onNote: (idx) => setTrainScoreActive(idx),
       onJudge: flashTrainJudge,
       onProgress: (hit, total) => {
         $('trainProgress').textContent = `${hit}/${total}`;
@@ -688,7 +705,7 @@ function initTrain() {
             <span>GOOD ${result.good}</span>
             <span>MISS ${result.miss}</span>
             <span>MAX COMBO ${result.maxCombo}</span>
-            <span>${pat.name} · ${bpm} BPM · ${bars}마디</span>
+            <span>${bpm} BPM · ${bars}마디</span>
             <span>+${xp} XP · +${result.coins} 🪙</span>
           </div>
         `;

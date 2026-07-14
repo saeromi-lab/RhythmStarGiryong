@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RhythmStarGiryong — 경기대 실용음악 리듬 트레이닝</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-badge">KGU</span>
+        <div>
+          <div class="app-title">RhythmStarGiryong</div>
+          <div class="app-sub">경기대학교 실용음악학과 · 아케이드 리듬 트레이닝</div>
+        </div>
+      </div>
+      <div class="header-stats" id="headerStats"></div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="home">홈</button>
+      <button class="tab-btn" data-tab="play">플레이</button>
+      <button class="tab-btn" data-tab="rank">랭킹</button>
+      <button class="tab-btn" data-tab="curriculum">커리큘럼</button>
+    </nav>
+
+    <!-- 홈 -->
+    <section class="tab-panel active" id="panel-home">
+      <div class="card giryong-card">
+        <div class="giryong-stage">
+          <div class="giryong-char" id="giryongChar">
+            <img
+              id="giryongImg"
+              class="giryong-img"
+              src="/images/giryong/giryong-hero.png"
+              alt="경기대학교 마스코트 기룡이"
+            >
+          </div>
+          <div class="speech-bubble" id="giryongSpeech">안녕! 나 기룡이야!</div>
+        </div>
+        <div class="profile-bar" id="profileBar"></div>
+      </div>
+
+      <div class="card attendance-card duo-streak-card">
+        <div class="duo-streak-hero">
+          <img src="/images/giryong/pearl-stamp.png" alt="" class="duo-streak-pearl" aria-hidden="true">
+          <div class="duo-streak-num" id="streakNum">0</div>
+          <div class="duo-streak-lbl">일 연속 출석</div>
+        </div>
+
+        <div class="duo-week-card">
+          <div class="stamp-board" id="stampBoard"></div>
+          <p class="duo-week-msg">매일 연습하여 진주조개를 모아 연속 출석 기록을 지켜내세요!</p>
+        </div>
+
+        <button id="checkInBtn" class="duo-btn duo-btn-green pearl-stamp-btn">
+          <img src="/images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
+          진주조개 도장 찍기
+        </button>
+        <div id="checkInMsg" class="check-in-msg"></div>
+        <div class="reward-chips" id="rewardChips"></div>
+      </div>
+
+      <div class="card duo-path-card" id="placementHomeCard">
+        <div class="duo-path-giryong">
+          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <div class="duo-path-bubble" id="pathBubble">이제 가장 알맞은 시작점을 찾아보아요!</div>
+        </div>
+        <div id="placementHomeStatus" class="placement-home-status"></div>
+        <div class="duo-path-options" id="pathOptions">
+          <button type="button" class="duo-path-option" data-path="basics">
+            <span class="duo-path-icon">📘</span>
+            <span class="duo-path-text">
+              <strong>기초부터 시작하기</strong>
+              <small>입문 레슨부터 차근차근 훈련합니다</small>
+            </span>
+          </button>
+          <button type="button" class="duo-path-option selected" data-path="placement">
+            <span class="duo-path-icon">🧭</span>
+            <span class="duo-path-text">
+              <strong>내 레벨 찾기</strong>
+              <small>10문제 테스트 후 맞는 구간을 기룡이가 추천해요</small>
+            </span>
+          </button>
+        </div>
+        <button id="placementHomeBtn" class="duo-btn duo-btn-green placement-home-btn">계속하기</button>
+      </div>
+
+      <div class="card">
+        <div class="sec-label">오늘의 퀘스트</div>
+        <div id="dailyMissions" class="mission-list duo-quest-list"></div>
+      </div>
+    </section>
+
+    <!-- 플레이 -->
+    <section class="tab-panel" id="panel-play">
+      <div class="card">
+        <div class="sec-label">플레이 모드</div>
+        <div class="mode-switch mode-switch-4" id="modeSwitch">
+          <button class="mode-btn active" data-mode="arcade">아케이드</button>
+          <button class="mode-btn" data-mode="train">메트로놈 훈련</button>
+          <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
+          <button class="mode-btn" data-mode="placement">레벨 테스트</button>
+        </div>
+      </div>
+
+      <div class="card" id="levelSelectCard">
+        <div class="sec-label" id="levelLabel">난이도 선택</div>
+        <div id="levelSelect" class="level-grid"></div>
+      </div>
+
+      <div class="card arcade-card" id="arcadeCard">
+        <div class="arcade-hud">
+          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="gameScore">0</span></div>
+          <div><span class="hud-lbl">COMBO</span><span class="hud-val combo" id="gameCombo">0</span></div>
+          <div><span class="hud-lbl">BEAT</span><span class="hud-val" id="gameBeat">0/0</span></div>
+        </div>
+
+        <div class="arcade-lane" id="arcadeLane">
+          <img src="/images/giryong/giryong-basic.png" alt="" class="arcade-giryong" aria-hidden="true">
+          <div class="hit-line"></div>
+          <div class="note-ring" id="noteRing"></div>
+        </div>
+
+        <div class="judge-flash" id="judgeFlash"></div>
+
+        <div class="arcade-controls">
+          <button id="gameStart" class="primary arcade-btn">START</button>
+          <button id="gameTap" class="tap-btn" disabled>TAP!</button>
+        </div>
+        <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
+      </div>
+
+      <div class="card train-card" id="trainCard" style="display:none">
+        <div class="sec-label">메트로놈 리듬 탭 훈련</div>
+        <p class="hint">악보를 보고 메트로놈에 맞춰 같은 리듬으로 TAP! 하세요 · 무실수 클리어가 목표</p>
+
+        <div class="train-tier-row" id="trainTierRow"></div>
+        <p class="hint train-tier-hint" id="trainTierHint"></p>
+
+        <div class="train-settings">
+          <label class="train-setting train-setting-bpm">
+            <span>BPM</span>
+            <input type="range" id="trainBpm" min="60" max="140" value="88" step="2">
+            <strong id="trainBpmVal">88</strong>
+          </label>
+        </div>
+
+        <div class="sec-label sec-label-sm">리듬 악보 선택</div>
+        <div id="trainPatternPicker" class="train-pattern-picker"></div>
+
+        <div id="trainPatternPreview" class="train-pattern-preview"></div>
+
+        <div class="train-hud">
+          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="trainScore">0</span></div>
+          <div><span class="hud-lbl">무실수</span><span class="hud-val combo" id="trainCombo">0</span></div>
+          <div><span class="hud-lbl">TAP</span><span class="hud-val" id="trainProgress">0/0</span></div>
+        </div>
+
+        <div class="judge-flash" id="trainJudgeFlash"></div>
+
+        <div class="arcade-controls">
+          <button id="trainStart" class="primary arcade-btn">훈련 시작</button>
+          <button id="trainTap" class="tap-btn" disabled>TAP!</button>
+        </div>
+      </div>
+
+      <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
+        <div class="duo-path-giryong">
+          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <div class="duo-path-bubble">8단원 커리큘럼 · 단원별 5문제 집중 훈련 + 메트로놈</div>
+        </div>
+        <button id="quizStart" class="duo-btn duo-btn-green">단원 퀴즈 시작</button>
+        <p class="hint" id="quizHint" style="margin-top:10px">단원을 고르고 5문제 집중 훈련</p>
+        <div id="quizUnitList" class="quiz-unit-list"></div>
+      </div>
+
+      <div class="card" id="resultCard" style="display:none">
+        <div class="sec-label" id="resultTitle">결과</div>
+        <div id="resultBody" class="result-body"></div>
+        <div class="result-actions" id="resultActions">
+          <button id="playAgain" class="primary">다시 하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 랭킹 -->
+    <section class="tab-panel" id="panel-rank">
+      <div class="card">
+        <div class="sec-label">이번 주 랭킹 · 실용음악학과</div>
+        <div class="rank-header">
+          <span>#</span><span>이름</span><span>전공</span><span>점수</span>
+        </div>
+        <div id="rankList" class="rank-list"></div>
+        <p class="hint">매주 월요일 랭킹이 갱신됩니다. 매일 플레이해서 1위에 도전하세요!</p>
+      </div>
+      <div class="card">
+        <div class="sec-label">내 기록</div>
+        <div id="myRankStats" class="stats-grid"></div>
+      </div>
+    </section>
+
+    <!-- 커리큘럼 -->
+    <section class="tab-panel" id="panel-curriculum">
+      <div class="card">
+        <div class="sec-label">12주 리듬 트레이닝 커리큘럼</div>
+        <p class="curriculum-intro">교재 흐름에 맞춘 8단원 커리큘럼입니다. 2연음 → 쉼표·싱코페이션 → 6/8 → 2마디 → 재즈 → 16분. Play에서 단원을 골라 집중 훈련하세요.</p>
+        <div id="curriculumList" class="curriculum-list"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">판정 기준</div>
+        <div class="judge-table" id="judgeTable"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      경기대학교 실용음악학과 · 기룡이와 함께하는 리듬 트레이닝<br>
+      <a href="https://www.kyonggi.ac.kr/www/contents.do?key=9819" target="_blank" rel="noopener">기룡이 캐릭터 출처: 경기대학교 공식 홈페이지</a>
+    </footer>
+  </div>
+
+  <!-- 레슨 화면 (퀴즈·레벨테스트) -->
+  <div id="lessonOverlay" class="lesson-overlay" hidden>
+    <header class="lesson-top">
+      <button type="button" id="lessonClose" class="lesson-close" aria-label="닫기">×</button>
+      <div class="lesson-top-center">
+        <div id="lessonStreakLbl" class="lesson-streak-lbl"></div>
+        <div class="lesson-progress-track">
+          <div id="lessonProgressFill" class="lesson-progress-fill"></div>
+        </div>
+      </div>
+      <img src="/images/giryong/giryong-logo.png" alt="" class="lesson-giryong-mini" aria-hidden="true">
+    </header>
+
+    <main class="lesson-main" id="lessonMain">
+      <h2 class="lesson-instruction" id="lessonInstruction">들은 리듬을 탭하세요</h2>
+      <p class="lesson-sub" id="lessonSub"></p>
+      <div id="lessonMeasure" class="lesson-measure" hidden></div>
+
+      <div class="lesson-audio-row" id="lessonAudioRow">
+        <button type="button" id="lessonMetronome" class="lesson-audio-btn lesson-audio-metronome" aria-label="기본박 듣기">
+          <span class="audio-icon">♩</span>
+        </button>
+        <button type="button" id="lessonListen" class="lesson-audio-btn" aria-label="리듬 듣기">
+          <span class="audio-icon">🔊</span>
+        </button>
+        <button type="button" id="lessonListenSlow" class="lesson-audio-btn lesson-audio-slow" aria-label="느리게 듣기">
+          <span class="audio-icon">🐢</span>
+        </button>
+      </div>
+
+      <div class="lesson-options" id="lessonOptions"></div>
+    </main>
+
+    <footer class="lesson-footer">
+      <button type="button" id="lessonBackBtn" class="lesson-back-btn" disabled aria-label="이전 문제">← 이전</button>
+      <button type="button" id="lessonCheckBtn" class="lesson-check-btn" disabled>확인</button>
+    </footer>
+
+    <div id="lessonFeedback" class="lesson-feedback" hidden>
+      <div class="lesson-feedback-inner">
+        <p class="lesson-feedback-title" id="lessonFeedbackTitle">참 잘했어요!</p>
+        <p class="lesson-feedback-detail" id="lessonFeedbackDetail"></p>
+        <button type="button" id="lessonContinueBtn" class="lesson-continue-btn">계속하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 레슨 완료 화면 -->
+  <div id="lessonCompleteOverlay" class="lesson-overlay lesson-complete-overlay" hidden>
+    <div class="lesson-complete-body">
+      <img src="/images/giryong/emote-5.png" alt="기룡이" class="lesson-complete-giryong">
+      <h2 class="lesson-complete-title">레슨 완료!</h2>
+      <div class="lesson-complete-cards" id="lessonCompleteCards"></div>
+      <button type="button" id="lessonCompleteBtn" class="duo-btn duo-btn-green">계속하기</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

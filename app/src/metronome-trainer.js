@@ -145,10 +145,13 @@ export class MetronomeTrainer {
     for (const seg of this.segments) {
       if (!seg.isNote) continue;
       const hitTime = this.rhythmStart + seg.startBeat * this.beatSec;
+      const noteDurSec = seg.durBeat * this.beatSec;
+      const endTime = hitTime + noteDurSec;
       const idx = hitIdx;
       hitIdx += 1;
       this.targets.push({
         time: hitTime,
+        endTime,
         hit: false,
         index: idx,
         pos: seg.pos,
@@ -158,10 +161,8 @@ export class MetronomeTrainer {
         this.onNote(idx, this.totalNotes);
       });
 
-      const missWindow = this.binaryJudge
-        ? JUDGE.perfect.windowMs
-        : JUDGE.good.windowMs;
-      const missAt = hitTime + missWindow / 1000;
+      // 커서가 음표를 지나갈 때까지 탭 대기 (55ms가 아니라 음표 길이 기준)
+      const missAt = endTime + 0.04;
       this.scheduleAt(missAt, () => {
         const tgt = this.targets[idx];
         if (tgt && !tgt.hit) this.registerMiss(tgt);
@@ -189,11 +190,13 @@ export class MetronomeTrainer {
     if (this.audioCtx.currentTime < this.rhythmStart) return null;
 
     const now = this.audioCtx.currentTime;
+    const earlySec = JUDGE.perfect.windowMs / 1000;
     let best = null;
     let bestDelta = Infinity;
 
     for (const t of this.targets) {
       if (t.hit) continue;
+      if (now < t.time - earlySec || now > t.endTime) continue;
       const deltaMs = Math.abs(now - t.time) * 1000;
       if (deltaMs < bestDelta) {
         bestDelta = deltaMs;
@@ -201,15 +204,10 @@ export class MetronomeTrainer {
       }
     }
 
-    const windowMs = this.binaryJudge ? JUDGE.perfect.windowMs : JUDGE.good.windowMs;
+    // 아직 탭할 음표가 없으면 무시 (조기 탭으로 실패 처리하지 않음)
+    if (!best) return null;
 
-    if (!best || bestDelta > windowMs) {
-      this.combo = 0;
-      this.miss += 1;
-      this.onJudge('miss', 0, this.combo, best?.index ?? null, best?.pos ?? null);
-      if (this.strict) this.fail();
-      return 'miss';
-    }
+    const windowMs = this.binaryJudge ? JUDGE.perfect.windowMs : JUDGE.good.windowMs;
 
     best.hit = true;
     let key = 'miss';
@@ -217,7 +215,7 @@ export class MetronomeTrainer {
       key = bestDelta <= JUDGE.perfect.windowMs ? 'perfect' : 'miss';
     } else if (bestDelta <= JUDGE.perfect.windowMs) key = 'perfect';
     else if (bestDelta <= JUDGE.great.windowMs) key = 'great';
-    else if (bestDelta <= JUDGE.good.windowMs) key = 'good';
+    else if (bestDelta <= windowMs) key = 'good';
 
     if (key === 'miss') {
       this.combo = 0;

@@ -403,6 +403,7 @@ function renderLessonQuestion() {
   const typeLabel = QUIZ_TYPE_LABELS[qType] ?? '퀴즈';
   const measureEl = $('lessonMeasure');
   const audioRow = $('lessonAudioRow');
+  const metroBtn = $('lessonMetronome');
 
   const instructions = {
     listen: '🔊로 듣고, 같은 리듬 칸을 고르세요',
@@ -413,6 +414,10 @@ function renderLessonQuestion() {
   };
 
   $('lessonInstruction').textContent = instructions[qType] ?? '정답을 고르세요';
+  if (metroBtn) {
+    metroBtn.hidden = !['listen', 'odd', 'fill', 'count', 'meter'].includes(qType);
+    metroBtn.title = (q.bars ?? 1) >= 2 ? '기본박 8박' : '기본박 4박';
+  }
 
   if (qType === 'fill') {
     measureEl.hidden = false;
@@ -473,6 +478,8 @@ function renderLessonQuestion() {
 
   $('lessonListen').disabled = false;
   $('lessonListenSlow').disabled = false;
+  const metroBtnState = $('lessonMetronome');
+  if (metroBtnState) metroBtnState.disabled = false;
   const backBtn = $('lessonBackBtn');
   if (backBtn) {
     backBtn.disabled = quizState.index === 0 || quizState.answered;
@@ -503,13 +510,30 @@ async function playOddOption(optionId, slow = false) {
   }
 }
 
+async function setLessonAudioBusy(busy) {
+  $('lessonListen').disabled = busy;
+  $('lessonListenSlow').disabled = busy;
+  const metro = $('lessonMetronome');
+  if (metro) metro.disabled = busy;
+}
+
+async function playLessonBasicBeat(slow = false) {
+  const q = quizState?.questions[quizState.index];
+  if (!q) return;
+  if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+  const bars = q.bars ?? 1;
+  await rhythmPlayer.playBasicBeats(q.bpm, { bars, slow });
+}
+
 async function playOddSequence(slow = false) {
   const q = quizState?.questions[quizState.index];
   if (!q || q.type !== 'odd') return;
-  $('lessonListen').disabled = true;
-  $('lessonListenSlow').disabled = true;
+  await setLessonAudioBusy(true);
   rhythmPlayer?.stop();
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+
+  await playLessonBasicBeat(slow);
+  await new Promise((resolve) => setTimeout(resolve, 320));
 
   const gapMs = slow ? 700 : 500;
   for (const opt of q.options) {
@@ -529,8 +553,7 @@ async function playOddSequence(slow = false) {
     btn.classList.remove('odd-playing');
   });
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
-    $('lessonListen').disabled = false;
-    $('lessonListenSlow').disabled = false;
+    await setLessonAudioBusy(false);
   }
 }
 
@@ -541,17 +564,21 @@ async function playLessonAudio(slow = false) {
     return;
   }
   if (!q.playTimeline?.length && !q.correctPattern?.length) return;
-  $('lessonListen').disabled = true;
-  $('lessonListenSlow').disabled = true;
+  await setLessonAudioBusy(true);
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
+
+  if (q.type === 'listen') {
+    await playLessonBasicBeat(slow);
+    await new Promise((resolve) => setTimeout(resolve, 320));
+  }
+
   if (q.playTimeline?.length) {
     await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow, countdown: false });
   } else {
     await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow, countdown: false });
   }
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
-    $('lessonListen').disabled = false;
-    $('lessonListenSlow').disabled = false;
+    await setLessonAudioBusy(false);
   }
 }
 
@@ -1174,6 +1201,7 @@ function initLesson() {
 
   $('lessonListen').addEventListener('click', () => playLessonAudio(false));
   $('lessonListenSlow').addEventListener('click', () => playLessonAudio(true));
+  $('lessonMetronome')?.addEventListener('click', () => playLessonBasicBeat(false));
   $('lessonCheckBtn').addEventListener('click', submitLessonAnswer);
   $('lessonBackBtn')?.addEventListener('click', goBackLesson);
   $('lessonContinueBtn').addEventListener('click', continueLesson);

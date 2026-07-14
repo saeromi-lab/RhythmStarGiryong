@@ -190,6 +190,26 @@ export function renderPatternPickerHtml(measure, meterId = '4/4') {
   `;
 }
 
+/** 그룹(음표·쉼표) N마디 그리드 */
+export function renderMeasuresGridHtml(measures, meterId = '4/4', { compact = false } = {}) {
+  const meter = METERS[meterId] ?? METERS['4/4'];
+  const barsHtml = measures.map((m) => {
+    const rendered = renderMeasureGroups(m, meter, { compact });
+    return `
+      <div class="measure-slots ${compact ? 'measure-slots-compact measure-slots-bar' : 'measure-slots-bar'}" style="--slots:${meter.eighthsPerBar}">
+        ${rendered.html}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="rhythm-grid-wrap rhythm-grid-multi ${compact ? 'rhythm-grid-option' : ''}">
+      <div class="measure-sig">${meter.shortLabel}</div>
+      <div class="rhythm-grid-bars">${barsHtml}</div>
+    </div>
+  `;
+}
+
 /** 그룹(음표·쉼표) 1마디 그리드 */
 export function renderGroupsGridHtml(groups, meterId = '4/4', { compact = false } = {}) {
   const meter = METERS[meterId] ?? METERS['4/4'];

@@ -1,7 +1,7 @@
 /** 청음 퀴즈 — 커리큘럼 기반 */
 
 import { buildFillQuestion } from './fill-quiz.js';
-import { renderPatternGridHtml, renderGroupsGridHtml, listenAnswerInOptions } from './rhythm-display.js';
+import { renderPatternGridHtml, renderGroupsGridHtml, renderMeasuresGridHtml, listenAnswerInOptions } from './rhythm-display.js';
 import { groupsKey } from './rhythm-groups.js';
 import {
   listenPatternsForLevel,
@@ -9,6 +9,9 @@ import {
   playPatternForEntry,
   playTimelineForEntry,
   getUnit,
+  entryBeats,
+  entryBars,
+  isValidListenEntry,
 } from './rhythm-curriculum.js';
 import {
   patternToNotation,
@@ -29,6 +32,8 @@ export function getPatternsForLevel(levelId) {
 
 function entryKey(p) {
   if (p.pattern) return patternKey(p.pattern);
+  if (p.measuresKey) return p.measuresKey;
+  if (p.measures) return p.measures.map((m) => groupsKey(m)).join('||');
   if (p.measure) return groupsKey(p.measure);
   return p.id;
 }
@@ -38,6 +43,8 @@ function curriculumToListenEntry(p) {
     level: p.level,
     pattern: p.pattern ?? null,
     measure: p.measure,
+    measures: p.measures,
+    measuresKey: p.measures ? p.measures.map((m) => groupsKey(m)).join('||') : null,
     groupsKey: p.measure ? groupsKey(p.measure) : null,
     title: p.focus,
     unitId: p.unitId,
@@ -66,16 +73,15 @@ function getPatternsWithSameBeats(beats, excludeKey, levelId) {
 
 function pickListenDistractors(correct, levelId, unitId = null) {
   const correctKey = entryKey(correct);
-  const beats = correct.pattern ? patternBeats(correct.pattern) : null;
+  const beats = entryBeats(correct.curriculumRef ?? correct);
+  const bars = entryBars(correct.curriculumRef ?? correct);
 
   let pool = (unitId
-    ? patternsForUnit(unitId).filter((p) => p.pattern || p.measure).map(curriculumToListenEntry)
+    ? patternsForUnit(unitId).filter((p) => isValidListenEntry(p)).map(curriculumToListenEntry)
     : getPatternsForLevel(levelId)
-  ).filter((p) => entryKey(p) !== correctKey);
-
-  if (beats != null) {
-    pool = pool.filter((p) => p.pattern && patternBeats(p.pattern) === beats);
-  }
+  ).filter((p) => entryKey(p) !== correctKey
+    && entryBeats(p.curriculumRef ?? p) === beats
+    && entryBars(p.curriculumRef ?? p) === bars);
 
   if (pool.length < 3) {
     const extra = listenPatternsForLevel(levelId)
@@ -97,13 +103,16 @@ function pickListenDistractors(correct, levelId, unitId = null) {
 }
 
 function renderListenOptionGrid(p) {
-  if (p.measure) return renderGroupsGridHtml(p.measure, p.meter ?? '4/4');
-  return renderPatternGridHtml(p.pattern, p.meter ?? '4/4');
+  const ref = p.curriculumRef ?? p;
+  if (ref.measures?.length) return renderMeasuresGridHtml(ref.measures, ref.meter ?? p.meter ?? '4/4', { compact: true });
+  if (p.pattern) return renderPatternGridHtml(p.pattern, p.meter ?? '4/4');
+  if (p.measure) return renderGroupsGridHtml(p.measure, p.meter ?? '4/4', { compact: true });
+  return '';
 }
 
 export function buildListenQuestion(levelId, patternOverride = null, unitId = null) {
   let pool = unitId
-    ? patternsForUnit(unitId).filter((p) => p.pattern || p.measure).map(curriculumToListenEntry)
+    ? patternsForUnit(unitId).filter((p) => isValidListenEntry(p)).map(curriculumToListenEntry)
     : getPatternsForLevel(levelId);
 
   if (!pool.length) {
@@ -121,6 +130,8 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
     fi += 1;
     if (distractors.some((d) => entryKey(d) === entryKey(extra))) continue;
     if (entryKey(extra) === correctKey) continue;
+    if (entryBeats(extra.curriculumRef ?? extra) !== beats) continue;
+    if (entryBars(extra.curriculumRef ?? extra) !== bars) continue;
     distractors.push(extra);
   }
 
@@ -129,24 +140,26 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
   }
 
   const unit = getUnit(correct.unitId ?? unitId);
-  const beats = correct.pattern ? patternBeats(correct.pattern) : 4;
+  const beats = entryBeats(correct.curriculumRef ?? correct);
+  const bars = entryBars(correct.curriculumRef ?? correct);
   const options = [correct, ...distractors.slice(0, 3)]
     .map((p, i) => ({
       id: String.fromCharCode(65 + i),
       notation: p.pattern ? patternToNotation(p.pattern) : '리듬 악보',
       pattern: p.pattern ? [...p.pattern] : null,
       groupsKey: p.groupsKey,
+      measuresKey: p.measuresKey,
       measure: p.measure,
       title: p.title,
       gridHtml: renderListenOptionGrid(p),
     }))
     .sort(() => Math.random() - 0.5);
 
-  const answerOption = options.find((o) => (
-    correct.pattern
-      ? o.pattern && patternKey(o.pattern) === patternKey(correct.pattern)
-      : o.groupsKey === correct.groupsKey
-  ));
+  const answerOption = options.find((o) => {
+    if (correct.measuresKey) return o.measuresKey === correct.measuresKey;
+    if (correct.pattern) return o.pattern && patternKey(o.pattern) === patternKey(correct.pattern);
+    return o.groupsKey === correct.groupsKey;
+  });
   if (!answerOption) throw new Error(`퀴즈 정답 누락: ${correctKey}`);
 
   const question = {
@@ -155,8 +168,8 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
     unitId: correct.unitId ?? unitId,
     unitTitle: unit?.title,
     bpm: correct.bpm ?? 88,
-    bars: beats / 4,
-    meterLabel: correct.pattern ? getMeterLabel(correct.pattern) : `${correct.meter ?? '4/4'} · 1마디`,
+    bars,
+    meterLabel: beats === 8 ? '4/4 · 2마디 (8박)' : beats === 4 ? '4/4 · 1마디 (4박)' : `${correct.meter ?? '4/4'} · ${bars}마디`,
     correctPattern: playPatternForEntry(correct.curriculumRef ?? correct),
     playTimeline: correct.timeline,
     correctNotation: correct.pattern ? patternToNotation(correct.pattern) : '악보 패턴',

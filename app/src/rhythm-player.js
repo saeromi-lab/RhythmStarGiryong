@@ -89,6 +89,30 @@ export class RhythmPlayer {
     });
   }
 
+  /** 기본박 메트로놈 — 마디당 4박(4/4) 기준 */
+  async playBasicBeats(bpm, { bars = 1, beatsPerBar = 4, slow = false } = {}) {
+    await this.ensureAudio();
+    this.stop();
+    this.playing = true;
+
+    const effectiveBpm = slow ? bpm * 0.65 : bpm;
+    const beatSec = 60 / effectiveBpm;
+    const start = this.audioCtx.currentTime + 0.12;
+    const totalBeats = bars * beatsPerBar;
+
+    for (let i = 0; i < totalBeats; i += 1) {
+      this.playClick(start + i * beatSec, i % beatsPerBar === 0);
+    }
+
+    const totalMs = totalBeats * beatSec * 1000 + 250;
+    await new Promise((resolve) => {
+      this._timer = setTimeout(() => {
+        this.playing = false;
+        resolve();
+      }, totalMs);
+    });
+  }
+
   stop() {
     this.playing = false;
     if (this._timer) {

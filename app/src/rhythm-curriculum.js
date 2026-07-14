@@ -3,7 +3,7 @@
  * 교재 흐름: 2연음 → 쉼표·싱코페이션 → 6/8 → 2마디 읽기 → 재즈/16분
  */
 
-import { N, R, groupsToPlayPattern, measureSum } from './rhythm-groups.js';
+import { N, R, groupsToPlayPattern, groupsToTimeline, measureSum } from './rhythm-groups.js';
 
 /** @typedef {'beginner'|'basic'|'intermediate'} LevelId */
 
@@ -215,7 +215,6 @@ export const CURRICULUM_PATTERNS = [
   // —— U6: 2마디 ——
   pat('u6-2bar', 'intermediate', '4/4', 100, '2마디 4분 8개', {
     id: '2q8', pattern: [1, 1, 1, 1, 1, 1, 1, 1],
-    measure: [N(2), N(2), N(2), N(2)],
     measures: [
       [N(2), N(2), N(2), N(2)],
       [N(2), N(2), N(2), N(2)],
@@ -223,19 +222,27 @@ export const CURRICULUM_PATTERNS = [
   }),
   pat('u6-2bar', 'intermediate', '4/4', 100, '2마디 4분+8분', {
     id: '2mix', pattern: [1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-    measure: [N(2), N(2), N(2), N(2), N(1), N(1), N(1), N(1)],
+    measures: [
+      [N(2), N(2), N(2), N(2)],
+      [N(1), N(1), N(1), N(1), N(1), N(1), N(1), N(1)],
+    ],
   }),
   pat('u6-2bar', 'intermediate', '4/4', 100, '2마디 싱코페이션', {
     id: '2sync', pattern: [1, 0.5, 0.5, 1, 0.5, 0.5, 1, 1],
-    measure: [N(2), N(1), N(1), N(2), N(1), N(1), N(2), N(2)],
+    measures: [
+      [N(2), N(1), N(1), N(2)],
+      [N(1), N(1), N(2), N(2)],
+    ],
   }),
   pat('u6-2bar', 'intermediate', '4/4', 100, '2마디 8분 그루브', {
     id: '2e8', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 1, 1],
-    measure: [N(1), N(1), N(1), N(1), N(2), N(2), N(2), N(2)],
+    measures: [
+      [N(1), N(1), N(1), N(1), N(2), N(2)],
+      [N(2), N(2), N(2), N(2)],
+    ],
   }),
   pat('u6-2bar', 'intermediate', '4/4', 100, '2마디 2분 4개', {
     id: '2h4', pattern: [2, 2, 2, 2],
-    measure: [N(4), N(4)],
     measures: [[N(4), N(4)], [N(4), N(4)]],
   }),
 
@@ -317,12 +324,52 @@ export function patternsForLevel(levelId) {
 }
 
 export function listenPatternsForLevel(levelId) {
-  const perBar = (p) => (p.meter === '6/8' ? 6 : 8);
-  return patternsForLevel(levelId).filter((p) => {
-    if (p.pattern && isValidListenPattern(p.pattern)) return true;
-    if (p.measure && measureSum(p.measure) === perBar(p)) return true;
-    return false;
-  });
+  return patternsForLevel(levelId).filter((p) => isValidListenEntry(p));
+}
+
+export function entryBeats(p) {
+  if (p.pattern?.length) return patternBeats(p.pattern);
+  if (p.measures?.length) {
+    return p.measures.reduce((sum, m) => sum + measureSum(m), 0) * 0.5;
+  }
+  if (p.measure) return measureSum(p.measure) * 0.5;
+  return 0;
+}
+
+export function entryBars(p) {
+  if (p.measures?.length) return p.measures.length;
+  if (p.pattern?.length) return Math.max(1, Math.round(entryBeats(p) / 4));
+  return 1;
+}
+
+function patternSplitsEvenBars(pattern, beatsPerBar = 4) {
+  let barSum = 0;
+  for (const d of pattern) {
+    barSum += d;
+    if (barSum > beatsPerBar + 0.001) return false;
+    if (Math.abs(barSum - beatsPerBar) < 0.001) barSum = 0;
+  }
+  return Math.abs(barSum) < 0.001;
+}
+
+export function isValidListenEntry(p) {
+  const perBar = p.meter === '6/8' ? 6 : 8;
+  const beatsPerBar = p.meter === '6/8' ? 3 : 4;
+
+  if (p.measures?.length) {
+    if (!p.measures.every((m) => measureSum(m) === perBar)) return false;
+    const beats = entryBeats(p);
+    return beats === 4 || beats === 8;
+  }
+
+  if (p.pattern?.length && isValidListenPattern(p.pattern)) {
+    const beats = patternBeats(p.pattern);
+    if (beats === 4) return true;
+    return patternSplitsEvenBars(p.pattern, beatsPerBar);
+  }
+
+  if (p.measure && measureSum(p.measure) === perBar) return true;
+  return false;
 }
 
 export function fillPatternsForLevel(levelId) {
@@ -380,30 +427,35 @@ export function hasRests(slots) {
 }
 
 export function groupsFromPattern(p) {
+  if (p.measures?.length) return p.measures.flat();
+  if (p.pattern) return p.pattern.map((d) => N(Math.round(d * 2)));
   if (p.measure) return p.measure;
   if (p.slots) {
     return p.slots.map((s) => (s > 0 ? N(s) : R(-s)));
-  }
-  if (p.pattern) {
-    return p.pattern.map((d) => N(Math.round(d * 2)));
   }
   return [];
 }
 
 export function playPatternForEntry(p) {
+  if (p.pattern?.length) return [...p.pattern];
+  if (p.measures?.length) {
+    return p.measures.flatMap((m) => groupsToPlayPattern(m));
+  }
   if (p.measure) return groupsToPlayPattern(p.measure);
-  if (p.pattern) return [...p.pattern];
   if (p.slots) return groupsToPlayPattern(groupsFromPattern(p));
   return [];
 }
 
 export function playTimelineForEntry(p) {
-  const groups = groupsFromPattern(p);
-  if (groups.length) {
-    return groups.map((g) => ({ kind: g.t, beats: g.e * 0.5 }));
+  if (p.measures?.length) {
+    return p.measures.flatMap((m) => groupsToTimeline(m));
   }
   if (p.pattern) {
     return p.pattern.map((d) => ({ kind: 'n', beats: d }));
+  }
+  const groups = groupsFromPattern(p);
+  if (groups.length) {
+    return groups.map((g) => ({ kind: g.t, beats: g.e * 0.5 }));
   }
   return [];
 }

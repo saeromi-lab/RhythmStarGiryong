@@ -435,6 +435,10 @@ function renderLessonQuestion() {
 
   $('lessonListen').disabled = false;
   $('lessonListenSlow').disabled = false;
+  const backBtn = $('lessonBackBtn');
+  if (backBtn) {
+    backBtn.disabled = quizState.index === 0 || quizState.answered;
+  }
   updateLessonProgress();
 }
 
@@ -503,6 +507,20 @@ function submitLessonAnswer() {
     ? (isPlacementMode() ? '' : `+${QUIZ_SCORE.correct.points}점`)
     : `정답: ${q.answerId} · ${q.options.find((o) => o.id === q.answerId)?.label ?? q.options.find((o) => o.id === q.answerId)?.notation ?? q.correctNotation}`;
   updateLessonProgress();
+}
+
+async function goBackLesson() {
+  if (!quizState || quizState.index === 0 || quizState.answered) return;
+  $('lessonFeedback').hidden = true;
+  rhythmPlayer?.stop();
+  quizState.index -= 1;
+  if (isPlacementMode()) {
+    quizState.answers = quizState.answers.slice(0, quizState.index);
+  }
+  renderLessonQuestion();
+  updateLessonProgress();
+  const q = quizState.questions[quizState.index];
+  if (q.type === 'listen') await playLessonAudio();
 }
 
 async function continueLesson() {
@@ -876,6 +894,7 @@ function initLesson() {
   $('lessonListen').addEventListener('click', () => playLessonAudio(false));
   $('lessonListenSlow').addEventListener('click', () => playLessonAudio(true));
   $('lessonCheckBtn').addEventListener('click', submitLessonAnswer);
+  $('lessonBackBtn')?.addEventListener('click', goBackLesson);
   $('lessonContinueBtn').addEventListener('click', continueLesson);
 
   $('lessonCompleteBtn').addEventListener('click', () => {

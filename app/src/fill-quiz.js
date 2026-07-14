@@ -17,9 +17,9 @@ export const METERS = {
   },
 };
 
-/** @type {{ level: string, meter: string, slots: number[], title: string }[]} */
+/** 슬롯 값 = 8분음표 칸 수. [2,2,2,2]=4분 4개, [4,4]=2분 2개 */
 export const FILL_PATTERNS = [
-  // 4/4 — 8칸
+  // 4/4 — 8칸(= 4박)
   { level: 'beginner', meter: '4/4', slots: [2, 2, 2, 2], title: '4분음표 4개' },
   { level: 'beginner', meter: '4/4', slots: [1, 1, 1, 1, 1, 1, 1, 1], title: '8분음표 8개' },
   { level: 'beginner', meter: '4/4', slots: [2, 2, 1, 1, 1, 1], title: '4분 2개 + 8분 4개' },
@@ -90,7 +90,53 @@ export function slotsKey(slots) {
 export function getMeterLabel(meterId, slots) {
   const meter = METERS[meterId];
   const total = slotSum(slots);
-  return `${meter.label} · 1마디 (${total}칸)`;
+  const beats = total / 2;
+  return `${meter.label} · 1마디 (${beats}박 · 8분음표 ${total}칸)`;
+}
+
+function getNoteGroups(slots) {
+  let pos = 0;
+  return slots.map((len) => {
+    const group = { start: pos, len, end: pos + len };
+    pos += len;
+    return group;
+  });
+}
+
+/** 음표 덩어리 단위로만 빈칸 지정 (음표 중간을 자르지 않음) */
+function pickBlankByGroups(slots, levelId) {
+  const groups = getNoteGroups(slots);
+  if (groups.length < 2) {
+    throw new Error('빈칸을 만들 음표 그룹이 부족합니다');
+  }
+
+  const maxBlankGroups = levelId === 'beginner'
+    ? Math.min(3, groups.length - 1)
+    : Math.min(2, groups.length - 1);
+  const candidates = [];
+
+  for (let num = 1; num <= maxBlankGroups; num += 1) {
+    for (let start = 0; start <= groups.length - num; start += 1) {
+      const trailingOnly = start === groups.length - num;
+      if (levelId === 'beginner' && !trailingOnly) continue;
+
+      const blankGroups = groups.slice(start, start + num);
+      const blankFrom = blankGroups[0].start;
+      const blankLen = blankGroups[blankGroups.length - 1].end - blankFrom;
+      const correctFill = blankGroups.map((g) => g.len);
+
+      if (blankLen < 2) continue;
+      if (blankLen >= 3 && compositions(blankLen, 4).length < 4) continue;
+
+      candidates.push({ blankFrom, blankLen, correctFill });
+    }
+  }
+
+  if (!candidates.length) {
+    throw new Error('유효한 빈칸 구성을 찾지 못했습니다');
+  }
+
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 /** 슬롯 배열을 칸 단위 그리드로 펼침 */
@@ -151,35 +197,24 @@ function compositions(total, maxPart = 4) {
   return results;
 }
 
-function pickBlankRegion(totalSlots, levelId) {
-  const minBlank = levelId === 'beginner' ? 2 : 2;
-  const maxBlank = levelId === 'beginner' ? 3 : Math.min(4, totalSlots - 2);
-  const blankLen = minBlank + Math.floor(Math.random() * (maxBlank - minBlank + 1));
-  const canMiddle = levelId !== 'beginner' && totalSlots - blankLen >= 2;
-  const useMiddle = canMiddle && Math.random() < 0.35;
-  const blankFrom = useMiddle
-    ? 1 + Math.floor(Math.random() * (totalSlots - blankLen - 1))
-    : totalSlots - blankLen;
-  return { blankFrom, blankLen };
-}
-
-function extractFillGroups(slots, blankFrom, blankLen) {
-  const groups = [];
-  let pos = 0;
-  for (const len of slots) {
-    const start = pos;
-    const end = pos + len;
-    pos = end;
-    if (end <= blankFrom || start >= blankFrom + blankLen) continue;
-    const clipStart = Math.max(start, blankFrom);
-    const clipEnd = Math.min(end, blankFrom + blankLen);
-    groups.push(clipEnd - clipStart);
-  }
-  return groups;
-}
-
 function pickDistractorFills(correctFill, blankLen) {
   const correctKey = slotsKey(correctFill);
+
+  if (blankLen === 2) {
+    const pool = [[2], [1, 1], [1], [3]]
+      .filter((c) => slotsKey(c) !== correctKey)
+      .map((fill) => ({ fill, notation: slotsToNotation(fill) }));
+    const seen = new Set();
+    const picked = [];
+    for (const item of pool) {
+      if (seen.has(item.notation)) continue;
+      seen.add(item.notation);
+      picked.push(item.fill);
+      if (picked.length >= 3) break;
+    }
+    return picked;
+  }
+
   const pool = compositions(blankLen, 4)
     .filter((c) => slotsKey(c) !== correctKey)
     .sort(() => Math.random() - 0.5);
@@ -187,7 +222,6 @@ function pickDistractorFills(correctFill, blankLen) {
   const seen = new Set();
   const picked = [];
   for (const fill of pool) {
-    const key = slotsKey(fill);
     const notation = slotsToNotation(fill);
     if (seen.has(notation)) continue;
     seen.add(notation);
@@ -205,8 +239,12 @@ export function buildFillQuestion(levelId, patternOverride = null) {
   const pool = getFillPatternsForLevel(levelId);
   const source = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
   const meter = METERS[source.meter];
-  const { blankFrom, blankLen } = pickBlankRegion(meter.eighthsPerBar, levelId);
-  const correctFill = extractFillGroups(source.slots, blankFrom, blankLen);
+
+  if (slotSum(source.slots) !== meter.eighthsPerBar) {
+    throw new Error(`마디 박자 불일치: ${slotsKey(source.slots)}`);
+  }
+
+  const { blankFrom, blankLen, correctFill } = pickBlankByGroups(source.slots, levelId);
   const correctKey = slotsKey(correctFill);
 
   if (slotSum(correctFill) !== blankLen) {
@@ -224,6 +262,10 @@ export function buildFillQuestion(levelId, patternOverride = null) {
     else break;
   }
 
+  if (distractors.length < 3) {
+    throw new Error(`빈칸 보기 부족: ${correctKey}`);
+  }
+
   const options = [correctFill, ...distractors]
     .map((fill, i) => ({
       id: String.fromCharCode(65 + i),
@@ -238,8 +280,6 @@ export function buildFillQuestion(levelId, patternOverride = null) {
     throw new Error(`빈칸 정답 누락: ${correctKey}`);
   }
 
-  const playPattern = slotsToPlayPattern(source.slots);
-
   return {
     type: 'fill',
     levelId,
@@ -252,10 +292,17 @@ export function buildFillQuestion(levelId, patternOverride = null) {
     blankLen,
     measureHtml: renderMeasureHtml(source.slots, source.meter, blankFrom, blankLen),
     correctFill,
-    correctPattern: playPattern,
+    correctPattern: slotsToPlayPattern(source.slots),
     correctNotation: slotsToNotation(source.slots),
     options,
     answerId: answerOption.id,
     hint: source.title,
   };
+}
+
+for (const p of FILL_PATTERNS) {
+  const meter = METERS[p.meter];
+  if (slotSum(p.slots) !== meter.eighthsPerBar) {
+    console.warn(`잘못된 마디 패턴: ${p.title} (${slotSum(p.slots)}칸)`);
+  }
 }

@@ -101,3 +101,15 @@ export function listenAnswerInOptions(question) {
     (o) => o.pattern.join(',') === key && o.id === question.answerId,
   );
 }
+
+/** 슬롯 배열(8분 칸) 그리드 */
+export function renderSlotsGridHtml(slots, meterId = '4/4') {
+  const meter = METERS[meterId] ?? METERS['4/4'];
+  const grid = expandSlotsToGrid(slots, meter.eighthsPerBar);
+  return `
+    <div class="rhythm-grid-wrap">
+      <div class="measure-sig">${meter.shortLabel}</div>
+      <div class="measure-slots" style="--slots:${meter.eighthsPerBar}">${renderCells(grid)}</div>
+    </div>
+  `;
+}

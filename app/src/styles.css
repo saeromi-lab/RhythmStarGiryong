@@ -500,9 +500,75 @@ body {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.mode-switch-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 480px) {
+  .mode-switch-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .mode-switch-3 .mode-btn {
   font-size: 12px;
   padding: 10px 6px;
+}
+
+.mode-switch-4 .mode-btn {
+  font-size: 11px;
+  padding: 10px 4px;
+}
+
+.train-settings {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.train-setting {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.train-setting input[type="range"] {
+  width: 100%;
+}
+
+.train-select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.train-pattern-preview {
+  margin: 8px 0 14px;
+}
+
+.train-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.train-card .judge-flash {
+  min-height: 36px;
+}
+
+.duo-choice-text {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 18px 14px;
 }
 
 .level-btn.recommended {

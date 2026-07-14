@@ -27,8 +27,9 @@ import {
   QUIZ_LEVELS,
   QUIZ_ROUND_SIZE,
   QUIZ_SCORE,
-  buildQuizRound,
 } from './quiz-data.js';
+import { buildQuizRound } from './quiz-round.js';
+import { QUIZ_TYPE_LABELS } from './quiz-extra.js';
 import {
   PLACEMENT_SIZE,
   PLACEMENT_REWARD,
@@ -36,6 +37,8 @@ import {
   evaluatePlacement,
 } from './placement-test.js';
 import { RhythmPlayer } from './rhythm-player.js';
+import { MetronomeTrainer, TRAIN_PATTERNS } from './metronome-trainer.js';
+import { renderPatternGridHtml } from './rhythm-display.js';
 
 const TIER_LABELS = {
   beginner: '입문',
@@ -45,6 +48,7 @@ const TIER_LABELS = {
 
 let profile = null;
 let game = null;
+let trainer = null;
 let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
 let selectedQuizLevel = QUIZ_LEVELS[0];
@@ -246,6 +250,28 @@ function applyRecommendedLevels(quizLevelId, arcadeLevelId) {
 function renderLevels() {
   if (playMode === 'placement') return;
 
+  if (playMode === 'train') {
+    $('levelLabel').textContent = '훈련 프리셋';
+    $('levelSelect').innerHTML = TRAIN_PATTERNS.map((p, i) => `
+      <button class="level-btn ${i === 0 ? 'active' : ''}" data-train-id="${p.id}">
+        <strong>${p.name}</strong>
+        <span>메트로놈 탭 연습</span>
+      </button>
+    `).join('');
+    $('levelSelect').querySelectorAll('.level-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $('levelSelect').querySelectorAll('.level-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pat = TRAIN_PATTERNS.find((p) => p.id === btn.dataset.trainId);
+        if (pat) {
+          $('trainPattern').value = pat.id;
+          updateTrainPreview();
+        }
+      });
+    });
+    return;
+  }
+
   if (playMode === 'quiz') {
     $('levelLabel').textContent = '퀴즈 난이도';
     $('levelSelect').innerHTML = QUIZ_LEVELS.map((lv) => {
@@ -292,16 +318,19 @@ function setPlayMode(mode) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
   $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
+  $('trainCard').style.display = mode === 'train' ? 'block' : 'none';
   $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
   $('levelSelectCard').style.display = mode === 'placement' ? 'none' : 'block';
   $('resultCard').style.display = 'none';
   game?.stop();
+  trainer?.stop();
   rhythmPlayer?.stop();
   if (mode === 'quiz' || mode === 'placement') {
     quizState = null;
     $('quizStart').style.display = 'block';
   }
   renderLevels();
+  updateTrainPreview();
   updateQuizModeUI();
 }
 
@@ -310,8 +339,8 @@ function updateQuizModeUI() {
   const hint = $('quizHint');
   if (hint) {
     hint.textContent = isPlacement
-      ? '듣기·마디 채우기 → 확인! 10문제 레벨 테스트'
-      : '청음 + 마디 채우기 · 듣기 → 선택 → 확인!';
+      ? '청음·박자표·칸세기 등 10문제 레벨 테스트'
+      : '청음 / 빈칸 / 박자표 / 칸세기 / 다른리듬 — 5유형';
   }
   const startBtn = $('quizStart');
   if (startBtn) {
@@ -346,42 +375,59 @@ function updateLessonProgress() {
 
 function renderLessonQuestion() {
   const q = quizState.questions[quizState.index];
-  const isFill = q.type === 'fill';
+  const qType = q.type ?? 'listen';
   lessonSelectedId = null;
   quizState.answered = false;
   $('lessonCheckBtn').disabled = true;
   $('lessonFeedback').hidden = true;
 
   const meterText = q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)');
-  const typeLabel = isFill ? '마디 채우기' : '청음';
-
+  const typeLabel = QUIZ_TYPE_LABELS[qType] ?? '퀴즈';
   const measureEl = $('lessonMeasure');
-  if (isFill) {
-    $('lessonInstruction').textContent = '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요';
+  const audioRow = $('lessonAudioRow');
+
+  const instructions = {
+    listen: '🔊로 듣고, 같은 리듬 칸을 고르세요',
+    fill: '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요',
+    meter: '이 마디의 박자표는 무엇일까요?',
+    count: '8분음표 칸은 모두 몇 칸일까요?',
+    odd: '다른 리듬 1개를 고르세요 (소리 없음)',
+  };
+
+  $('lessonInstruction').textContent = instructions[qType] ?? '정답을 고르세요';
+
+  if (qType === 'fill') {
     measureEl.hidden = false;
     measureEl.innerHTML = q.measureHtml;
-    $('lessonAudioRow').hidden = false;
+    audioRow.hidden = false;
     $('lessonListen').setAttribute('aria-label', '전체 마디 듣기 (힌트)');
-    $('lessonListenSlow').setAttribute('aria-label', '전체 마디 느리게 (힌트)');
+  } else if (qType === 'odd') {
+    measureEl.hidden = false;
+    measureEl.innerHTML = '<p class="lesson-measure-hint">4개 중 3개는 같고 1개만 달라요</p>';
+    audioRow.hidden = true;
+  } else if (qType === 'meter' || qType === 'count') {
+    measureEl.hidden = false;
+    measureEl.innerHTML = q.measureHtml;
+    audioRow.hidden = false;
+    $('lessonListen').setAttribute('aria-label', '리듬 듣기 (힌트)');
   } else {
-    $('lessonInstruction').textContent = '🔊로 듣고, 같은 리듬 칸을 고르세요';
     measureEl.hidden = false;
     measureEl.innerHTML = `<p class="lesson-measure-hint">${meterText} · 아래 보기 중 같은 패턴을 찾으세요</p>`;
-    $('lessonAudioRow').hidden = false;
+    audioRow.hidden = false;
     $('lessonListen').setAttribute('aria-label', '리듬 듣기');
-    $('lessonListenSlow').setAttribute('aria-label', '느리게 듣기');
   }
+
   if (isPlacementMode()) {
     $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel} · ${meterText} · ${quizState.index + 1}/${quizState.questions.length}`;
   } else {
     $('lessonSub').textContent = `${typeLabel} · ${meterText} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
   }
 
-  $('lessonOptions').innerHTML = q.options.map((opt) => `
-    <button type="button" class="duo-choice duo-choice-grid" data-id="${opt.id}">
-      ${opt.gridHtml || opt.notation}
-    </button>
-  `).join('');
+  $('lessonOptions').innerHTML = q.options.map((opt) => {
+    const inner = opt.gridHtml || opt.label || opt.notation;
+    const cls = opt.gridHtml ? 'duo-choice duo-choice-grid' : 'duo-choice duo-choice-text';
+    return `<button type="button" class="${cls}" data-id="${opt.id}">${inner}</button>`;
+  }).join('');
 
   $('lessonOptions').querySelectorAll('.duo-choice').forEach((btn) => {
     btn.addEventListener('click', () => selectLessonOption(btn.dataset.id));
@@ -403,6 +449,7 @@ function selectLessonOption(choiceId) {
 
 async function playLessonAudio(slow = false) {
   const q = quizState.questions[quizState.index];
+  if (!q.correctPattern?.length) return;
   $('lessonListen').disabled = true;
   $('lessonListenSlow').disabled = true;
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
@@ -454,7 +501,7 @@ function submitLessonAnswer() {
   $('lessonFeedbackTitle').textContent = correct ? '참 잘했어요!' : '정답이 아니에요';
   $('lessonFeedbackDetail').textContent = correct
     ? (isPlacementMode() ? '' : `+${QUIZ_SCORE.correct.points}점`)
-    : `정답: ${q.answerId} · ${q.type === 'fill' ? q.options.find((o) => o.id === q.answerId)?.notation : q.correctNotation}`;
+    : `정답: ${q.answerId} · ${q.options.find((o) => o.id === q.answerId)?.label ?? q.options.find((o) => o.id === q.answerId)?.notation ?? q.correctNotation}`;
   updateLessonProgress();
 }
 
@@ -524,6 +571,118 @@ function flashJudge(key, pts) {
     setGiryongMood('sad');
     sayGiryong('miss');
   }
+}
+
+function flashTrainJudge(key, pts) {
+  const el = $('trainJudgeFlash');
+  const j = JUDGE[key];
+  el.textContent = key === 'miss' ? 'MISS' : `${j.label} +${pts}`;
+  el.className = `judge-flash show ${key}`;
+  setTimeout(() => el.classList.remove('show'), 380);
+  $('trainScore').textContent = (trainer?.score ?? 0).toLocaleString();
+  $('trainCombo').textContent = trainer?.combo ?? 0;
+}
+
+function updateTrainPreview() {
+  const patId = $('trainPattern')?.value;
+  const pat = TRAIN_PATTERNS.find((p) => p.id === patId) ?? TRAIN_PATTERNS[0];
+  const preview = $('trainPatternPreview');
+  if (preview && pat) {
+    preview.innerHTML = renderPatternGridHtml(pat.pattern, '4/4');
+  }
+}
+
+function initTrain() {
+  const patternSelect = $('trainPattern');
+  if (!patternSelect) return;
+
+  patternSelect.innerHTML = TRAIN_PATTERNS.map((p) => (
+    `<option value="${p.id}">${p.name}</option>`
+  )).join('');
+
+  const bpmInput = $('trainBpm');
+  const bpmVal = $('trainBpmVal');
+  bpmInput.addEventListener('input', () => {
+    bpmVal.textContent = bpmInput.value;
+  });
+  patternSelect.addEventListener('change', updateTrainPreview);
+  updateTrainPreview();
+
+  const startBtn = $('trainStart');
+  const tapBtn = $('trainTap');
+
+  const doTrainTap = () => {
+    if (trainer?.running) trainer.judgeTap();
+  };
+
+  tapBtn.addEventListener('click', doTrainTap);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || ! $('panel-play').classList.contains('active')) return;
+    if (playMode !== 'train' || !trainer?.running) return;
+    e.preventDefault();
+    doTrainTap();
+  });
+
+  startBtn.addEventListener('click', async () => {
+    trainer?.stop();
+    const pat = TRAIN_PATTERNS.find((p) => p.id === patternSelect.value) ?? TRAIN_PATTERNS[0];
+    const bpm = Number(bpmInput.value);
+    const bars = Number($('trainBars').value);
+    const totalTaps = pat.pattern.length * bars;
+
+    startBtn.disabled = true;
+    tapBtn.disabled = false;
+    $('trainScore').textContent = '0';
+    $('trainCombo').textContent = '0';
+    $('trainProgress').textContent = `0/${totalTaps}`;
+    setGiryongMood('focus');
+
+    trainer = new MetronomeTrainer({
+      bpm,
+      pattern: pat.pattern,
+      bars,
+      onMetro: () => {},
+      onNote: () => {},
+      onJudge: flashTrainJudge,
+      onProgress: (hit, total) => {
+        $('trainProgress').textContent = `${hit}/${total}`;
+      },
+      onEnd: (result) => {
+        tapBtn.disabled = true;
+        startBtn.disabled = false;
+        const xp = Math.round(result.xp * 1.1);
+        profile = addPlayResult(profile, {
+          score: result.score,
+          xpGained: xp,
+          coinsGained: result.coins,
+          maxCombo: result.maxCombo,
+        });
+
+        $('trainCard').style.display = 'none';
+        $('resultCard').style.display = 'block';
+        $('resultTitle').textContent = '메트로놈 훈련 결과';
+        $('resultBody').innerHTML = `
+          <div class="result-score">${result.score.toLocaleString()}</div>
+          <div class="result-grid">
+            <span>PERFECT ${result.perfect}</span>
+            <span>GREAT ${result.great}</span>
+            <span>GOOD ${result.good}</span>
+            <span>MISS ${result.miss}</span>
+            <span>MAX COMBO ${result.maxCombo}</span>
+            <span>${pat.name} · ${bpm} BPM · ${bars}마디</span>
+            <span>+${xp} XP · +${result.coins} 🪙</span>
+          </div>
+        `;
+        setGiryongMood(result.maxCombo >= 8 ? 'celebrate' : 'happy');
+        sayGiryong('perfect', `메트로놈 훈련 ${result.score}점!`);
+        renderProfile();
+        renderRank();
+      },
+    });
+
+    await trainer.start();
+  });
 }
 
 function initGame() {
@@ -635,6 +794,13 @@ function handlePlayAgain() {
     $('gameBeat').textContent = `0/${selectedLevel.noteCount}`;
     $('gameStart').disabled = false;
     $('gameTap').disabled = true;
+  } else if (playMode === 'train') {
+    $('trainCard').style.display = 'block';
+    $('trainStart').disabled = false;
+    $('trainTap').disabled = true;
+    $('trainScore').textContent = '0';
+    $('trainCombo').textContent = '0';
+    updateTrainPreview();
   } else {
     closeLessonOverlay();
     $('quizCard').style.display = 'block';
@@ -794,6 +960,7 @@ function init() {
   renderLevels();
   initModeSwitch();
   initGame();
+  initTrain();
   initLesson();
   renderCurriculum();
   renderRank();

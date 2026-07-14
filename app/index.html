@@ -98,8 +98,9 @@
     <section class="tab-panel" id="panel-play">
       <div class="card">
         <div class="sec-label">플레이 모드</div>
-        <div class="mode-switch mode-switch-3" id="modeSwitch">
+        <div class="mode-switch mode-switch-4" id="modeSwitch">
           <button class="mode-btn active" data-mode="arcade">아케이드</button>
+          <button class="mode-btn" data-mode="train">메트로놈 훈련</button>
           <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
           <button class="mode-btn" data-mode="placement">레벨 테스트</button>
         </div>
@@ -132,13 +133,52 @@
         <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
       </div>
 
+      <div class="card train-card" id="trainCard" style="display:none">
+        <div class="sec-label">메트로놈 리듬 탭 훈련</div>
+        <p class="hint">메트로놈 박자를 듣고, 아래 리듬 패턴 타이밍에 맞춰 TAP! 하세요</p>
+
+        <div class="train-settings">
+          <label class="train-setting">
+            <span>BPM</span>
+            <input type="range" id="trainBpm" min="60" max="140" value="88" step="2">
+            <strong id="trainBpmVal">88</strong>
+          </label>
+          <label class="train-setting">
+            <span>패턴</span>
+            <select id="trainPattern" class="train-select"></select>
+          </label>
+          <label class="train-setting">
+            <span>마디</span>
+            <select id="trainBars" class="train-select">
+              <option value="1">1마디</option>
+              <option value="2" selected>2마디</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="trainPatternPreview" class="train-pattern-preview"></div>
+
+        <div class="train-hud">
+          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="trainScore">0</span></div>
+          <div><span class="hud-lbl">COMBO</span><span class="hud-val combo" id="trainCombo">0</span></div>
+          <div><span class="hud-lbl">TAP</span><span class="hud-val" id="trainProgress">0/0</span></div>
+        </div>
+
+        <div class="judge-flash" id="trainJudgeFlash"></div>
+
+        <div class="arcade-controls">
+          <button id="trainStart" class="primary arcade-btn">훈련 시작</button>
+          <button id="trainTap" class="tap-btn" disabled>TAP!</button>
+        </div>
+      </div>
+
       <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
         <div class="duo-path-giryong">
           <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
-          <div class="duo-path-bubble">청음 + 마디 채우기로 리듬 감각을 키워요</div>
+          <div class="duo-path-bubble">청음·박자표·칸세기·빈칸·다른리듬 + 메트로놈 훈련</div>
         </div>
         <button id="quizStart" class="duo-btn duo-btn-green">리듬 퀴즈 시작</button>
-        <p class="hint" id="quizHint" style="margin-top:10px">청음 + 마디 채우기 · 듣기 → 선택 → 확인!</p>
+        <p class="hint" id="quizHint" style="margin-top:10px">5가지 퀴즈 유형 · 듣기 → 선택 → 확인!</p>
       </div>
 
       <div class="card" id="resultCard" style="display:none">

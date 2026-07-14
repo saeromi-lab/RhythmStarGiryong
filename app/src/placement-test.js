@@ -3,10 +3,10 @@ import {
   buildListenQuestion,
   getPatternsForLevel,
 } from './quiz-data.js';
-import { buildFillQuestion, getFillPatternsForLevel } from './fill-quiz.js';
+import { buildQuestionByType, QUIZ_ROUND_TYPES } from './quiz-round.js';
 import { LEVELS } from './data.js';
 
-/** 입문 3 + 기초 3 + 심화 4 = 10문제 (청음 + 빈칸 혼합) */
+/** 입문 3 + 기초 3 + 심화 4 = 10문제 (다양한 유형 혼합) */
 export const PLACEMENT_SIZE = 10;
 
 const PLACEMENT_TIERS = [
@@ -15,30 +15,39 @@ const PLACEMENT_TIERS = [
   { levelId: 'intermediate', count: 4, label: '심화' },
 ];
 
+const TIER_TYPES = {
+  beginner: ['listen', 'fill', 'count'],
+  basic: ['listen', 'fill', 'meter', 'count'],
+  intermediate: QUIZ_ROUND_TYPES,
+};
+
 export const PLACEMENT_REWARD = { xp: 60, coins: 15 };
 
 export function buildPlacementRound() {
   const questions = [];
+  let typeIdx = 0;
 
   PLACEMENT_TIERS.forEach(({ levelId, count }) => {
     const listenPool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
-    const fillPool = [...getFillPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
+    const types = TIER_TYPES[levelId];
     let listenIdx = 0;
-    let fillIdx = 0;
 
     for (let i = 0; i < count; i += 1) {
-      const useFill = i % 2 === 1 && fillPool.length > 0;
-      if (useFill) {
-        try {
-          questions.push(buildFillQuestion(levelId, fillPool[fillIdx % fillPool.length]));
-          fillIdx += 1;
-          continue;
-        } catch {
-          // listen으로 대체
-        }
+      const type = types[typeIdx % types.length];
+      typeIdx += 1;
+
+      if (type === 'listen') {
+        questions.push(buildListenQuestion(levelId, listenPool[listenIdx % listenPool.length]));
+        listenIdx += 1;
+        continue;
       }
-      questions.push(buildListenQuestion(levelId, listenPool[listenIdx % listenPool.length]));
-      listenIdx += 1;
+
+      try {
+        questions.push(buildQuestionByType(levelId, type));
+      } catch {
+        questions.push(buildListenQuestion(levelId, listenPool[listenIdx % listenPool.length]));
+        listenIdx += 1;
+      }
     }
   });
 

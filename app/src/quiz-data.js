@@ -216,29 +216,6 @@ export function buildQuizQuestion(levelId, patternOverride = null, questionType 
   return buildListenQuestion(levelId, patternOverride);
 }
 
-export function buildQuizRound(levelId, count = QUIZ_ROUND_SIZE) {
-  const questions = [];
-  const listenPool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
-  let listenIdx = 0;
-
-  for (let i = 0; i < count; i += 1) {
-    const preferFill = i % 2 === 1;
-    if (preferFill) {
-      try {
-        questions.push(buildFillQuestion(levelId));
-        continue;
-      } catch {
-        // fall through to listen
-      }
-    }
-    const override = listenPool[listenIdx % listenPool.length];
-    listenIdx += 1;
-    questions.push(buildListenQuestion(levelId, override));
-  }
-
-  return questions;
-}
-
 // 개발 시 패턴 검증
 for (const p of QUIZ_PATTERNS) {
   if (!isValidListenPattern(p.pattern)) {

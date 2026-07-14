@@ -2,6 +2,52 @@
 
 import { slotGroupSymbol, METERS } from './fill-quiz.js';
 
+function restGroupSymbol(eighths) {
+  if (eighths >= 4) return '𝄻';
+  if (eighths === 2) return '𝄽';
+  return '𝄾';
+}
+
+function renderGroupCell(group, { hitIdx, posIdx, compact = false } = {}) {
+  const sym = group.t === 'n' ? slotGroupSymbol(group.e) : restGroupSymbol(group.e);
+  const ties = group.e > 1
+    ? Array.from({ length: group.e - 1 }, () => '<span class="measure-slot tie"></span>').join('')
+    : '';
+  const cls = [
+    'measure-slot',
+    group.t === 'n' ? 'filled' : 'rest',
+    group.t === 'n' ? 'train-hit-slot' : 'train-rest-slot',
+    compact ? 'compact' : '',
+  ].filter(Boolean).join(' ');
+  const hitAttr = group.t === 'n' ? ` data-hit="${hitIdx}"` : '';
+  return `<span class="${cls}" data-pos="${posIdx}"${hitAttr}>${sym}</span>${ties}`;
+}
+
+function renderMeasureGroups(groups, meter, { compact = false, startHit = 0, startPos = 0 } = {}) {
+  let hitIdx = startHit;
+  let posIdx = startPos;
+  const cells = [];
+  let eighths = 0;
+
+  for (const group of groups) {
+    cells.push(renderGroupCell(group, {
+      hitIdx: group.t === 'n' ? hitIdx : null,
+      posIdx,
+      compact,
+    }));
+    if (group.t === 'n') hitIdx += 1;
+    posIdx += 1;
+    eighths += group.e;
+  }
+
+  while (eighths < meter.eighthsPerBar) {
+    cells.push('<span class="measure-slot tie"></span>');
+    eighths += 1;
+  }
+
+  return { html: cells.join(''), nextHit: hitIdx, nextPos: posIdx };
+}
+
 function patternBeats(pattern) {
   return pattern.reduce((s, d) => s + d, 0);
 }
@@ -94,37 +140,22 @@ export function renderPatternGridHtml(pattern, meterId = '4/4', opts = {}) {
   `;
 }
 
-/** 2마디 연습 악보 (메트로놈 훈련용) */
-export function renderTrainScoreHtml(pattern, bars = 2, meterId = '4/4') {
+/** N마디 연습 악보 (메트로놈 훈련용) — measures: 그룹 배열의 배열 */
+export function renderTrainScoreHtml(measures, meterId = '4/4') {
   const meter = METERS[meterId] ?? METERS['4/4'];
-  const slots = patternToSlots(pattern);
+  const bars = measures.length;
   let hitIdx = 0;
+  let posIdx = 0;
   const barsHtml = [];
 
   for (let b = 0; b < bars; b += 1) {
-    const cells = [];
-    let pos = 0;
-    for (const len of slots) {
-      for (let i = 0; i < len; i += 1) {
-        if (i === 0) {
-          cells.push(
-            `<span class="measure-slot filled train-hit-slot" data-hit="${hitIdx}">${slotGroupSymbol(len)}</span>`,
-          );
-          hitIdx += 1;
-        } else {
-          cells.push('<span class="measure-slot tie"></span>');
-        }
-        pos += 1;
-      }
-    }
-    while (pos < meter.eighthsPerBar) {
-      cells.push('<span class="measure-slot tie"></span>');
-      pos += 1;
-    }
+    const rendered = renderMeasureGroups(measures[b], meter, { startHit: hitIdx, startPos: posIdx });
+    hitIdx = rendered.nextHit;
+    posIdx = rendered.nextPos;
     barsHtml.push(`
       <div class="train-score-bar">
         <span class="train-bar-num">${b + 1}마디</span>
-        <div class="measure-slots" style="--slots:${meter.eighthsPerBar}">${cells.join('')}</div>
+        <div class="measure-slots" style="--slots:${meter.eighthsPerBar}">${rendered.html}</div>
       </div>
     `);
   }
@@ -136,16 +167,32 @@ export function renderTrainScoreHtml(pattern, bars = 2, meterId = '4/4') {
         <div class="measure-sig train-score-sig">${meter.shortLabel}</div>
         <div class="train-score-bars">${barsHtml.join('')}</div>
       </div>
-      <p class="train-score-hint">아래 악보 리듬에 맞춰 메트로놈 박자로 TAP! 하세요</p>
+      <p class="train-score-hint">쉼표는 TAP 없이 지나가요 · 음표에서만 TAP! · 한 번이라도 MISS면 처음부터</p>
     </div>
   `;
 }
 
 /** 패턴 선택용 미리보기 (1마디) */
-export function renderPatternPickerHtml(pattern, meterId = '4/4') {
-  return renderPatternGridHtml(pattern, meterId);
+export function renderPatternPickerHtml(measure, meterId = '4/4') {
+  const meter = METERS[meterId] ?? METERS['4/4'];
+  const rendered = renderMeasureGroups(measure, meter, { compact: true });
+  return `
+    <div class="rhythm-grid-wrap rhythm-grid-option">
+      <div class="measure-sig">${meter.shortLabel}</div>
+      <div class="measure-slots measure-slots-compact" style="--slots:${meter.eighthsPerBar}">${rendered.html}</div>
+    </div>
+  `;
 }
 
+/** @deprecated pattern 배열용 — 호환 */
+export function renderTrainScoreFromPattern(pattern, bars = 2, meterId = '4/4') {
+  const slots = patternToSlots(pattern);
+  const measure = slots.map((e) => ({ t: 'n', e }));
+  const measures = Array.from({ length: bars }, () => measure);
+  return renderTrainScoreHtml(measures, meterId);
+}
+
+/** 청음 정답이 보기에 포함됐는지 */
 export function listenAnswerInOptions(question) {
   if (question.type !== 'listen') return true;
   const key = question.correctPattern.join(',');

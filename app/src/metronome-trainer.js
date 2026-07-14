@@ -1,37 +1,36 @@
 import { JUDGE } from './data.js';
+import { countTrainNotes } from './train-data.js';
 
-/** 메트로놈 박자에 맞춰 패턴 리듬을 탭하는 훈련 */
+/** 메트로놈 박자에 맞춰 악보 리듬을 탭하는 훈련 (쉼표·무실수 모드) */
 
-export const TRAIN_PATTERNS = [
-  { id: 'q4', name: '4분음표 4개', pattern: [1, 1, 1, 1] },
-  { id: 'e8', name: '8분음표 8개', pattern: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] },
-  { id: 'sync', name: '싱코페이션', pattern: [0.5, 1, 0.5, 0.5, 0.5, 1] },
-  { id: 'front8', name: '앞 8분 4개', pattern: [0.5, 0.5, 0.5, 0.5, 1, 1] },
-  { id: 'back8', name: '뒤 8분 4개', pattern: [1, 1, 0.5, 0.5, 0.5, 0.5] },
-  { id: 'half2', name: '2분음표 2개', pattern: [2, 2] },
-];
+export { TRAIN_EXERCISES, TRAIN_PATTERNS, TRAIN_TIERS } from './train-data.js';
 
 export class MetronomeTrainer {
   constructor({
     bpm,
-    pattern,
-    bars = 2,
+    measures,
+    strict = true,
     onMetro,
+    onPlayhead,
     onNote,
     onJudge,
     onProgress,
+    onFail,
     onEnd,
   }) {
     this.bpm = bpm;
-    this.pattern = pattern;
-    this.bars = bars;
+    this.measures = measures;
+    this.strict = strict;
     this.onMetro = onMetro ?? (() => {});
+    this.onPlayhead = onPlayhead ?? (() => {});
     this.onNote = onNote ?? (() => {});
     this.onJudge = onJudge ?? (() => {});
     this.onProgress = onProgress ?? (() => {});
+    this.onFail = onFail ?? (() => {});
     this.onEnd = onEnd ?? (() => {});
     this.beatSec = 60 / bpm;
     this.running = false;
+    this.failed = false;
     this.audioCtx = null;
     this.timers = [];
     this.targets = [];
@@ -44,6 +43,7 @@ export class MetronomeTrainer {
     this.miss = 0;
     this.xp = 0;
     this.coins = 0;
+    this.totalNotes = countTrainNotes(measures);
   }
 
   async ensureAudio() {
@@ -65,11 +65,12 @@ export class MetronomeTrainer {
 
   schedule() {
     const base = this.audioCtx.currentTime;
-    const leadIn = 0.6;
+    const leadIn = 0.8;
     const start = base + leadIn;
-    let targetIdx = 0;
+    let hitIdx = 0;
+    let posIdx = 0;
 
-    for (let bar = 0; bar < this.bars; bar += 1) {
+    for (let bar = 0; bar < this.measures.length; bar += 1) {
       const barStart = start + bar * 4 * this.beatSec;
 
       for (let beat = 0; beat < 4; beat += 1) {
@@ -78,49 +79,81 @@ export class MetronomeTrainer {
         const timer = setTimeout(() => {
           if (!this.running) return;
           this.playClick(this.audioCtx.currentTime, beat === 0);
-          this.onMetro(bar * 4 + beat + 1, this.bars * 4);
+          this.onMetro(bar * 4 + beat + 1, this.measures.length * 4);
         }, delayMs);
         this.timers.push(timer);
       }
 
       let noteT = barStart;
-      for (let i = 0; i < this.pattern.length; i += 1) {
-        const dur = this.pattern[i];
-        const hitTime = noteT;
-        const idx = targetIdx;
-        targetIdx += 1;
-        this.targets.push({ time: hitTime, hit: false, index: idx });
+      for (const group of this.measures[bar]) {
+        const eventTime = noteT;
+        const durSec = group.e * 0.5 * this.beatSec;
+        const pos = posIdx;
+        const isNote = group.t === 'n';
+        let noteIndex = null;
 
-        const delayMs = Math.max(0, (hitTime - base) * 1000);
-        const timer = setTimeout(() => {
+        if (isNote) {
+          noteIndex = hitIdx;
+          this.targets.push({
+            time: eventTime,
+            hit: false,
+            index: hitIndex,
+            pos,
+          });
+          hitIdx += 1;
+        }
+
+        const playheadMs = Math.max(0, (eventTime - base) * 1000);
+        const playheadTimer = setTimeout(() => {
           if (!this.running) return;
-          this.playClick(this.audioCtx.currentTime, i === 0);
-          this.onNote(idx, this.targets.length);
-          const tgt = this.targets[idx];
-          if (tgt && !tgt.hit) this.registerMiss(tgt);
-        }, delayMs);
-        this.timers.push(timer);
+          this.onPlayhead(pos, isNote ? noteIndex : null);
+          if (isNote) {
+            this.playClick(this.audioCtx.currentTime, true);
+            this.onNote(noteIndex, this.totalNotes);
+          }
+        }, playheadMs);
+        this.timers.push(playheadTimer);
 
-        noteT += dur * this.beatSec;
+        if (isNote) {
+          const missAt = eventTime + JUDGE.good.windowMs / 1000;
+          const missMs = Math.max(0, (missAt - base) * 1000);
+          const missTimer = setTimeout(() => {
+            if (!this.running) return;
+            const tgt = this.targets[noteIndex];
+            if (tgt && !tgt.hit) this.registerMiss(tgt);
+          }, missMs);
+          this.timers.push(missTimer);
+        }
+
+        const clearMs = Math.max(0, (eventTime + durSec - base) * 1000);
+        const clearTimer = setTimeout(() => {
+          if (!this.running) return;
+          this.onPlayhead(-1, null);
+        }, clearMs);
+        this.timers.push(clearTimer);
+
+        noteT += durSec;
+        posIdx += 1;
       }
     }
 
-    const totalMs = (leadIn + this.bars * 4 * this.beatSec + 0.8) * 1000;
+    const totalMs = (leadIn + this.measures.length * 4 * this.beatSec + 0.6) * 1000;
     const endTimer = setTimeout(() => this.finish(), totalMs);
     this.timers.push(endTimer);
   }
 
   registerMiss(target) {
-    if (target.hit) return;
+    if (!this.running || target.hit) return;
     target.hit = true;
     this.combo = 0;
     this.miss += 1;
-    this.onJudge('miss', 0, this.combo, target.index);
-    this.onProgress(this.targets.filter((t) => t.hit).length, this.targets.length);
+    this.onJudge('miss', 0, this.combo, target.index, target.pos);
+    this.onProgress(this.targets.filter((t) => t.hit).length, this.totalNotes);
+    if (this.strict) this.fail();
   }
 
   judgeTap() {
-    if (!this.running || !this.audioCtx) return null;
+    if (!this.running || !this.audioCtx || this.failed) return null;
     const now = this.audioCtx.currentTime;
     let best = null;
     let bestDelta = Infinity;
@@ -137,7 +170,8 @@ export class MetronomeTrainer {
     if (!best || bestDelta > JUDGE.good.windowMs) {
       this.combo = 0;
       this.miss += 1;
-      this.onJudge('miss', 0, this.combo, best?.index);
+      this.onJudge('miss', 0, this.combo, best?.index ?? null, best?.pos ?? null);
+      if (this.strict) this.fail();
       return 'miss';
     }
 
@@ -156,26 +190,68 @@ export class MetronomeTrainer {
     this.xp += j.xp;
     this.coins += key === 'perfect' ? 2 : 1;
     this[key] += 1;
-    this.onJudge(key, pts, this.combo, best.index);
-    this.onProgress(this.targets.filter((t) => t.hit).length, this.targets.length);
+    this.onJudge(key, pts, this.combo, best.index, best.pos);
+    this.onProgress(this.targets.filter((t) => t.hit).length, this.totalNotes);
     return key;
+  }
+
+  fail() {
+    if (this.failed) return;
+    this.failed = true;
+    this.running = false;
+    this.timers.forEach((t) => clearTimeout(t));
+    this.timers = [];
+    this.onFail({
+      score: this.score,
+      xp: this.xp,
+      coins: this.coins,
+      maxCombo: this.maxCombo,
+      perfect: this.perfect,
+      great: this.great,
+      good: this.good,
+      miss: this.miss,
+      cleared: false,
+    });
   }
 
   async start() {
     await this.ensureAudio();
     this.running = true;
+    this.failed = false;
     this.targets = [];
     this.schedule();
   }
 
   finish() {
-    if (!this.running) return;
+    if (!this.running || this.failed) return;
     this.running = false;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];
-    this.targets.forEach((t) => {
-      if (!t.hit) this.registerMiss(t);
-    });
+
+    const remaining = this.targets.filter((t) => !t.hit);
+    if (remaining.length) {
+      remaining.forEach((t) => {
+        t.hit = true;
+        this.miss += 1;
+      });
+      this.combo = 0;
+      if (this.strict) {
+        this.failed = true;
+        this.onFail({
+          score: this.score,
+          xp: this.xp,
+          coins: this.coins,
+          maxCombo: this.maxCombo,
+          perfect: this.perfect,
+          great: this.great,
+          good: this.good,
+          miss: this.miss,
+          cleared: false,
+        });
+        return;
+      }
+    }
+
     this.onEnd({
       score: this.score,
       xp: this.xp,
@@ -185,11 +261,13 @@ export class MetronomeTrainer {
       great: this.great,
       good: this.good,
       miss: this.miss,
+      cleared: this.miss === 0,
     });
   }
 
   stop() {
     this.running = false;
+    this.failed = true;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];
   }

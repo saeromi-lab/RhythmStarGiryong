@@ -22,6 +22,8 @@ const defaultProfile = () => ({
   placement: null,
   weeklyCheckIns: {},
   badges: [],
+  trainMaxTier: 1,
+  trainClears: {},
   createdAt: new Date().toISOString(),
 });
 
@@ -139,6 +141,17 @@ export function savePlacementResult(profile, result) {
   };
   profile.xp += result.xpGained ?? 0;
   profile.coins += result.coinsGained ?? 0;
+  saveProfile(profile);
+  return profile;
+}
+
+export function saveTrainClear(profile, { exerciseId, bars, tier }) {
+  profile.trainClears = profile.trainClears ?? {};
+  profile.trainClears[`${exerciseId}-${bars}`] = true;
+  const maxTier = profile.trainMaxTier ?? 1;
+  if (tier >= maxTier && tier < 3) {
+    profile.trainMaxTier = tier + 1;
+  }
   saveProfile(profile);
   return profile;
 }

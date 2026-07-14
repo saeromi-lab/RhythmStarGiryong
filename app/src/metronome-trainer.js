@@ -6,6 +6,19 @@ import { countTrainNotes } from './train-data.js';
 export { TRAIN_EXERCISES, TRAIN_PATTERNS, TRAIN_TIERS } from './train-data.js';
 
 const COUNT_IN_BEATS = 4;
+/** 훈련 모드: 커서가 음표 위에 있을 때 탭하는 UX에 맞춘 판정 */
+const TRAIN_EARLY_MS = 140;
+const TRAIN_PERFECT_RATIO = 0.65; // 음표 길이의 65% 안이면 PERFECT
+
+function trainPerfectWindowMs(target) {
+  const noteDurMs = (target.endTime - target.time) * 1000;
+  return Math.max(140, noteDurMs * TRAIN_PERFECT_RATIO);
+}
+
+function trainEarliestSec(target) {
+  const earlyMs = target.index === 0 ? TRAIN_EARLY_MS + 40 : TRAIN_EARLY_MS;
+  return target.time - earlyMs / 1000;
+}
 
 export class MetronomeTrainer {
   constructor({
@@ -190,13 +203,12 @@ export class MetronomeTrainer {
     if (this.audioCtx.currentTime < this.rhythmStart) return null;
 
     const now = this.audioCtx.currentTime;
-    const earlySec = JUDGE.perfect.windowMs / 1000;
     let best = null;
     let bestDelta = Infinity;
 
     for (const t of this.targets) {
       if (t.hit) continue;
-      if (now < t.time - earlySec || now > t.endTime) continue;
+      if (now < trainEarliestSec(t) || now > t.endTime) continue;
       const deltaMs = Math.abs(now - t.time) * 1000;
       if (deltaMs < bestDelta) {
         bestDelta = deltaMs;
@@ -207,12 +219,14 @@ export class MetronomeTrainer {
     // 아직 탭할 음표가 없으면 무시 (조기 탭으로 실패 처리하지 않음)
     if (!best) return null;
 
-    const windowMs = this.binaryJudge ? JUDGE.perfect.windowMs : JUDGE.good.windowMs;
+    const windowMs = this.binaryJudge
+      ? trainPerfectWindowMs(best)
+      : JUDGE.good.windowMs;
 
     best.hit = true;
     let key = 'miss';
     if (this.binaryJudge) {
-      key = bestDelta <= JUDGE.perfect.windowMs ? 'perfect' : 'miss';
+      key = bestDelta <= trainPerfectWindowMs(best) ? 'perfect' : 'miss';
     } else if (bestDelta <= JUDGE.perfect.windowMs) key = 'perfect';
     else if (bestDelta <= JUDGE.great.windowMs) key = 'great';
     else if (bestDelta <= windowMs) key = 'good';

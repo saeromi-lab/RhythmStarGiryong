@@ -2487,11 +2487,11 @@ body.lesson-open {
 .runner-fish-3 { top: 52%; font-size: 18px; animation-duration: 16s; animation-delay: -8s; }
 
 @keyframes fishSwim {
-  0% { left: -10%; transform: scaleX(1); }
-  49% { transform: scaleX(1); }
-  50% { left: 110%; transform: scaleX(-1); }
-  99% { transform: scaleX(-1); }
-  100% { left: -10%; transform: scaleX(1); }
+  0% { left: 110%; transform: scaleX(-1); }
+  49% { transform: scaleX(-1); }
+  50% { left: -10%; transform: scaleX(1); }
+  99% { transform: scaleX(1); }
+  100% { left: 110%; transform: scaleX(-1); }
 }
 
 @keyframes bubbleRise {

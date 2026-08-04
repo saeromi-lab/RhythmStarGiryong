@@ -801,6 +801,14 @@ function showTrainCountIn(beat, total) {
   setTimeout(() => el.classList.remove('show'), 200);
 }
 
+function showRunnerPrep(beat, total) {
+  const el = $('runnerJudgeFlash');
+  if (!el) return;
+  el.textContent = `준비 ${beat} / ${total} — 곧 시작!`;
+  el.className = 'judge-flash show prep';
+  setTimeout(() => el.classList.remove('show'), 280);
+}
+
 function setTrainScoreActive(hitIdx) {
   getScorePreviewRoots().forEach((root) => {
     root.querySelectorAll('.train-hit-slot').forEach((el) => {
@@ -1208,13 +1216,14 @@ function initRunner() {
       bpm,
       measures,
       onCountIn: showTrainCountIn,
+      onPrep: showRunnerPrep,
       onCursor: ({ phase, progress, activePos }) => {
         setTrainCursor({ phase, progress, activePos });
         $('runnerLane')?.classList.toggle('playing', phase === 'play');
         if (phase === 'play') {
           $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
           $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
-        } else if (phase === 'count-in' || phase === 'ready') {
+        } else if (phase === 'count-in' || phase === 'ready' || phase === 'prep') {
           $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
           $('runnerProgressBar').style.width = '0%';
         }

@@ -3,6 +3,7 @@
 import { MetronomeTrainer } from './metronome-trainer.js';
 
 export const RUNNER_LIVES = 3;
+export const RUNNER_PREP_BEATS = 2;
 
 export class RhythmRunnerGame {
   constructor(options) {
@@ -10,7 +11,11 @@ export class RhythmRunnerGame {
       ...options,
       strict: false,
       binaryJudge: false,
+      prepBeats: options.prepBeats ?? RUNNER_PREP_BEATS,
+      missGraceSec: options.missGraceSec ?? 0.55,
+      tapLeadMs: options.tapLeadMs ?? 220,
       onCountIn: options.onCountIn,
+      onPrep: options.onPrep,
       onCursor: options.onCursor,
       onNote: options.onNote,
       onJudge: (key, pts, combo, hitIdx, pos) => {

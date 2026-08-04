@@ -193,7 +193,7 @@ function renderMissions() {
   const quests = [
     { done: checked, label: '진주조개 도장 찍기', reward: '15🪙' },
     { done: profile.dailyQuiz, label: '리듬 퀴즈 1회', reward: '25 XP' },
-    { done: profile.dailyArcade, label: '아케이드 1회', reward: '20 XP' },
+    { done: profile.dailyArcade, label: '리듬 러너 1회', reward: '20 XP' },
     { done: profile.dailyCombo10, label: 'COMBO 10+', reward: '보너스' },
   ];
   $('dailyMissions').innerHTML = quests.map((q) => `

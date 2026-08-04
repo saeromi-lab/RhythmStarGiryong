@@ -115,7 +115,7 @@
 
       <div class="card runner-card" id="runnerCard">
         <div class="sec-label">리듬 수영 — 기룡이 물속 탐험</div>
-        <p class="hint">예비박 4번 → 진주 리듬에 맞춰 TAP! · ♥ 3개 · 물속에서 헤엄치며 전진</p>
+        <p class="hint">예비박 4번 → 조개 리듬에 맞춰 TAP! · 진주 모으기 · ♥ 3개</p>
 
         <div class="runner-hud">
           <div class="runner-stat"><span>Correct</span><strong id="runnerCorrect">0</strong></div>
@@ -124,10 +124,21 @@
           <div class="runner-stat runner-stat-score"><span>SCORE</span><strong id="runnerScore">0</strong></div>
         </div>
 
+        <div class="runner-pearl-bar">
+          <img src="/images/giryong/pearl-stamp.png" alt="" class="runner-pearl-icon" aria-hidden="true">
+          <span class="runner-pearl-lbl">진주</span>
+          <strong id="runnerPearls">0</strong>
+        </div>
+
         <div class="runner-lives" id="runnerLives" aria-label="남은 목숨">♥♥♥</div>
 
         <div class="runner-stage runner-underwater" id="runnerStage">
           <div class="runner-water-light"></div>
+          <div class="runner-fishies" aria-hidden="true">
+            <span class="runner-fish runner-fish-1">🐟</span>
+            <span class="runner-fish runner-fish-2">🐠</span>
+            <span class="runner-fish runner-fish-3">🐡</span>
+          </div>
           <div class="runner-bubbles" aria-hidden="true">
             <span class="runner-bubble runner-bubble-a"></span>
             <span class="runner-bubble runner-bubble-b"></span>
@@ -135,9 +146,15 @@
             <span class="runner-bubble runner-bubble-d"></span>
           </div>
           <div class="runner-ocean">
+            <div class="runner-floor-deco" aria-hidden="true">
+              <span class="runner-clam runner-clam-a">🦪</span>
+              <span class="runner-clam runner-clam-b">🦪</span>
+              <span class="runner-coral">🪸</span>
+            </div>
             <div class="runner-scroll" id="runnerScroll">
               <div class="runner-blocks" id="runnerBlocks"></div>
             </div>
+            <div class="runner-fx" id="runnerFx" aria-hidden="true"></div>
             <img src="/images/giryong/pearl-catching.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
             <div class="runner-seaweed runner-seaweed-a" aria-hidden="true"></div>
             <div class="runner-seaweed runner-seaweed-b" aria-hidden="true"></div>

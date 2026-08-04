@@ -1053,13 +1053,27 @@ function renderRunnerLives(lives) {
   el.textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, RUNNER_LIVES - lives));
 }
 
+let runnerPearls = 0;
+
+function spawnRunnerPearlFx() {
+  const fx = $('runnerFx');
+  const g = $('runnerGiryong');
+  if (!fx || !g) return;
+  const el = document.createElement('span');
+  el.className = 'runner-pearl-pop';
+  el.innerHTML = '<img src="/images/giryong/pearl-stamp.png" alt=""> +1';
+  fx.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
 function renderRunnerBlocks(measures) {
   const blocks = $('runnerBlocks');
   if (!blocks) return;
   const noteCount = countTrainNotes(measures);
   blocks.innerHTML = Array.from({ length: Math.max(noteCount, 4) }, (_, i) => `
-    <div class="runner-block runner-pearl" data-idx="${i}">
-      <span class="runner-block-icon">🫧</span>
+    <div class="runner-block runner-clam" data-idx="${i}">
+      <span class="runner-clam-shell">🦪</span>
+      <img src="/images/giryong/pearl-stamp.png" alt="" class="runner-clam-pearl">
       <span class="runner-block-note">♩</span>
     </div>
   `).join('');
@@ -1087,10 +1101,13 @@ function resetRunnerUI() {
   $('runnerCorrect').textContent = '0';
   $('runnerWrong').textContent = '0';
   $('runnerAccuracy').textContent = '100%';
+  runnerPearls = 0;
+  $('runnerPearls').textContent = '0';
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
   $('runnerGiryong')?.classList.remove('swim', 'sink');
   $('runnerScroll')?.style.setProperty('--run-offset', '0%');
+  $('runnerFx')?.replaceChildren();
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
 }
@@ -1108,6 +1125,7 @@ function showRunnerResult(result, { cleared, title, bpm }) {
       <span>GOOD ${result.good}</span>
       <span>MISS ${result.miss}</span>
       <span>MAX COMBO ${result.maxCombo}</span>
+      <span>진주 ${runnerPearls}개</span>
     </div>
   `;
   if (cleared) {
@@ -1193,8 +1211,14 @@ function initRunner() {
       onLifeChange: (lives) => renderRunnerLives(lives),
       onJudge: (key, pts, combo, hitIdx) => {
         updateRunnerStats();
-        $('runnerCombo') && ($('runnerCombo').textContent = combo);
-        if (hitIdx != null && key !== 'miss') markTrainScoreHit(hitIdx, key);
+        if (hitIdx != null && key !== 'miss') {
+          markTrainScoreHit(hitIdx, key);
+          if (key === 'perfect') {
+            runnerPearls += 1;
+            $('runnerPearls').textContent = runnerPearls;
+            spawnRunnerPearlFx();
+          }
+        }
         if (key !== 'miss') {
           $('runnerBlocks')?.querySelector(`[data-idx="${hitIdx}"]`)?.classList.add('cleared');
         }

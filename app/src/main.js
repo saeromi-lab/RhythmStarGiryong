@@ -193,7 +193,7 @@ function renderMissions() {
   const quests = [
     { done: checked, label: '진주조개 도장 찍기', reward: '15🪙' },
     { done: profile.dailyQuiz, label: '리듬 퀴즈 1회', reward: '25 XP' },
-    { done: profile.dailyArcade, label: '리듬 러너 1회', reward: '20 XP' },
+    { done: profile.dailyArcade, label: '리듬 수영 1회', reward: '20 XP' },
     { done: profile.dailyCombo10, label: 'COMBO 10+', reward: '보너스' },
   ];
   $('dailyMissions').innerHTML = quests.map((q) => `
@@ -1058,8 +1058,8 @@ function renderRunnerBlocks(measures) {
   if (!blocks) return;
   const noteCount = countTrainNotes(measures);
   blocks.innerHTML = Array.from({ length: Math.max(noteCount, 4) }, (_, i) => `
-    <div class="runner-block" data-idx="${i}">
-      <span class="runner-block-icon">🧱</span>
+    <div class="runner-block runner-pearl" data-idx="${i}">
+      <span class="runner-block-icon">🫧</span>
       <span class="runner-block-note">♩</span>
     </div>
   `).join('');
@@ -1089,7 +1089,7 @@ function resetRunnerUI() {
   $('runnerAccuracy').textContent = '100%';
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
-  $('runnerGiryong')?.classList.remove('jump', 'stumble');
+  $('runnerGiryong')?.classList.remove('swim', 'sink');
   $('runnerScroll')?.style.setProperty('--run-offset', '0%');
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
@@ -1098,7 +1098,7 @@ function resetRunnerUI() {
 function showRunnerResult(result, { cleared, title, bpm }) {
   $('runnerCard').style.display = 'none';
   $('resultCard').style.display = 'block';
-  $('resultTitle').textContent = cleared ? '스테이지 클리어!' : '런 종료';
+  $('resultTitle').textContent = cleared ? '수영 완주!' : '수영 종료';
   $('resultBody').innerHTML = `
     <div class="result-score">${result.score.toLocaleString()}</div>
     <p class="result-clear-msg">${title} · ${bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
@@ -1119,12 +1119,12 @@ function showRunnerResult(result, { cleared, title, bpm }) {
       maxCombo: result.maxCombo,
     });
     setGiryongMood('celebrate');
-    sayGiryong('perfect', '기룡이가 결승선 통과!');
+    sayGiryong('perfect', '기룡이가 진주를 모았어!');
     renderProfile();
     renderRank();
   } else {
     setGiryongMood('sad');
-    sayGiryong('miss', '다시 달려보자!');
+    sayGiryong('miss', '물살을 다시 맞춰보자!');
   }
   pendingThrowChallenge = null;
 }
@@ -1142,8 +1142,8 @@ function initRunner() {
       flashRunnerJudge(key, Math.round(j.score * mult));
     } else if (key === 'miss') {
       flashRunnerJudge('miss', 0);
-      $('runnerGiryong')?.classList.add('stumble');
-      setTimeout(() => $('runnerGiryong')?.classList.remove('stumble'), 400);
+      $('runnerGiryong')?.classList.add('sink');
+      setTimeout(() => $('runnerGiryong')?.classList.remove('sink'), 500);
     }
     updateRunnerStats();
   };
@@ -1187,8 +1187,8 @@ function initRunner() {
         }
       },
       onJump: () => {
-        $('runnerGiryong')?.classList.add('jump');
-        setTimeout(() => $('runnerGiryong')?.classList.remove('jump'), 320);
+        $('runnerGiryong')?.classList.add('swim');
+        setTimeout(() => $('runnerGiryong')?.classList.remove('swim'), 420);
       },
       onLifeChange: (lives) => renderRunnerLives(lives),
       onJudge: (key, pts, combo, hitIdx) => {

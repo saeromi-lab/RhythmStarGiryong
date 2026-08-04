@@ -2352,7 +2352,7 @@ body.lesson-open {
   }
 }
 
-/* —— 리듬 러너 (ChordRunner 스타일) —— */
+/* —— 리듬 수영 (물속 기룡이) —— */
 .runner-hud {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2361,12 +2361,13 @@ body.lesson-open {
 }
 
 .runner-stat {
-  background: #1a1040;
-  color: #fff;
+  background: linear-gradient(180deg, #0d3d56, #0a2840);
+  color: #e8f7ff;
   border-radius: 10px;
   padding: 8px 6px;
   text-align: center;
   font-size: 11px;
+  border: 1px solid #2a6f8f;
 }
 
 .runner-stat span {
@@ -2381,134 +2382,205 @@ body.lesson-open {
 }
 
 .runner-stat-score strong {
-  color: #ffc857;
+  color: #7ee8ff;
 }
 
 .runner-lives {
   text-align: center;
   font-size: 22px;
-  color: #ff4b6e;
+  color: #ff6b9d;
   letter-spacing: 4px;
   margin-bottom: 10px;
+  text-shadow: 0 0 8px #ff6b9d88;
 }
 
 .runner-stage {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  border: 3px solid #5c94fc;
+  border: 3px solid #2a8fb8;
   margin-bottom: 12px;
-  box-shadow: 0 4px 0 #3a5fc8;
+  box-shadow: 0 4px 0 #1a5f7a, inset 0 0 40px #0a284055;
 }
 
-.runner-sky {
-  height: 72px;
-  background: linear-gradient(180deg, #5c94fc 0%, #87ceeb 100%);
-  position: relative;
+.runner-underwater {
+  background: linear-gradient(180deg, #4db8e8 0%, #1a7aa8 35%, #0d4d6e 70%, #083550 100%);
 }
 
-.runner-cloud {
+.runner-water-light {
   position: absolute;
-  width: 48px;
-  height: 18px;
-  background: #fff;
-  border-radius: 12px;
-  opacity: 0.9;
+  inset: 0;
+  background: linear-gradient(165deg, #ffffff33 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 1;
 }
 
-.runner-cloud-a { top: 18px; left: 12%; }
-.runner-cloud-b { top: 32px; right: 18%; width: 36px; }
+.runner-bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
 
-.runner-ground {
+.runner-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, #a8e8ff88);
+  border: 1px solid #ffffff66;
+  animation: bubbleRise 4s ease-in infinite;
+}
+
+.runner-bubble-a { width: 10px; height: 10px; left: 15%; bottom: 20%; animation-delay: 0s; }
+.runner-bubble-b { width: 14px; height: 14px; left: 45%; bottom: 10%; animation-delay: 1.2s; }
+.runner-bubble-c { width: 8px; height: 8px; right: 25%; bottom: 30%; animation-delay: 2.1s; }
+.runner-bubble-d { width: 12px; height: 12px; right: 12%; bottom: 15%; animation-delay: 0.6s; }
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-90px) scale(1.2); opacity: 0; }
+}
+
+.runner-ocean {
   position: relative;
-  height: 120px;
-  background: linear-gradient(180deg, #c84c0c 0%, #8b4513 40%, #6b8e23 40%, #6b8e23 100%);
+  height: 148px;
   overflow: hidden;
+}
+
+.runner-ocean::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 28px;
+  background: linear-gradient(180deg, transparent, #c2a06044 40%, #8b7355 100%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .runner-scroll {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 28px;
-  height: 48px;
+  bottom: 36px;
+  height: 56px;
   transform: translateX(calc(-1 * var(--run-offset, 0%)));
   transition: transform 0.05s linear;
+  z-index: 3;
 }
 
 .runner-blocks {
   display: flex;
-  gap: 40px;
+  gap: 48px;
   padding-left: 120%;
   height: 100%;
-  align-items: flex-end;
+  align-items: center;
 }
 
-.runner-block {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(180deg, #deb887, #8b6914);
-  border: 2px solid #5c3a0a;
-  border-radius: 4px;
+.runner-block.runner-pearl {
+  width: 46px;
+  height: 46px;
+  background: radial-gradient(circle at 35% 30%, #fffef8, #d4f4ff 45%, #7ec8e8 100%);
+  border: 2px solid #ffffffaa;
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  box-shadow: inset 0 -4px 0 #5c3a0a;
-  transition: transform 0.15s, opacity 0.2s;
+  font-size: 11px;
+  box-shadow: 0 4px 12px #0a284066, inset 0 -2px 4px #2a8fb866;
+  transition: transform 0.2s, opacity 0.25s;
 }
 
 .runner-block.active {
-  transform: scale(1.08);
-  box-shadow: 0 0 12px #ffc857;
+  transform: scale(1.12);
+  box-shadow: 0 0 16px #7ee8ff, 0 0 24px #ffc85788;
 }
 
 .runner-block.cleared {
-  opacity: 0.35;
-  transform: translateY(8px);
+  opacity: 0.25;
+  transform: scale(0.7) translateY(12px);
+}
+
+.runner-block-note {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.runner-block-icon {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.8;
 }
 
 .runner-giryong {
   position: absolute;
-  left: 16px;
-  bottom: 24px;
-  width: 52px;
+  left: 14px;
+  bottom: 38px;
+  width: 58px;
   height: auto;
+  z-index: 4;
+  filter: drop-shadow(0 6px 8px #0a284088);
+  animation: giryongFloat 2.4s ease-in-out infinite;
+}
+
+.runner-giryong.swim {
+  animation: giryongSwim 0.42s ease-out;
+}
+
+.runner-giryong.sink {
+  animation: giryongSink 0.5s ease;
+}
+
+@keyframes giryongFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+@keyframes giryongSwim {
+  0% { transform: translateY(0) translateX(0) rotate(-2deg); }
+  35% { transform: translateY(-22px) translateX(14px) rotate(6deg); }
+  70% { transform: translateY(-10px) translateX(22px) rotate(-4deg); }
+  100% { transform: translateY(0) translateX(0) rotate(-2deg); }
+}
+
+@keyframes giryongSink {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(10px) rotate(-12deg); }
+  60% { transform: translateY(6px) rotate(10deg); }
+}
+
+.runner-seaweed {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 36px;
+  background: linear-gradient(180deg, #3d9b5a, #2a6b3f);
+  border-radius: 8px 8px 0 0;
   z-index: 2;
-  transition: transform 0.2s;
-  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25));
+  opacity: 0.7;
+  animation: seaweedSway 3s ease-in-out infinite;
 }
 
-.runner-giryong.jump {
-  animation: runnerJump 0.32s ease-out;
-}
+.runner-seaweed-a { left: 8%; height: 42px; animation-delay: 0s; }
+.runner-seaweed-b { right: 10%; height: 32px; animation-delay: 1.4s; }
 
-.runner-giryong.stumble {
-  animation: runnerStumble 0.4s ease;
-}
-
-@keyframes runnerJump {
-  0% { transform: translateY(0); }
-  40% { transform: translateY(-36px) scale(1.05); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes runnerStumble {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px) rotate(-8deg); }
-  75% { transform: translateX(6px) rotate(8deg); }
+@keyframes seaweedSway {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(6deg); }
 }
 
 .runner-progress-wrap {
-  height: 6px;
-  background: #333;
+  position: relative;
+  height: 8px;
+  background: #1a4d66;
 }
 
-.runner-progress-bar {
+#runnerProgressBar.runner-progress-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #58cc02, #ffc857);
+  background: linear-gradient(90deg, #58cc02, #7ee8ff);
+  box-shadow: 0 0 8px #7ee8ff88;
   transition: width 0.05s linear;
 }
 
@@ -2518,6 +2590,8 @@ body.lesson-open {
 
 .runner-score-preview .train-score-card {
   padding: 10px;
+  background: linear-gradient(180deg, #f0fbff, #e8f7ff);
+  border-color: #7ec8e8;
 }
 
 .runner-card .judge-flash {

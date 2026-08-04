@@ -39,6 +39,13 @@ import {
 } from './placement-test.js';
 import { RhythmPlayer } from './rhythm-player.js';
 import { MetronomeTrainer } from './metronome-trainer.js';
+import { RhythmRunnerGame, RUNNER_LIVES } from './runner-game.js';
+import {
+  emptyGrid,
+  gridToMeasure,
+  encodeShareCode,
+  decodeShareCode,
+} from './rhythm-throw.js';
 import {
   TRAIN_TIERS,
   TRAIN_EXERCISES,
@@ -56,6 +63,7 @@ const TIER_LABELS = {
 
 let profile = null;
 let game = null;
+let runnerGame = null;
 let trainer = null;
 let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
@@ -63,10 +71,13 @@ let selectedTrainExerciseId = TRAIN_EXERCISES[0]?.id ?? 'u1-even8-q4';
 let selectedTrainTier = 1;
 let selectedQuizLevel = QUIZ_LEVELS[0];
 let selectedQuizUnitId = 'u1-even8';
-let playMode = 'arcade';
+let playMode = 'runner';
 let quizState = null;
 let lessonSelectedId = null;
 let selectedPath = 'placement';
+let throwGrid = emptyGrid();
+let throwBpm = 88;
+let pendingThrowChallenge = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -307,12 +318,15 @@ function setPlayMode(mode) {
   document.querySelectorAll('.mode-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
-  $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
+  $('runnerCard').style.display = mode === 'runner' ? 'block' : 'none';
+  $('throwCard').style.display = mode === 'throw' ? 'block' : 'none';
+  $('arcadeCard').style.display = 'none';
   $('trainCard').style.display = mode === 'train' ? 'block' : 'none';
   $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
-  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train') ? 'none' : 'block';
+  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train' || mode === 'throw') ? 'none' : 'block';
   $('resultCard').style.display = 'none';
   game?.stop();
+  runnerGame?.stop();
   trainer?.stop();
   rhythmPlayer?.stop();
   if (mode === 'quiz' || mode === 'placement') {
@@ -325,6 +339,7 @@ function setPlayMode(mode) {
     renderTrainPatternPicker();
   }
   if (mode === 'quiz') renderQuizUnitList();
+  if (mode === 'throw') renderThrowMaker();
   updateTrainPreview();
   updateQuizModeUI();
 }
@@ -1009,6 +1024,268 @@ function initTrain() {
   });
 }
 
+function getRunnerExercise() {
+  const tierMap = { beginner: 1, basic: 2, intermediate: 3, advanced: 3 };
+  const tier = tierMap[selectedLevel.id] ?? 1;
+  const list = exercisesForTier(tier);
+  return list[Math.floor(Math.random() * list.length)] ?? TRAIN_EXERCISES[0];
+}
+
+function getRunnerStage() {
+  if (pendingThrowChallenge) {
+    return {
+      measures: [pendingThrowChallenge.measure],
+      bpm: pendingThrowChallenge.bpm,
+      title: '던진 리듬 도전!',
+    };
+  }
+  const ex = getRunnerExercise();
+  return {
+    measures: buildTrainMeasures(ex, 1),
+    bpm: selectedLevel.bpm,
+    title: ex.focus ?? '리듬 스테이지',
+  };
+}
+
+function renderRunnerLives(lives) {
+  const el = $('runnerLives');
+  if (!el) return;
+  el.textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, RUNNER_LIVES - lives));
+}
+
+function renderRunnerBlocks(measures) {
+  const blocks = $('runnerBlocks');
+  if (!blocks) return;
+  const noteCount = countTrainNotes(measures);
+  blocks.innerHTML = Array.from({ length: Math.max(noteCount, 4) }, (_, i) => `
+    <div class="runner-block" data-idx="${i}">
+      <span class="runner-block-icon">🧱</span>
+      <span class="runner-block-note">♩</span>
+    </div>
+  `).join('');
+}
+
+function updateRunnerStats() {
+  if (!runnerGame) return;
+  const correct = runnerGame.perfect + runnerGame.great + runnerGame.good;
+  $('runnerCorrect').textContent = correct;
+  $('runnerWrong').textContent = runnerGame.miss;
+  $('runnerAccuracy').textContent = `${runnerGame.accuracy()}%`;
+  $('runnerScore').textContent = runnerGame.score.toLocaleString();
+}
+
+function flashRunnerJudge(key, pts) {
+  const el = $('runnerJudgeFlash');
+  const j = JUDGE[key];
+  el.textContent = key === 'miss' ? 'MISS' : `${j?.label ?? key} +${pts}`;
+  el.className = `judge-flash show ${key}`;
+  setTimeout(() => el.classList.remove('show'), 380);
+}
+
+function resetRunnerUI() {
+  $('runnerScore').textContent = '0';
+  $('runnerCorrect').textContent = '0';
+  $('runnerWrong').textContent = '0';
+  $('runnerAccuracy').textContent = '100%';
+  renderRunnerLives(RUNNER_LIVES);
+  $('runnerProgressBar').style.width = '0%';
+  $('runnerGiryong')?.classList.remove('jump', 'stumble');
+  $('runnerScroll')?.style.setProperty('--run-offset', '0%');
+  $('resultCard').style.display = 'none';
+  $('runnerCard').style.display = 'block';
+}
+
+function showRunnerResult(result, { cleared, title, bpm }) {
+  $('runnerCard').style.display = 'none';
+  $('resultCard').style.display = 'block';
+  $('resultTitle').textContent = cleared ? '스테이지 클리어!' : '런 종료';
+  $('resultBody').innerHTML = `
+    <div class="result-score">${result.score.toLocaleString()}</div>
+    <p class="result-clear-msg">${title} · ${bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
+    <div class="result-grid">
+      <span>PERFECT ${result.perfect}</span>
+      <span>GREAT ${result.great}</span>
+      <span>GOOD ${result.good}</span>
+      <span>MISS ${result.miss}</span>
+      <span>MAX COMBO ${result.maxCombo}</span>
+    </div>
+  `;
+  if (cleared) {
+    const xp = Math.round(result.xp * (selectedLevel.xpMultiplier ?? 1));
+    profile = addPlayResult(profile, {
+      score: result.score,
+      xpGained: xp,
+      coinsGained: result.coins + 5,
+      maxCombo: result.maxCombo,
+    });
+    setGiryongMood('celebrate');
+    sayGiryong('perfect', '기룡이가 결승선 통과!');
+    renderProfile();
+    renderRank();
+  } else {
+    setGiryongMood('sad');
+    sayGiryong('miss', '다시 달려보자!');
+  }
+  pendingThrowChallenge = null;
+}
+
+function initRunner() {
+  const startBtn = $('runnerStart');
+  const tapBtn = $('runnerTap');
+
+  const doTap = () => {
+    if (!runnerGame?.running) return;
+    const key = runnerGame.judgeTap();
+    if (key && key !== 'miss') {
+      const j = JUDGE[key];
+      const mult = 1 + Math.floor(runnerGame.combo / 8) * 0.25;
+      flashRunnerJudge(key, Math.round(j.score * mult));
+    } else if (key === 'miss') {
+      flashRunnerJudge('miss', 0);
+      $('runnerGiryong')?.classList.add('stumble');
+      setTimeout(() => $('runnerGiryong')?.classList.remove('stumble'), 400);
+    }
+    updateRunnerStats();
+  };
+
+  tapBtn.addEventListener('click', doTap);
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || !$('panel-play').classList.contains('active')) return;
+    if (playMode !== 'runner' || !runnerGame?.running) return;
+    e.preventDefault();
+    doTap();
+  });
+
+  startBtn.addEventListener('click', async () => {
+    runnerGame?.stop();
+    resetRunnerUI();
+    const stage = getRunnerStage();
+    const measures = stage.measures;
+    const bpm = stage.bpm;
+    const totalTaps = countTrainNotes(measures);
+
+    $('runnerScorePreview').innerHTML = renderTrainScoreHtml(measures);
+    renderRunnerBlocks(measures);
+    resetTrainScoreHighlights();
+
+    startBtn.disabled = true;
+    tapBtn.disabled = false;
+    setGiryongMood('focus');
+
+    runnerGame = new RhythmRunnerGame({
+      bpm,
+      measures,
+      onCountIn: showTrainCountIn,
+      onCursor: ({ phase, progress, activePos }) => {
+        setTrainCursor({ phase, progress, activePos });
+        $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
+        $('runnerScroll')?.style.setProperty('--run-offset', `${progress * 55}%`);
+        if (phase === 'play' && activePos >= 0) {
+          $('runnerBlocks')?.querySelectorAll('.runner-block').forEach((el, i) => {
+            el.classList.toggle('active', i === activePos);
+          });
+        }
+      },
+      onJump: () => {
+        $('runnerGiryong')?.classList.add('jump');
+        setTimeout(() => $('runnerGiryong')?.classList.remove('jump'), 320);
+      },
+      onLifeChange: (lives) => renderRunnerLives(lives),
+      onJudge: (key, pts, combo, hitIdx) => {
+        updateRunnerStats();
+        $('runnerCombo') && ($('runnerCombo').textContent = combo);
+        if (hitIdx != null && key !== 'miss') markTrainScoreHit(hitIdx, key);
+        if (key !== 'miss') {
+          $('runnerBlocks')?.querySelector(`[data-idx="${hitIdx}"]`)?.classList.add('cleared');
+        }
+      },
+      onProgress: () => updateRunnerStats(),
+      onFail: (result) => {
+        tapBtn.disabled = true;
+        startBtn.disabled = false;
+        showRunnerResult(result, { cleared: false, title: stage.title, bpm });
+      },
+      onEnd: (result) => {
+        tapBtn.disabled = true;
+        startBtn.disabled = false;
+        showRunnerResult(result, {
+          cleared: true,
+          title: stage.title,
+          bpm,
+        });
+      },
+    });
+
+    await runnerGame.start();
+  });
+}
+
+function renderThrowMaker() {
+  const grid = $('throwGrid');
+  if (!grid) return;
+  grid.innerHTML = throwGrid.map((on, i) => `
+    <button type="button" class="throw-cell ${on ? 'on' : ''}" data-i="${i}" aria-label="${i + 1}번 칸">
+      ${on ? '♪' : '·'}
+    </button>
+  `).join('');
+  grid.querySelectorAll('.throw-cell').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.i);
+      throwGrid[i] = throwGrid[i] ? 0 : 1;
+      renderThrowMaker();
+    });
+  });
+  const measure = gridToMeasure(throwGrid);
+  $('throwPreview').innerHTML = renderTrainScoreHtml([measure]);
+  $('throwBpmVal').textContent = throwBpm;
+  const code = encodeShareCode(throwBpm, throwGrid);
+  $('throwCodeOut').value = code;
+  $('throwChallenge').disabled = measure.every((g) => g.t === 'r');
+}
+
+function initThrow() {
+  const bpmInput = $('throwBpm');
+  bpmInput?.addEventListener('input', () => {
+    throwBpm = Number(bpmInput.value) || 88;
+    renderThrowMaker();
+  });
+
+  $('throwGenerate')?.addEventListener('click', () => {
+    renderThrowMaker();
+    const code = $('throwCodeOut').value;
+    $('throwJudgeFlash').textContent = `던졌어요! 코드: ${code}`;
+    $('throwJudgeFlash').className = 'judge-flash show perfect';
+    setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 2000);
+    $('throwChallenge').disabled = false;
+    sayGiryong('perfect', '친구에게 코드를 알려줘!');
+  });
+
+  $('throwLoad')?.addEventListener('click', () => {
+    const raw = $('throwCodeIn').value.trim();
+    const decoded = decodeShareCode(raw);
+    if (!decoded) {
+      $('throwJudgeFlash').textContent = '코드 형식: RSG88-11110000';
+      $('throwJudgeFlash').className = 'judge-flash show miss';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 1500);
+      return;
+    }
+    throwGrid = decoded.grid;
+    throwBpm = decoded.bpm;
+    bpmInput.value = throwBpm;
+    renderThrowMaker();
+    $('throwChallenge').disabled = false;
+  });
+
+  $('throwChallenge')?.addEventListener('click', () => {
+    const measure = gridToMeasure(throwGrid);
+    pendingThrowChallenge = { measure, bpm: throwBpm, grid: [...throwGrid] };
+    setPlayMode('runner');
+    sayGiryong('excited', '던진 리듬! 런 시작을 눌러!');
+  });
+
+  renderThrowMaker();
+}
+
 function initGame() {
   const startBtn = $('gameStart');
   const tapBtn = $('gameTap');
@@ -1111,7 +1388,14 @@ function handlePlayAgain() {
   $('resultTitle').textContent = '결과';
   $('resultActions').innerHTML = '<button id="playAgain" class="primary">다시 하기</button>';
   $('playAgain').addEventListener('click', handlePlayAgain);
-  if (playMode === 'arcade') {
+  if (playMode === 'runner') {
+    $('runnerCard').style.display = 'block';
+    $('runnerStart').disabled = false;
+    $('runnerTap').disabled = true;
+    resetRunnerUI();
+  } else if (playMode === 'throw') {
+    $('throwCard').style.display = 'block';
+  } else if (playMode === 'arcade') {
     $('arcadeCard').style.display = 'block';
     $('gameScore').textContent = '0';
     $('gameCombo').textContent = '0';
@@ -1288,6 +1572,8 @@ function init() {
   initPlacementHome();
   renderLevels();
   initModeSwitch();
+  initRunner();
+  initThrow();
   initGame();
   initTrain();
   initLesson();

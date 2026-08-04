@@ -755,14 +755,25 @@ function resetTrainScoreHighlights() {
   });
 }
 
+function getScorePreviewRoots() {
+  return [$('runnerScorePreview'), $('trainPatternPreview')].filter((el) => el?.innerHTML?.trim());
+}
+
 function setTrainCursor({ phase, progress, activePos }) {
-  const cursor = $('trainCursor');
-  const track = $('trainScoreTrack');
+  const isRunner = playMode === 'runner';
+  const cursor = isRunner
+    ? $('runnerScorePreview')?.querySelector('#trainCursor')
+    : $('trainCursor');
+  const track = isRunner
+    ? $('runnerScorePreview')?.querySelector('#trainScoreTrack')
+    : $('trainScoreTrack');
   if (cursor) {
-    const pct = phase === 'play'
-      ? Math.max(0, Math.min(100, progress * 100))
-      : 0;
-    cursor.style.left = `${pct}%`;
+    if (!isRunner) {
+      const pct = phase === 'play'
+        ? Math.max(0, Math.min(100, progress * 100))
+        : 0;
+      cursor.style.left = `${pct}%`;
+    }
     cursor.classList.toggle('active', phase === 'play');
     cursor.classList.toggle('count-in', phase === 'count-in');
     cursor.hidden = phase === 'ready' || phase === 'end';
@@ -771,33 +782,40 @@ function setTrainCursor({ phase, progress, activePos }) {
     track.classList.toggle('train-count-in', phase === 'count-in');
     track.classList.toggle('train-playing', phase === 'play');
   }
-  $('trainPatternPreview')?.querySelectorAll('[data-pos]').forEach((el) => {
-    if (phase === 'play' && activePos >= 0) {
-      el.classList.toggle('playhead', Number(el.dataset.pos) === activePos);
-    } else {
-      el.classList.remove('playhead');
-    }
+  getScorePreviewRoots().forEach((root) => {
+    root.querySelectorAll('[data-pos]').forEach((el) => {
+      if (phase === 'play' && activePos >= 0) {
+        el.classList.toggle('playhead', Number(el.dataset.pos) === activePos);
+      } else {
+        el.classList.remove('playhead');
+      }
+    });
   });
 }
 
 function showTrainCountIn(beat, total) {
-  const el = $('trainJudgeFlash');
+  const el = playMode === 'runner' ? $('runnerJudgeFlash') : $('trainJudgeFlash');
+  if (!el) return;
   el.textContent = `예비박 ${beat} / ${total}`;
   el.className = 'judge-flash show';
   setTimeout(() => el.classList.remove('show'), 200);
 }
 
 function setTrainScoreActive(hitIdx) {
-  $('trainPatternPreview')?.querySelectorAll('.train-hit-slot').forEach((el) => {
-    el.classList.toggle('active', Number(el.dataset.hit) === hitIdx);
+  getScorePreviewRoots().forEach((root) => {
+    root.querySelectorAll('.train-hit-slot').forEach((el) => {
+      el.classList.toggle('active', Number(el.dataset.hit) === hitIdx);
+    });
   });
 }
 
 function markTrainScoreHit(hitIdx, key) {
-  const slot = $('trainPatternPreview')?.querySelector(`[data-hit="${hitIdx}"]`);
-  if (!slot) return;
-  slot.classList.remove('active', 'playhead');
-  slot.classList.add(key === 'miss' ? 'miss' : 'hit');
+  getScorePreviewRoots().forEach((root) => {
+    const slot = root.querySelector(`[data-hit="${hitIdx}"]`);
+    if (!slot) return;
+    slot.classList.remove('active', 'playhead');
+    slot.classList.add(key === 'miss' ? 'miss' : 'hit');
+  });
 }
 
 function flashTrainJudge(key, pts, combo, hitIdx, posIdx) {
@@ -1055,6 +1073,15 @@ function renderRunnerLives(lives) {
 
 let runnerPearls = 0;
 
+function pulseRunnerGiryong(kind = 'dash') {
+  const g = $('runnerGiryong');
+  if (!g) return;
+  g.classList.remove('swim', 'dash', 'sink');
+  void g.offsetWidth;
+  g.classList.add(kind);
+  setTimeout(() => g.classList.remove(kind), kind === 'sink' ? 500 : 380);
+}
+
 function spawnRunnerPearlFx() {
   const fx = $('runnerFx');
   const g = $('runnerGiryong');
@@ -1064,19 +1091,6 @@ function spawnRunnerPearlFx() {
   el.innerHTML = '<img src="/images/giryong/pearl-stamp.png" alt=""> +1';
   fx.appendChild(el);
   setTimeout(() => el.remove(), 700);
-}
-
-function renderRunnerBlocks(measures) {
-  const blocks = $('runnerBlocks');
-  if (!blocks) return;
-  const noteCount = countTrainNotes(measures);
-  blocks.innerHTML = Array.from({ length: Math.max(noteCount, 4) }, (_, i) => `
-    <div class="runner-block runner-clam" data-idx="${i}">
-      <span class="runner-clam-shell">🦪</span>
-      <img src="/images/giryong/pearl-stamp.png" alt="" class="runner-clam-pearl">
-      <span class="runner-block-note">♩</span>
-    </div>
-  `).join('');
 }
 
 function updateRunnerStats() {
@@ -1105,8 +1119,8 @@ function resetRunnerUI() {
   $('runnerPearls').textContent = '0';
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
-  $('runnerGiryong')?.classList.remove('swim', 'sink');
-  $('runnerScroll')?.style.setProperty('--run-offset', '0%');
+  $('runnerGiryong')?.classList.remove('swim', 'sink', 'dash');
+  $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerFx')?.replaceChildren();
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
@@ -1158,10 +1172,10 @@ function initRunner() {
       const j = JUDGE[key];
       const mult = 1 + Math.floor(runnerGame.combo / 8) * 0.25;
       flashRunnerJudge(key, Math.round(j.score * mult));
+      pulseRunnerGiryong(key === 'perfect' ? 'swim' : 'dash');
     } else if (key === 'miss') {
       flashRunnerJudge('miss', 0);
-      $('runnerGiryong')?.classList.add('sink');
-      setTimeout(() => $('runnerGiryong')?.classList.remove('sink'), 500);
+      pulseRunnerGiryong('sink');
     }
     updateRunnerStats();
   };
@@ -1183,7 +1197,6 @@ function initRunner() {
     const totalTaps = countTrainNotes(measures);
 
     $('runnerScorePreview').innerHTML = renderTrainScoreHtml(measures);
-    renderRunnerBlocks(measures);
     resetTrainScoreHighlights();
 
     startBtn.disabled = true;
@@ -1197,16 +1210,10 @@ function initRunner() {
       onCursor: ({ phase, progress, activePos }) => {
         setTrainCursor({ phase, progress, activePos });
         $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
-        $('runnerScroll')?.style.setProperty('--run-offset', `${progress * 55}%`);
-        if (phase === 'play' && activePos >= 0) {
-          $('runnerBlocks')?.querySelectorAll('.runner-block').forEach((el, i) => {
-            el.classList.toggle('active', i === activePos);
-          });
-        }
+        $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
       },
       onJump: () => {
-        $('runnerGiryong')?.classList.add('swim');
-        setTimeout(() => $('runnerGiryong')?.classList.remove('swim'), 420);
+        pulseRunnerGiryong('swim');
       },
       onLifeChange: (lives) => renderRunnerLives(lives),
       onJudge: (key, pts, combo, hitIdx) => {
@@ -1218,9 +1225,6 @@ function initRunner() {
             $('runnerPearls').textContent = runnerPearls;
             spawnRunnerPearlFx();
           }
-        }
-        if (key !== 'miss') {
-          $('runnerBlocks')?.querySelector(`[data-idx="${hitIdx}"]`)?.classList.add('cleared');
         }
       },
       onProgress: () => updateRunnerStats(),

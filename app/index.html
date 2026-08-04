@@ -115,7 +115,7 @@
 
       <div class="card runner-card" id="runnerCard">
         <div class="sec-label">리듬 수영 — 기룡이 물속 탐험</div>
-        <p class="hint">예비박 4번 → 조개 리듬에 맞춰 TAP! · 진주 모으기 · ♥ 3개</p>
+        <p class="hint">예비박 4번 → 기룡이 옆 노란 선에 음표가 올 때 TAP! · 진주 · ♥ 3개</p>
 
         <div class="runner-hud">
           <div class="runner-stat"><span>Correct</span><strong id="runnerCorrect">0</strong></div>
@@ -151,11 +151,16 @@
               <span class="runner-clam runner-clam-b">🦪</span>
               <span class="runner-coral">🪸</span>
             </div>
-            <div class="runner-scroll" id="runnerScroll">
-              <div class="runner-blocks" id="runnerBlocks"></div>
+            <div class="runner-lane" id="runnerLane">
+              <div class="runner-hit-line" aria-hidden="true">
+                <span class="runner-hit-glow"></span>
+              </div>
+              <img src="/images/giryong/giryong-basic.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
+              <div class="runner-lane-scroll" id="runnerLaneScroll">
+                <div id="runnerScorePreview" class="runner-score-inline"></div>
+              </div>
+              <div class="runner-fx" id="runnerFx" aria-hidden="true"></div>
             </div>
-            <div class="runner-fx" id="runnerFx" aria-hidden="true"></div>
-            <img src="/images/giryong/pearl-catching.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
             <div class="runner-seaweed runner-seaweed-a" aria-hidden="true"></div>
             <div class="runner-seaweed runner-seaweed-b" aria-hidden="true"></div>
           </div>
@@ -164,7 +169,6 @@
           </div>
         </div>
 
-        <div id="runnerScorePreview" class="runner-score-preview"></div>
         <div class="judge-flash" id="runnerJudgeFlash"></div>
 
         <div class="arcade-controls">

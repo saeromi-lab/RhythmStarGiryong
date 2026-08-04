@@ -2534,6 +2534,12 @@ body.lesson-open {
   width: 3px;
   z-index: 5;
   pointer-events: none;
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+
+.runner-lane.playing .runner-hit-line {
+  opacity: 1;
 }
 
 .runner-hit-glow {

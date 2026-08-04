@@ -776,7 +776,7 @@ function setTrainCursor({ phase, progress, activePos }) {
     }
     cursor.classList.toggle('active', phase === 'play');
     cursor.classList.toggle('count-in', phase === 'count-in');
-    cursor.hidden = phase === 'ready' || phase === 'end';
+    cursor.hidden = phase !== 'play';
   }
   if (track) {
     track.classList.toggle('train-count-in', phase === 'count-in');
@@ -1120,6 +1120,7 @@ function resetRunnerUI() {
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
   $('runnerGiryong')?.classList.remove('swim', 'sink', 'dash');
+  $('runnerLane')?.classList.remove('playing');
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerFx')?.replaceChildren();
   $('resultCard').style.display = 'none';
@@ -1209,8 +1210,14 @@ function initRunner() {
       onCountIn: showTrainCountIn,
       onCursor: ({ phase, progress, activePos }) => {
         setTrainCursor({ phase, progress, activePos });
-        $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
-        $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
+        $('runnerLane')?.classList.toggle('playing', phase === 'play');
+        if (phase === 'play') {
+          $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
+          $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
+        } else if (phase === 'count-in' || phase === 'ready') {
+          $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
+          $('runnerProgressBar').style.width = '0%';
+        }
       },
       onJump: () => {
         pulseRunnerGiryong('swim');

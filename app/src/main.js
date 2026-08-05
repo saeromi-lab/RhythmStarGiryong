@@ -39,6 +39,13 @@ import {
 } from './placement-test.js';
 import { RhythmPlayer } from './rhythm-player.js';
 import { MetronomeTrainer } from './metronome-trainer.js';
+import { RhythmRunnerGame, RUNNER_LIVES } from './runner-game.js';
+import {
+  emptyGrid,
+  gridToMeasure,
+  encodeShareCode,
+  decodeShareCode,
+} from './rhythm-throw.js';
 import {
   TRAIN_TIERS,
   TRAIN_EXERCISES,
@@ -56,6 +63,7 @@ const TIER_LABELS = {
 
 let profile = null;
 let game = null;
+let runnerGame = null;
 let trainer = null;
 let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
@@ -63,10 +71,13 @@ let selectedTrainExerciseId = TRAIN_EXERCISES[0]?.id ?? 'u1-even8-q4';
 let selectedTrainTier = 1;
 let selectedQuizLevel = QUIZ_LEVELS[0];
 let selectedQuizUnitId = 'u1-even8';
-let playMode = 'arcade';
+let playMode = 'runner';
 let quizState = null;
 let lessonSelectedId = null;
 let selectedPath = 'placement';
+let throwGrid = emptyGrid();
+let throwBpm = 88;
+let pendingThrowChallenge = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -182,7 +193,7 @@ function renderMissions() {
   const quests = [
     { done: checked, label: '진주조개 도장 찍기', reward: '15🪙' },
     { done: profile.dailyQuiz, label: '리듬 퀴즈 1회', reward: '25 XP' },
-    { done: profile.dailyArcade, label: '아케이드 1회', reward: '20 XP' },
+    { done: profile.dailyArcade, label: '비트 서핑 1회', reward: '20 XP' },
     { done: profile.dailyCombo10, label: 'COMBO 10+', reward: '보너스' },
   ];
   $('dailyMissions').innerHTML = quests.map((q) => `
@@ -307,12 +318,15 @@ function setPlayMode(mode) {
   document.querySelectorAll('.mode-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
-  $('arcadeCard').style.display = mode === 'arcade' ? 'block' : 'none';
+  $('runnerCard').style.display = mode === 'runner' ? 'block' : 'none';
+  $('throwCard').style.display = mode === 'throw' ? 'block' : 'none';
+  $('arcadeCard').style.display = 'none';
   $('trainCard').style.display = mode === 'train' ? 'block' : 'none';
   $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
-  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train') ? 'none' : 'block';
+  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train' || mode === 'throw') ? 'none' : 'block';
   $('resultCard').style.display = 'none';
   game?.stop();
+  runnerGame?.stop();
   trainer?.stop();
   rhythmPlayer?.stop();
   if (mode === 'quiz' || mode === 'placement') {
@@ -325,6 +339,7 @@ function setPlayMode(mode) {
     renderTrainPatternPicker();
   }
   if (mode === 'quiz') renderQuizUnitList();
+  if (mode === 'throw') renderThrowMaker();
   updateTrainPreview();
   updateQuizModeUI();
 }
@@ -740,49 +755,75 @@ function resetTrainScoreHighlights() {
   });
 }
 
+function getScorePreviewRoots() {
+  return [$('runnerScorePreview'), $('trainPatternPreview')].filter((el) => el?.innerHTML?.trim());
+}
+
 function setTrainCursor({ phase, progress, activePos }) {
-  const cursor = $('trainCursor');
-  const track = $('trainScoreTrack');
+  const isRunner = playMode === 'runner';
+  const cursor = isRunner
+    ? $('runnerScorePreview')?.querySelector('#trainCursor')
+    : $('trainCursor');
+  const track = isRunner
+    ? $('runnerScorePreview')?.querySelector('#trainScoreTrack')
+    : $('trainScoreTrack');
   if (cursor) {
-    const pct = phase === 'play'
-      ? Math.max(0, Math.min(100, progress * 100))
-      : 0;
-    cursor.style.left = `${pct}%`;
+    if (!isRunner) {
+      const pct = phase === 'play'
+        ? Math.max(0, Math.min(100, progress * 100))
+        : 0;
+      cursor.style.left = `${pct}%`;
+    }
     cursor.classList.toggle('active', phase === 'play');
     cursor.classList.toggle('count-in', phase === 'count-in');
-    cursor.hidden = phase === 'ready' || phase === 'end';
+    cursor.hidden = phase !== 'play';
   }
   if (track) {
     track.classList.toggle('train-count-in', phase === 'count-in');
     track.classList.toggle('train-playing', phase === 'play');
   }
-  $('trainPatternPreview')?.querySelectorAll('[data-pos]').forEach((el) => {
-    if (phase === 'play' && activePos >= 0) {
-      el.classList.toggle('playhead', Number(el.dataset.pos) === activePos);
-    } else {
-      el.classList.remove('playhead');
-    }
+  getScorePreviewRoots().forEach((root) => {
+    root.querySelectorAll('[data-pos]').forEach((el) => {
+      if (phase === 'play' && activePos >= 0) {
+        el.classList.toggle('playhead', Number(el.dataset.pos) === activePos);
+      } else {
+        el.classList.remove('playhead');
+      }
+    });
   });
 }
 
 function showTrainCountIn(beat, total) {
-  const el = $('trainJudgeFlash');
+  const el = playMode === 'runner' ? $('runnerJudgeFlash') : $('trainJudgeFlash');
+  if (!el) return;
   el.textContent = `예비박 ${beat} / ${total}`;
   el.className = 'judge-flash show';
   setTimeout(() => el.classList.remove('show'), 200);
 }
 
+function showRunnerPrep(beat, total) {
+  const el = $('runnerJudgeFlash');
+  if (!el) return;
+  el.textContent = `준비 ${beat} / ${total} — 곧 시작!`;
+  el.className = 'judge-flash show prep';
+  setTimeout(() => el.classList.remove('show'), 280);
+}
+
 function setTrainScoreActive(hitIdx) {
-  $('trainPatternPreview')?.querySelectorAll('.train-hit-slot').forEach((el) => {
-    el.classList.toggle('active', Number(el.dataset.hit) === hitIdx);
+  getScorePreviewRoots().forEach((root) => {
+    root.querySelectorAll('.train-hit-slot').forEach((el) => {
+      el.classList.toggle('active', Number(el.dataset.hit) === hitIdx);
+    });
   });
 }
 
 function markTrainScoreHit(hitIdx, key) {
-  const slot = $('trainPatternPreview')?.querySelector(`[data-hit="${hitIdx}"]`);
-  if (!slot) return;
-  slot.classList.remove('active', 'playhead');
-  slot.classList.add(key === 'miss' ? 'miss' : 'hit');
+  getScorePreviewRoots().forEach((root) => {
+    const slot = root.querySelector(`[data-hit="${hitIdx}"]`);
+    if (!slot) return;
+    slot.classList.remove('active', 'playhead');
+    slot.classList.add(key === 'miss' ? 'miss' : 'hit');
+  });
 }
 
 function flashTrainJudge(key, pts, combo, hitIdx, posIdx) {
@@ -1009,6 +1050,347 @@ function initTrain() {
   });
 }
 
+function getRunnerExercise() {
+  const tierMap = { beginner: 1, basic: 2, intermediate: 3, advanced: 3 };
+  const tier = tierMap[selectedLevel.id] ?? 1;
+  const list = exercisesForTier(tier);
+  return list[Math.floor(Math.random() * list.length)] ?? TRAIN_EXERCISES[0];
+}
+
+function getRunnerStage() {
+  if (pendingThrowChallenge) {
+    return {
+      measures: [pendingThrowChallenge.measure],
+      bpm: pendingThrowChallenge.bpm,
+      title: '파티시에 케이크 도전!',
+    };
+  }
+  const ex = getRunnerExercise();
+  return {
+    measures: buildTrainMeasures(ex, 1),
+    bpm: selectedLevel.bpm,
+    title: ex.focus ?? '리듬 스테이지',
+  };
+}
+
+function renderRunnerLives(lives) {
+  const el = $('runnerLives');
+  if (!el) return;
+  el.textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, RUNNER_LIVES - lives));
+}
+
+let runnerPearls = 0;
+
+function pulseRunnerSurfer(kind = 'carve') {
+  const surfer = $('runnerSurfer');
+  if (!surfer) return;
+  surfer.classList.remove('surf', 'carve', 'wipeout');
+  void surfer.offsetWidth;
+  surfer.classList.add(kind);
+  setTimeout(() => surfer.classList.remove(kind), kind === 'wipeout' ? 520 : 380);
+}
+
+function spawnRunnerPearlFx() {
+  const fx = $('runnerFx');
+  const g = $('runnerGiryong');
+  if (!fx || !g) return;
+  const el = document.createElement('span');
+  el.className = 'runner-pearl-pop';
+  el.innerHTML = '<img src="/images/giryong/pearl-stamp.png" alt=""> +1';
+  fx.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+function updateRunnerStats() {
+  if (!runnerGame) return;
+  const correct = runnerGame.perfect + runnerGame.great + runnerGame.good;
+  $('runnerCorrect').textContent = correct;
+  $('runnerWrong').textContent = runnerGame.miss;
+  $('runnerAccuracy').textContent = `${runnerGame.accuracy()}%`;
+  $('runnerScore').textContent = runnerGame.score.toLocaleString();
+}
+
+function flashRunnerJudge(key, pts) {
+  const el = $('runnerJudgeFlash');
+  const j = JUDGE[key];
+  el.textContent = key === 'miss' ? 'MISS' : `${j?.label ?? key} +${pts}`;
+  el.className = `judge-flash show ${key}`;
+  setTimeout(() => el.classList.remove('show'), 380);
+}
+
+function resetRunnerUI() {
+  $('runnerScore').textContent = '0';
+  $('runnerCorrect').textContent = '0';
+  $('runnerWrong').textContent = '0';
+  $('runnerAccuracy').textContent = '100%';
+  runnerPearls = 0;
+  $('runnerPearls').textContent = '0';
+  renderRunnerLives(RUNNER_LIVES);
+  $('runnerProgressBar').style.width = '0%';
+  $('runnerSurfer')?.classList.remove('surf', 'carve', 'wipeout');
+  $('runnerGiryong')?.classList.remove('swim', 'sink', 'dash');
+  $('runnerLane')?.classList.remove('playing');
+  $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
+  $('runnerFx')?.replaceChildren();
+  $('resultCard').style.display = 'none';
+  $('runnerCard').style.display = 'block';
+}
+
+function showRunnerResult(result, { cleared, title, bpm }) {
+  $('runnerCard').style.display = 'none';
+  $('resultCard').style.display = 'block';
+  $('resultTitle').textContent = cleared ? '서핑 완주!' : '서핑 종료';
+  $('resultBody').innerHTML = `
+    <div class="result-score">${result.score.toLocaleString()}</div>
+    <p class="result-clear-msg">${title} · ${bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
+    <div class="result-grid">
+      <span>PERFECT ${result.perfect}</span>
+      <span>GREAT ${result.great}</span>
+      <span>GOOD ${result.good}</span>
+      <span>MISS ${result.miss}</span>
+      <span>MAX COMBO ${result.maxCombo}</span>
+      <span>진주 ${runnerPearls}개</span>
+    </div>
+  `;
+  if (cleared) {
+    const xp = Math.round(result.xp * (selectedLevel.xpMultiplier ?? 1));
+    profile = addPlayResult(profile, {
+      score: result.score,
+      xpGained: xp,
+      coinsGained: result.coins + 5,
+      maxCombo: result.maxCombo,
+    });
+    setGiryongMood('celebrate');
+    sayGiryong('perfect', '기룡이가 진주를 모았어!');
+    renderProfile();
+    renderRank();
+  } else {
+    setGiryongMood('sad');
+    sayGiryong('miss', '파도 타이밍을 다시 맞춰보자!');
+  }
+  pendingThrowChallenge = null;
+}
+
+function initRunner() {
+  const startBtn = $('runnerStart');
+  const tapBtn = $('runnerTap');
+
+  const doTap = () => {
+    if (!runnerGame?.running) return;
+    const key = runnerGame.judgeTap();
+    if (key && key !== 'miss') {
+      const j = JUDGE[key];
+      const mult = 1 + Math.floor(runnerGame.combo / 8) * 0.25;
+      flashRunnerJudge(key, Math.round(j.score * mult));
+      pulseRunnerSurfer(key === 'perfect' ? 'surf' : 'carve');
+    } else if (key === 'miss') {
+      flashRunnerJudge('miss', 0);
+      pulseRunnerSurfer('wipeout');
+    }
+    updateRunnerStats();
+  };
+
+  tapBtn.addEventListener('click', doTap);
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' || !$('panel-play').classList.contains('active')) return;
+    if (playMode !== 'runner' || !runnerGame?.running) return;
+    e.preventDefault();
+    doTap();
+  });
+
+  startBtn.addEventListener('click', async () => {
+    runnerGame?.stop();
+    resetRunnerUI();
+    const stage = getRunnerStage();
+    const measures = stage.measures;
+    const bpm = stage.bpm;
+    const totalTaps = countTrainNotes(measures);
+
+    $('runnerScorePreview').innerHTML = renderTrainScoreHtml(measures);
+    resetTrainScoreHighlights();
+
+    startBtn.disabled = true;
+    tapBtn.disabled = false;
+    setGiryongMood('focus');
+
+    runnerGame = new RhythmRunnerGame({
+      bpm,
+      measures,
+      onCountIn: showTrainCountIn,
+      onPrep: showRunnerPrep,
+      onCursor: ({ phase, progress, activePos }) => {
+        setTrainCursor({ phase, progress, activePos });
+        $('runnerLane')?.classList.toggle('playing', phase === 'play');
+        if (phase === 'play') {
+          $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
+          $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
+        } else if (phase === 'count-in' || phase === 'ready' || phase === 'prep') {
+          $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
+          $('runnerProgressBar').style.width = '0%';
+        }
+      },
+      onJump: () => {
+        pulseRunnerSurfer('surf');
+      },
+      onLifeChange: (lives) => renderRunnerLives(lives),
+      onJudge: (key, pts, combo, hitIdx) => {
+        updateRunnerStats();
+        if (hitIdx != null && key !== 'miss') {
+          markTrainScoreHit(hitIdx, key);
+          if (key === 'perfect') {
+            runnerPearls += 1;
+            $('runnerPearls').textContent = runnerPearls;
+            spawnRunnerPearlFx();
+          }
+        }
+      },
+      onProgress: () => updateRunnerStats(),
+      onFail: (result) => {
+        tapBtn.disabled = true;
+        startBtn.disabled = false;
+        showRunnerResult(result, { cleared: false, title: stage.title, bpm });
+      },
+      onEnd: (result) => {
+        tapBtn.disabled = true;
+        startBtn.disabled = false;
+        showRunnerResult(result, {
+          cleared: true,
+          title: stage.title,
+          bpm,
+        });
+      },
+    });
+
+    await runnerGame.start();
+  });
+}
+
+function resetPatissierBakeVisual() {
+  const stage = $('patissierStage');
+  stage?.classList.remove('present', 'baking', 'done');
+  const trayRhythm = $('patissierTrayRhythm');
+  const trayCake = $('patissierTrayCake');
+  const ovenCake = $('patissierOvenCake');
+  if (trayRhythm) trayRhythm.style.opacity = '1';
+  if (trayCake) trayCake.hidden = true;
+  if (ovenCake) ovenCake.hidden = true;
+}
+
+function renderPatissierTray() {
+  const el = $('patissierTrayRhythm');
+  if (!el) return;
+  if (throwGrid.every((v) => !v)) {
+    el.innerHTML = '<span class="tray-empty">재료 넣기 ♪</span>';
+    return;
+  }
+  el.innerHTML = throwGrid.map((on) => `
+    <span class="tray-beat ${on ? 'on' : ''}">${on ? '♪' : '·'}</span>
+  `).join('');
+}
+
+function playPatissierBake(onComplete) {
+  const stage = $('patissierStage');
+  resetPatissierBakeVisual();
+  stage?.classList.add('present');
+
+  setTimeout(() => {
+    stage?.classList.remove('present');
+    stage?.classList.add('baking');
+  }, 450);
+
+  setTimeout(() => {
+    stage?.classList.remove('baking');
+    stage?.classList.add('done');
+    const trayRhythm = $('patissierTrayRhythm');
+    const trayCake = $('patissierTrayCake');
+    const ovenCake = $('patissierOvenCake');
+    if (trayRhythm) trayRhythm.style.opacity = '0';
+    if (trayCake) trayCake.hidden = false;
+    if (ovenCake) ovenCake.hidden = false;
+    onComplete?.();
+  }, 1650);
+}
+
+function renderThrowMaker() {
+  resetPatissierBakeVisual();
+  renderPatissierTray();
+  const grid = $('throwGrid');
+  if (!grid) return;
+  grid.innerHTML = throwGrid.map((on, i) => `
+    <button type="button" class="throw-cell ${on ? 'on baked' : ''}" data-i="${i}" aria-label="${i + 1}번 재료 칸">
+      ${on ? '♪' : '·'}
+    </button>
+  `).join('');
+  grid.querySelectorAll('.throw-cell').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.i);
+      throwGrid[i] = throwGrid[i] ? 0 : 1;
+      renderThrowMaker();
+    });
+  });
+  const measure = gridToMeasure(throwGrid);
+  $('throwPreview').innerHTML = renderTrainScoreHtml([measure]);
+  $('throwBpmVal').textContent = throwBpm;
+  const code = encodeShareCode(throwBpm, throwGrid);
+  $('throwCodeOut').value = code;
+  $('throwChallenge').disabled = measure.every((g) => g.t === 'r');
+}
+
+function initThrow() {
+  const bpmInput = $('throwBpm');
+  bpmInput?.addEventListener('input', () => {
+    throwBpm = Number(bpmInput.value) || 88;
+    renderThrowMaker();
+  });
+
+  $('throwGenerate')?.addEventListener('click', () => {
+    const measure = gridToMeasure(throwGrid);
+    if (measure.every((g) => g.t === 'r')) {
+      $('throwJudgeFlash').textContent = '리듬 재료를 하나 이상 넣어줘!';
+      $('throwJudgeFlash').className = 'judge-flash show miss';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 1500);
+      return;
+    }
+    const bakeBtn = $('throwGenerate');
+    bakeBtn.disabled = true;
+    renderThrowMaker();
+    playPatissierBake(() => {
+      const code = $('throwCodeOut').value;
+      $('throwJudgeFlash').textContent = `굽기 완료! 케이크 코드: ${code}`;
+      $('throwJudgeFlash').className = 'judge-flash show perfect';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 2500);
+      $('throwChallenge').disabled = false;
+      sayGiryong('perfect', '리듬 케이크 완성! 코드를 나눠줘!');
+      bakeBtn.disabled = false;
+    });
+  });
+
+  $('throwLoad')?.addEventListener('click', () => {
+    const raw = $('throwCodeIn').value.trim();
+    const decoded = decodeShareCode(raw);
+    if (!decoded) {
+      $('throwJudgeFlash').textContent = '코드 형식: RSG88-11110000';
+      $('throwJudgeFlash').className = 'judge-flash show miss';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 1500);
+      return;
+    }
+    throwGrid = decoded.grid;
+    throwBpm = decoded.bpm;
+    bpmInput.value = throwBpm;
+    renderThrowMaker();
+    $('throwChallenge').disabled = false;
+  });
+
+  $('throwChallenge')?.addEventListener('click', () => {
+    const measure = gridToMeasure(throwGrid);
+    pendingThrowChallenge = { measure, bpm: throwBpm, grid: [...throwGrid] };
+    setPlayMode('runner');
+    sayGiryong('excited', '파티시에 케이크! 서핑 시작을 눌러 맛보자!');
+  });
+
+  renderThrowMaker();
+}
+
 function initGame() {
   const startBtn = $('gameStart');
   const tapBtn = $('gameTap');
@@ -1111,7 +1493,14 @@ function handlePlayAgain() {
   $('resultTitle').textContent = '결과';
   $('resultActions').innerHTML = '<button id="playAgain" class="primary">다시 하기</button>';
   $('playAgain').addEventListener('click', handlePlayAgain);
-  if (playMode === 'arcade') {
+  if (playMode === 'runner') {
+    $('runnerCard').style.display = 'block';
+    $('runnerStart').disabled = false;
+    $('runnerTap').disabled = true;
+    resetRunnerUI();
+  } else if (playMode === 'throw') {
+    $('throwCard').style.display = 'block';
+  } else if (playMode === 'arcade') {
     $('arcadeCard').style.display = 'block';
     $('gameScore').textContent = '0';
     $('gameCombo').textContent = '0';
@@ -1288,6 +1677,8 @@ function init() {
   initPlacementHome();
   renderLevels();
   initModeSwitch();
+  initRunner();
+  initThrow();
   initGame();
   initTrain();
   initLesson();

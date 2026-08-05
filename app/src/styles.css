@@ -5,24 +5,24 @@
 }
 
 :root {
-  --bg: #0f0e17;
-  --surface: #1a1830;
-  --card: #221f3d;
-  --border: #3d3868;
-  --accent: #ff6b9d;
-  --accent2: #ffc857;
-  --accent3: #4ecdc4;
-  --text: #f5f0ff;
-  --muted: #9b94c4;
+  --bg: #0b1a22;
+  --surface: #122b38;
+  --card: #173547;
+  --border: #2a5f73;
+  --accent: #ff8f6b;
+  --accent2: #ffd166;
+  --accent3: #5ec8e8;
+  --text: #f4f9fb;
+  --muted: #8eb9c9;
   --perfect: #4ecdc4;
-  --great: #ffc857;
-  --good: #a78bfa;
+  --great: #ffd166;
+  --good: #7ed4c8;
   --miss: #ff6b6b;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-  background: radial-gradient(ellipse at top, #2a1f5e 0%, var(--bg) 55%);
+  background: radial-gradient(ellipse at top, #1a4a5e 0%, var(--bg) 55%);
   color: var(--text);
   min-height: 100vh;
   padding: 1rem;
@@ -40,7 +40,7 @@ body {
 }
 
 .brand-badge {
-  background: linear-gradient(135deg, var(--accent), #c44dff);
+  background: linear-gradient(135deg, var(--accent), #3db8c4);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -147,7 +147,7 @@ body {
 
 /* 기룡이 — 경기대 공식 캐릭터 이미지 */
 .giryong-card {
-  background: linear-gradient(160deg, #2d1f6e, var(--card));
+  background: linear-gradient(160deg, #1a4a5e, var(--card));
   overflow: hidden;
 }
 
@@ -250,7 +250,7 @@ body {
 
 /* 출석 · 진주조개 도장 */
 .attendance-card {
-  background: linear-gradient(160deg, #1a1830 0%, #2a1f3d 45%, #1f2a35 100%);
+  background: linear-gradient(160deg, #122b38 0%, #1a4055 45%, #0f2835 100%);
   border: 1px solid #f8a68f44;
 }
 
@@ -409,7 +409,7 @@ body {
 }
 
 .bonus-chip {
-  background: linear-gradient(90deg, #ff6b9d33, #ffc85733);
+  background: linear-gradient(90deg, #ff8f6b33, #ffd16633);
   border: 1px solid var(--accent2);
   color: var(--accent2);
   font-size: 11px;
@@ -467,7 +467,7 @@ body {
 
 .level-btn.active {
   border-color: var(--accent);
-  background: linear-gradient(135deg, #ff6b9d22, #c44dff22);
+  background: linear-gradient(135deg, #ff8f6b22, #3db8c422);
   box-shadow: 0 0 0 1px var(--accent);
 }
 
@@ -493,7 +493,7 @@ body {
 .mode-btn.active {
   border-color: var(--accent3);
   color: var(--text);
-  background: linear-gradient(135deg, #4ecdc422, #ff6b9d22);
+  background: linear-gradient(135deg, #4ecdc422, #ff8f6b22);
 }
 
 .mode-switch-3 {
@@ -929,7 +929,7 @@ body {
 
 .placement-home-card {
   border: 1px solid #4ecdc444;
-  background: linear-gradient(135deg, #1a1830, #1a2a3a);
+  background: linear-gradient(135deg, #122b38, #1a4055);
 }
 
 .placement-home-desc {
@@ -1064,7 +1064,7 @@ body {
 
 .arcade-card {
   position: relative;
-  background: linear-gradient(180deg, #1a1040, var(--card));
+  background: linear-gradient(180deg, #1a4055, var(--card));
 }
 
 .arcade-hud {
@@ -1093,7 +1093,7 @@ body {
 .arcade-lane {
   position: relative;
   height: 180px;
-  background: linear-gradient(180deg, #0d0820, #1a1040);
+  background: linear-gradient(180deg, #0b1a22, #173547);
   border: 2px solid var(--border);
   border-radius: 16px;
   margin-bottom: 12px;
@@ -1172,7 +1172,7 @@ body {
 }
 
 button.primary {
-  background: linear-gradient(135deg, var(--accent), #c44dff);
+  background: linear-gradient(135deg, var(--accent), #3db8c4);
   color: #fff;
 }
 
@@ -1187,7 +1187,7 @@ button:disabled {
 
 .tap-btn {
   background: linear-gradient(135deg, var(--accent2), #ff9f1c);
-  color: #1a1a2e;
+  color: #0b1a22;
   font-size: 22px;
   letter-spacing: 0.05em;
   box-shadow: 0 6px 0 #c47d00, 0 8px 16px #0005;
@@ -1394,8 +1394,8 @@ button:disabled {
 }
 
 .rank-row.me {
-  background: linear-gradient(90deg, #ff6b9d22, transparent);
-  border: 1px solid #ff6b9d44;
+  background: linear-gradient(90deg, #ff8f6b22, transparent);
+  border: 1px solid #ff8f6b44;
 }
 
 .rank-row.top-1 .rank-num { color: #ffd700; font-weight: 800; }
@@ -1511,7 +1511,7 @@ button:disabled {
 
 .judge-badge.perfect { background: #4ecdc433; color: var(--perfect); }
 .judge-badge.great { background: #ffc85733; color: var(--great); }
-.judge-badge.good { background: #a78bfa33; color: var(--good); }
+.judge-badge.good { background: #7ed4c833; color: var(--good); }
 
 .empty-msg {
   text-align: center;
@@ -2419,10 +2419,10 @@ body.lesson-open {
 .runner-lives {
   text-align: center;
   font-size: 22px;
-  color: #ff6b9d;
+  color: #ff8f6b;
   letter-spacing: 4px;
   margin-bottom: 10px;
-  text-shadow: 0 0 8px #ff6b9d88;
+  text-shadow: 0 0 8px #ff8f6b88;
 }
 
 .runner-stage {

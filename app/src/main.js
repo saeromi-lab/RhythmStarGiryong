@@ -1081,13 +1081,13 @@ function renderRunnerLives(lives) {
 
 let runnerPearls = 0;
 
-function pulseRunnerGiryong(kind = 'dash') {
-  const g = $('runnerGiryong');
-  if (!g) return;
-  g.classList.remove('swim', 'dash', 'sink');
-  void g.offsetWidth;
-  g.classList.add(kind);
-  setTimeout(() => g.classList.remove(kind), kind === 'sink' ? 500 : 380);
+function pulseRunnerSurfer(kind = 'carve') {
+  const surfer = $('runnerSurfer');
+  if (!surfer) return;
+  surfer.classList.remove('surf', 'carve', 'wipeout');
+  void surfer.offsetWidth;
+  surfer.classList.add(kind);
+  setTimeout(() => surfer.classList.remove(kind), kind === 'wipeout' ? 520 : 380);
 }
 
 function spawnRunnerPearlFx() {
@@ -1127,6 +1127,7 @@ function resetRunnerUI() {
   $('runnerPearls').textContent = '0';
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
+  $('runnerSurfer')?.classList.remove('surf', 'carve', 'wipeout');
   $('runnerGiryong')?.classList.remove('swim', 'sink', 'dash');
   $('runnerLane')?.classList.remove('playing');
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
@@ -1181,10 +1182,10 @@ function initRunner() {
       const j = JUDGE[key];
       const mult = 1 + Math.floor(runnerGame.combo / 8) * 0.25;
       flashRunnerJudge(key, Math.round(j.score * mult));
-      pulseRunnerGiryong(key === 'perfect' ? 'swim' : 'dash');
+      pulseRunnerSurfer(key === 'perfect' ? 'surf' : 'carve');
     } else if (key === 'miss') {
       flashRunnerJudge('miss', 0);
-      pulseRunnerGiryong('sink');
+      pulseRunnerSurfer('wipeout');
     }
     updateRunnerStats();
   };
@@ -1229,7 +1230,7 @@ function initRunner() {
         }
       },
       onJump: () => {
-        pulseRunnerGiryong('swim');
+        pulseRunnerSurfer('surf');
       },
       onLifeChange: (lives) => renderRunnerLives(lives),
       onJudge: (key, pts, combo, hitIdx) => {

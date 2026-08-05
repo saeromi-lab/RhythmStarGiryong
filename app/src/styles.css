@@ -2352,7 +2352,7 @@ body.lesson-open {
   }
 }
 
-/* —— 비트 서핑 (물속 기룡이) —— */
+/* —— 비트 서핑 (서핑보드 기룡이) —— */
 .runner-hud {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2434,8 +2434,47 @@ body.lesson-open {
   box-shadow: 0 4px 0 #1a5f7a, inset 0 0 40px #0a284055;
 }
 
-.runner-underwater {
-  background: linear-gradient(180deg, #4db8e8 0%, #1a7aa8 35%, #0d4d6e 70%, #083550 100%);
+.runner-surf-scene {
+  background: linear-gradient(180deg, #8ed4f0 0%, #5ec8e8 22%, #2a9fd4 48%, #156a94 78%, #0a4a6e 100%);
+}
+
+.runner-sky-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #ffffff55 0%, transparent 38%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.runner-wave {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: 42px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.55;
+}
+
+.runner-wave-back {
+  bottom: 38px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 80' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff33' d='M0 40 C150 70 300 10 450 40 S750 70 900 40 S1050 10 1200 40 L1200 80 L0 80Z'/%3E%3C/svg%3E") repeat-x;
+  background-size: 50% 100%;
+  animation: waveDrift 6s linear infinite;
+}
+
+.runner-wave-front {
+  bottom: 28px;
+  height: 34px;
+  opacity: 0.75;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff55' d='M0 30 C120 50 240 10 360 30 S600 50 720 30 S960 10 1080 30 S1140 50 1200 30 L1200 60 L0 60Z'/%3E%3C/svg%3E") repeat-x;
+  background-size: 42% 100%;
+  animation: waveDrift 4.5s linear infinite reverse;
+}
+
+@keyframes waveDrift {
+  0% { background-position-x: 0; }
+  100% { background-position-x: 200px; }
 }
 
 .runner-water-light {
@@ -2762,8 +2801,8 @@ body.lesson-open {
 
 .runner-pearl-pop {
   position: absolute;
-  left: 58px;
-  bottom: 52px;
+  left: 48px;
+  bottom: 58px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -2786,52 +2825,128 @@ body.lesson-open {
   100% { opacity: 0; transform: translateY(-36px) scale(0.9); }
 }
 
+.runner-surfer {
+  position: absolute;
+  left: 4px;
+  bottom: 10px;
+  width: 88px;
+  height: 78px;
+  z-index: 6;
+  transform-origin: center bottom;
+  animation: surferBob 2.2s ease-in-out infinite;
+}
+
+.runner-surfboard {
+  position: absolute;
+  left: 8px;
+  bottom: 2px;
+  width: 72px;
+  height: 18px;
+  z-index: 1;
+}
+
+.runner-board-deck {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 42% 42% / 68% 68% 32% 32%;
+  background: linear-gradient(180deg, #ffe8a8 0%, #ff9f4a 45%, #e86b2a 100%);
+  border: 2px solid #fff8;
+  box-shadow: 0 4px 10px #0a284066, inset 0 -2px 4px #c45c0088;
+  transform: rotate(-4deg);
+}
+
+.runner-board-fin {
+  position: absolute;
+  right: 10px;
+  bottom: -4px;
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(180deg, #5ec8e8, #2a8fb8);
+  border-radius: 2px 2px 6px 6px;
+  transform: rotate(8deg);
+  box-shadow: 0 2px 4px #0a284044;
+}
+
 .runner-giryong {
   position: absolute;
-  left: 6px;
-  bottom: 8px;
-  width: 72px;
+  left: 10px;
+  bottom: 14px;
+  width: 64px;
   height: auto;
-  z-index: 6;
-  filter: drop-shadow(0 6px 10px #0a2840aa);
-  animation: giryongFloat 2.4s ease-in-out infinite;
+  z-index: 2;
+  filter: drop-shadow(0 4px 8px #0a2840aa);
+  transform: scaleX(-1);
   transform-origin: center bottom;
 }
 
-.runner-giryong.swim {
-  animation: giryongSwim 0.42s ease-out;
+.runner-spray {
+  position: absolute;
+  left: 52px;
+  bottom: 8px;
+  width: 28px;
+  height: 20px;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 30% 60%, #fff 0%, #a8e8ff88 45%, transparent 70%);
 }
 
-.runner-giryong.dash {
-  animation: giryongDash 0.32s ease-out;
+.runner-surfer.surf .runner-spray,
+.runner-surfer.carve .runner-spray {
+  animation: surfSpray 0.38s ease-out;
 }
 
-.runner-giryong.sink {
-  animation: giryongSink 0.5s ease;
+@keyframes surferBob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
 }
 
-@keyframes giryongFloat {
-  0%, 100% { transform: translateY(0) scaleX(-1); }
-  50% { transform: translateY(-8px) scaleX(-1); }
+@keyframes surfSpray {
+  0% { opacity: 0; transform: scale(0.4); }
+  35% { opacity: 0.9; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.4) translateX(8px); }
 }
 
-@keyframes giryongSwim {
-  0% { transform: translate(0, 0) scaleX(-1); }
-  35% { transform: translate(28px, -18px) scaleX(-1); }
-  70% { transform: translate(40px, -8px) scaleX(-1); }
-  100% { transform: translate(0, 0) scaleX(-1); }
+.runner-surfer.surf {
+  animation: surferCarve 0.42s ease-out;
 }
 
-@keyframes giryongDash {
-  0% { transform: translate(0, 0) scaleX(-1); }
-  40% { transform: translate(32px, -12px) scaleX(-1); }
-  100% { transform: translate(0, 0) scaleX(-1); }
+.runner-surfer.carve {
+  animation: surferCarveSmall 0.32s ease-out;
 }
 
-@keyframes giryongSink {
-  0%, 100% { transform: translateY(0) scaleX(-1); }
-  30% { transform: translateY(10px) rotate(12deg) scaleX(-1); }
-  60% { transform: translateY(6px) rotate(-10deg) scaleX(-1); }
+.runner-surfer.wipeout {
+  animation: surferWipeout 0.52s ease;
+}
+
+@keyframes surferCarve {
+  0% { transform: translate(0, 0) rotate(-2deg); }
+  35% { transform: translate(28px, -14px) rotate(6deg); }
+  70% { transform: translate(40px, -6px) rotate(2deg); }
+  100% { transform: translate(0, 0) rotate(-2deg); }
+}
+
+@keyframes surferCarveSmall {
+  0% { transform: translate(0, 0) rotate(-2deg); }
+  40% { transform: translate(22px, -10px) rotate(4deg); }
+  100% { transform: translate(0, 0) rotate(-2deg); }
+}
+
+@keyframes surferWipeout {
+  0%, 100% { transform: translate(0, 0) rotate(-2deg); }
+  30% { transform: translate(6px, 12px) rotate(18deg); }
+  60% { transform: translate(2px, 8px) rotate(-12deg); }
+}
+
+.runner-surfer.wipeout .runner-giryong {
+  animation: giryongTumble 0.52s ease;
+}
+
+@keyframes giryongTumble {
+  0%, 100% { transform: scaleX(-1) rotate(0); }
+  40% { transform: scaleX(-1) rotate(22deg) translateY(6px); }
+  70% { transform: scaleX(-1) rotate(-14deg) translateY(4px); }
 }
 
 .runner-seaweed {

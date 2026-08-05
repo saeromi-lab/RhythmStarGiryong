@@ -132,8 +132,10 @@
 
         <div class="runner-lives" id="runnerLives" aria-label="남은 목숨">♥♥♥</div>
 
-        <div class="runner-stage runner-underwater" id="runnerStage">
-          <div class="runner-water-light"></div>
+        <div class="runner-stage runner-surf-scene" id="runnerStage">
+          <div class="runner-sky-glow"></div>
+          <div class="runner-wave runner-wave-back" aria-hidden="true"></div>
+          <div class="runner-wave runner-wave-front" aria-hidden="true"></div>
           <div class="runner-fishies" aria-hidden="true">
             <span class="runner-fish runner-fish-1">🐟</span>
             <span class="runner-fish runner-fish-2">🐠</span>
@@ -155,7 +157,14 @@
               <div class="runner-hit-line" aria-hidden="true">
                 <span class="runner-hit-glow"></span>
               </div>
-              <img src="/images/giryong/giryong-basic.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
+              <div class="runner-surfer" id="runnerSurfer">
+                <div class="runner-surfboard" aria-hidden="true">
+                  <span class="runner-board-deck"></span>
+                  <span class="runner-board-fin"></span>
+                </div>
+                <img src="/images/giryong/giryong-basic.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
+                <span class="runner-spray" aria-hidden="true"></span>
+              </div>
               <div class="runner-lane-scroll" id="runnerLaneScroll">
                 <div id="runnerScorePreview" class="runner-score-inline"></div>
               </div>

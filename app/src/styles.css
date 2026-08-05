@@ -3051,12 +3051,79 @@ body.lesson-open {
   50% { opacity: 1; }
 }
 
+.patissier-giryong-wrap {
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  width: 72px;
+  height: 78px;
+}
+
+.patissier-chef-hat {
+  position: absolute;
+  left: 6px;
+  top: -2px;
+  width: 52px;
+  height: 38px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chef-hat-top {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 44px;
+  height: 28px;
+  border-radius: 50% 50% 42% 42% / 68% 68% 32% 32%;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 55%, #e8e8e8 100%);
+  border: 2px solid #d8d8d8;
+  box-shadow: inset 0 -4px 8px #00000012, 0 2px 4px #3d281833;
+}
+
+.chef-hat-top::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 8px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff99;
+  transform: rotate(-18deg);
+}
+
+.chef-hat-top::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  width: 6px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00000008;
+  transform: rotate(12deg);
+}
+
+.chef-hat-band {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 52px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #ffffff, #e0e0e0);
+  border: 2px solid #c8c8c8;
+  box-shadow: 0 2px 4px #3d281844;
+}
+
 .patissier-giryong {
   position: absolute;
-  right: 16px;
-  bottom: 4px;
+  left: 4px;
+  bottom: 2px;
   width: 64px;
   height: auto;
+  z-index: 1;
   filter: drop-shadow(0 4px 8px #3d281866);
   transform: scaleX(-1);
 }

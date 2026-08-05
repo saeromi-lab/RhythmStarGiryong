@@ -1062,7 +1062,7 @@ function getRunnerStage() {
     return {
       measures: [pendingThrowChallenge.measure],
       bpm: pendingThrowChallenge.bpm,
-      title: '던진 리듬 도전!',
+      title: '파티시에 케이크 도전!',
     };
   }
   const ex = getRunnerExercise();
@@ -1269,7 +1269,7 @@ function renderThrowMaker() {
   const grid = $('throwGrid');
   if (!grid) return;
   grid.innerHTML = throwGrid.map((on, i) => `
-    <button type="button" class="throw-cell ${on ? 'on' : ''}" data-i="${i}" aria-label="${i + 1}번 칸">
+    <button type="button" class="throw-cell ${on ? 'on baked' : ''}" data-i="${i}" aria-label="${i + 1}번 재료 칸">
       ${on ? '♪' : '·'}
     </button>
   `).join('');
@@ -1298,11 +1298,11 @@ function initThrow() {
   $('throwGenerate')?.addEventListener('click', () => {
     renderThrowMaker();
     const code = $('throwCodeOut').value;
-    $('throwJudgeFlash').textContent = `던졌어요! 코드: ${code}`;
+    $('throwJudgeFlash').textContent = `굽기 완료! 케이크 코드: ${code}`;
     $('throwJudgeFlash').className = 'judge-flash show perfect';
     setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 2000);
     $('throwChallenge').disabled = false;
-    sayGiryong('perfect', '친구에게 코드를 알려줘!');
+    sayGiryong('perfect', '리듬 케이크 완성! 코드를 나눠줘!');
   });
 
   $('throwLoad')?.addEventListener('click', () => {
@@ -1325,7 +1325,7 @@ function initThrow() {
     const measure = gridToMeasure(throwGrid);
     pendingThrowChallenge = { measure, bpm: throwBpm, grid: [...throwGrid] };
     setPlayMode('runner');
-    sayGiryong('excited', '던진 리듬! 서핑 시작을 눌러!');
+    sayGiryong('excited', '파티시에 케이크! 서핑 시작을 눌러 맛보자!');
   });
 
   renderThrowMaker();

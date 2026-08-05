@@ -100,7 +100,7 @@
         <div class="sec-label">플레이 모드</div>
         <div class="mode-switch mode-switch-5" id="modeSwitch">
           <button class="mode-btn active" data-mode="runner">비트 서핑</button>
-          <button class="mode-btn" data-mode="throw">리듬 던지기</button>
+          <button class="mode-btn" data-mode="throw">리듬 파티시에</button>
           <button class="mode-btn" data-mode="train">메트로놈 훈련</button>
           <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
           <button class="mode-btn" data-mode="placement">레벨 테스트</button>
@@ -186,35 +186,45 @@
         </div>
       </div>
 
-      <div class="card throw-card" id="throwCard" style="display:none">
-        <div class="sec-label">리듬 던지기 — 리듬 구구단</div>
-        <p class="hint">칸을 눌러 리듬 만들기 → 코드로 던지기 → 친구가 TAP으로 맞추기</p>
+      <div class="card throw-card patissier-card" id="throwCard" style="display:none">
+        <div class="sec-label">리듬 파티시에 — 리듬 조합 굽기</div>
+        <p class="hint">칸을 눌러 리듬 재료 넣기 → 굽기 완료 후 코드 공유 → 친구가 서핑으로 맛보기</p>
+
+        <div class="patissier-stage" aria-hidden="true">
+          <div class="patissier-oven">
+            <span class="patissier-oven-window"></span>
+            <span class="patissier-oven-glow"></span>
+          </div>
+          <img src="/images/giryong/giryong-dressed.png" alt="" class="patissier-giryong">
+          <span class="patissier-tray">🧁</span>
+        </div>
 
         <div class="throw-maker">
           <label class="train-setting throw-bpm">
-            <span>BPM</span>
+            <span>굽기 BPM</span>
             <input type="range" id="throwBpm" min="60" max="120" value="88" step="2">
             <strong id="throwBpmVal">88</strong>
           </label>
-          <div class="throw-grid-label">8분음표 칸 탭해서 리듬 만들기 (1=♪)</div>
+          <div class="throw-grid-label">8분음표 칸 탭해서 리듬 재료 넣기 (1=♪)</div>
           <div class="throw-grid" id="throwGrid"></div>
+          <div class="throw-preview-label">완성 미리보기</div>
           <div id="throwPreview" class="throw-preview"></div>
         </div>
 
         <div class="throw-share">
           <div class="throw-code-row">
-            <input type="text" id="throwCodeOut" class="throw-code-input" readonly placeholder="던지기 후 코드 표시">
-            <button type="button" id="throwGenerate" class="secondary-btn">던지기!</button>
+            <input type="text" id="throwCodeOut" class="throw-code-input" readonly placeholder="굽기 완료 후 케이크 코드 표시">
+            <button type="button" id="throwGenerate" class="secondary-btn patissier-bake-btn">굽기 완료!</button>
           </div>
           <div class="throw-code-row">
-            <input type="text" id="throwCodeIn" class="throw-code-input" placeholder="받은 코드 입력 (RSG88-11110000)">
-            <button type="button" id="throwLoad" class="secondary-btn">불러오기</button>
+            <input type="text" id="throwCodeIn" class="throw-code-input" placeholder="받은 케이크 코드 (RSG88-11110000)">
+            <button type="button" id="throwLoad" class="secondary-btn">레시피 불러오기</button>
           </div>
         </div>
 
         <div class="judge-flash" id="throwJudgeFlash"></div>
         <div class="arcade-controls">
-          <button id="throwChallenge" class="primary arcade-btn" disabled>이 리듬 도전하기</button>
+          <button id="throwChallenge" class="primary arcade-btn patissier-taste-btn" disabled>이 리듬 맛보기 (서핑)</button>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-/** 리듬 던지기 — 만들기·코드 공유·도전 (모바일 TAP, 구구단식) */
+/** 리듬 파티시에 — 리듬 조합·굽기·코드 공유·도전 */
 
 import { N, R, groupsToPlayPattern } from './rhythm-groups.js';
 

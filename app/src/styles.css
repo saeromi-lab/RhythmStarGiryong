@@ -3004,7 +3004,7 @@ body.lesson-open {
 
 .patissier-stage {
   position: relative;
-  height: 88px;
+  height: 118px;
   margin-bottom: 14px;
   border-radius: 14px;
   background: linear-gradient(180deg, #fff8f044, #ffe8c822);
@@ -3014,36 +3014,165 @@ body.lesson-open {
 
 .patissier-oven {
   position: absolute;
-  left: 12px;
-  bottom: 8px;
-  width: 56px;
-  height: 48px;
+  left: 10px;
+  bottom: 10px;
+  width: 72px;
+  height: 58px;
   background: linear-gradient(180deg, #8b5a3c, #5c3d28);
-  border-radius: 8px 8px 10px 10px;
+  border-radius: 10px 10px 12px 12px;
   border: 2px solid #d4a574;
-  box-shadow: inset 0 -4px 8px #3d281866;
+  box-shadow: inset 0 -4px 8px #3d281866, 4px 4px 0 #3d281833;
+  z-index: 2;
 }
 
 .patissier-oven-window {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  top: 10px;
-  height: 22px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #ffb34755, #ff6b3544);
+  left: 10px;
+  right: 10px;
+  top: 12px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffb34744, #ff6b3533);
   border: 1px solid #ffd16666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.patissier-oven-cake {
+  font-size: 22px;
+  animation: cakePop 0.5s ease-out;
+  filter: drop-shadow(0 2px 4px #3d281844);
+}
+
+@keyframes cakePop {
+  0% { transform: scale(0.2); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
 }
 
 .patissier-oven-glow {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  height: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  height: 10px;
   border-radius: 4px;
   background: #ff8f6b88;
   animation: ovenGlow 1.8s ease-in-out infinite;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.patissier-stage.baking .patissier-oven-glow,
+.patissier-stage.done .patissier-oven-glow {
+  background: #ff6b35;
+  box-shadow: 0 0 16px #ff6b35cc, 0 0 28px #ff9f4a88;
+  animation: ovenGlowHot 0.35s ease-in-out infinite;
+}
+
+@keyframes ovenGlowHot {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.patissier-tray-wrap {
+  position: absolute;
+  left: 46%;
+  bottom: 22px;
+  z-index: 4;
+  transition: left 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+    bottom 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+}
+
+.patissier-stage.present .patissier-tray-wrap {
+  transform: translateX(-50%) translateY(-6px) scale(1.05);
+}
+
+.patissier-stage.baking .patissier-tray-wrap {
+  left: 38px;
+  bottom: 28px;
+  transform: translateX(0) scale(0.72) rotate(-4deg);
+}
+
+.patissier-stage.done .patissier-tray-wrap {
+  left: 42%;
+  bottom: 20px;
+  transform: translateX(-50%) scale(1);
+}
+
+.patissier-serving-tray {
+  position: relative;
+  min-width: 108px;
+  padding: 8px 10px 10px;
+  background: linear-gradient(180deg, #e8e8e8 0%, #c8c8c8 45%, #a8a8a8 100%);
+  border-radius: 50% 50% 44% 44% / 55% 55% 45% 45%;
+  border: 2px solid #f5f5f5;
+  box-shadow: 0 6px 12px #3d281844, inset 0 2px 0 #fff8;
+  animation: trayBob 2.4s ease-in-out infinite;
+}
+
+.patissier-stage.baking .patissier-serving-tray,
+.patissier-stage.done .patissier-serving-tray {
+  animation: none;
+}
+
+.patissier-tray-rhythm {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+  min-height: 28px;
+  transition: opacity 0.35s;
+}
+
+.tray-beat {
+  width: 10px;
+  height: 22px;
+  border-radius: 6px;
+  background: #fffef8;
+  border: 1px solid #d4a57455;
+  font-size: 9px;
+  line-height: 22px;
+  text-align: center;
+  color: #b8a080;
+}
+
+.tray-beat.on {
+  background: linear-gradient(180deg, #ffe8a8, #ffb347);
+  border-color: #e86b2a;
+  color: #8b4513;
+  font-weight: 700;
+  transform: scale(1.08);
+}
+
+.tray-empty {
+  font-size: 11px;
+  color: #8b7355;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.patissier-tray-cake {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  filter: drop-shadow(0 3px 6px #3d281866);
+  animation: cakePop 0.55s ease-out;
+}
+
+.patissier-stage.baking .patissier-giryong-wrap {
+  animation: giryongPushTray 0.75s ease-in-out;
+}
+
+@keyframes giryongPushTray {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-12px); }
+  70% { transform: translateX(-6px); }
 }
 
 @keyframes ovenGlow {
@@ -3053,10 +3182,12 @@ body.lesson-open {
 
 .patissier-giryong-wrap {
   position: absolute;
-  right: 12px;
+  right: 10px;
   bottom: 0;
   width: 72px;
   height: 78px;
+  z-index: 3;
+  transition: transform 0.4s ease;
 }
 
 .patissier-chef-hat {
@@ -3128,18 +3259,9 @@ body.lesson-open {
   transform: scaleX(-1);
 }
 
-.patissier-tray {
-  position: absolute;
-  right: 88px;
-  bottom: 14px;
-  font-size: 28px;
-  filter: drop-shadow(0 2px 4px #3d281844);
-  animation: trayBob 2s ease-in-out infinite;
-}
-
 @keyframes trayBob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-5px); }
 }
 
 .throw-preview-label {

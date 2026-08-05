@@ -1265,7 +1265,55 @@ function initRunner() {
   });
 }
 
+function resetPatissierBakeVisual() {
+  const stage = $('patissierStage');
+  stage?.classList.remove('present', 'baking', 'done');
+  const trayRhythm = $('patissierTrayRhythm');
+  const trayCake = $('patissierTrayCake');
+  const ovenCake = $('patissierOvenCake');
+  if (trayRhythm) trayRhythm.style.opacity = '1';
+  if (trayCake) trayCake.hidden = true;
+  if (ovenCake) ovenCake.hidden = true;
+}
+
+function renderPatissierTray() {
+  const el = $('patissierTrayRhythm');
+  if (!el) return;
+  if (throwGrid.every((v) => !v)) {
+    el.innerHTML = '<span class="tray-empty">재료 넣기 ♪</span>';
+    return;
+  }
+  el.innerHTML = throwGrid.map((on) => `
+    <span class="tray-beat ${on ? 'on' : ''}">${on ? '♪' : '·'}</span>
+  `).join('');
+}
+
+function playPatissierBake(onComplete) {
+  const stage = $('patissierStage');
+  resetPatissierBakeVisual();
+  stage?.classList.add('present');
+
+  setTimeout(() => {
+    stage?.classList.remove('present');
+    stage?.classList.add('baking');
+  }, 450);
+
+  setTimeout(() => {
+    stage?.classList.remove('baking');
+    stage?.classList.add('done');
+    const trayRhythm = $('patissierTrayRhythm');
+    const trayCake = $('patissierTrayCake');
+    const ovenCake = $('patissierOvenCake');
+    if (trayRhythm) trayRhythm.style.opacity = '0';
+    if (trayCake) trayCake.hidden = false;
+    if (ovenCake) ovenCake.hidden = false;
+    onComplete?.();
+  }, 1650);
+}
+
 function renderThrowMaker() {
+  resetPatissierBakeVisual();
+  renderPatissierTray();
   const grid = $('throwGrid');
   if (!grid) return;
   grid.innerHTML = throwGrid.map((on, i) => `
@@ -1296,13 +1344,25 @@ function initThrow() {
   });
 
   $('throwGenerate')?.addEventListener('click', () => {
+    const measure = gridToMeasure(throwGrid);
+    if (measure.every((g) => g.t === 'r')) {
+      $('throwJudgeFlash').textContent = '리듬 재료를 하나 이상 넣어줘!';
+      $('throwJudgeFlash').className = 'judge-flash show miss';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 1500);
+      return;
+    }
+    const bakeBtn = $('throwGenerate');
+    bakeBtn.disabled = true;
     renderThrowMaker();
-    const code = $('throwCodeOut').value;
-    $('throwJudgeFlash').textContent = `굽기 완료! 케이크 코드: ${code}`;
-    $('throwJudgeFlash').className = 'judge-flash show perfect';
-    setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 2000);
-    $('throwChallenge').disabled = false;
-    sayGiryong('perfect', '리듬 케이크 완성! 코드를 나눠줘!');
+    playPatissierBake(() => {
+      const code = $('throwCodeOut').value;
+      $('throwJudgeFlash').textContent = `굽기 완료! 케이크 코드: ${code}`;
+      $('throwJudgeFlash').className = 'judge-flash show perfect';
+      setTimeout(() => $('throwJudgeFlash').classList.remove('show'), 2500);
+      $('throwChallenge').disabled = false;
+      sayGiryong('perfect', '리듬 케이크 완성! 코드를 나눠줘!');
+      bakeBtn.disabled = false;
+    });
   });
 
   $('throwLoad')?.addEventListener('click', () => {

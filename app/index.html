@@ -188,21 +188,28 @@
 
       <div class="card throw-card patissier-card" id="throwCard" style="display:none">
         <div class="sec-label">리듬 파티시에 — 리듬 조합 굽기</div>
-        <p class="hint">칸을 눌러 리듬 재료 넣기 → 굽기 완료 후 코드 공유 → 친구가 서핑으로 맛보기</p>
+        <p class="hint">재료 칸 탭 → 쟁반에 리듬 제시 → 굽기 완료로 오븐에 넣기 → 코드 공유</p>
 
-        <div class="patissier-stage" aria-hidden="true">
-          <div class="patissier-oven">
-            <span class="patissier-oven-window"></span>
-            <span class="patissier-oven-glow"></span>
+        <div class="patissier-stage" id="patissierStage">
+          <div class="patissier-oven" id="patissierOven">
+            <span class="patissier-oven-window">
+              <span class="patissier-oven-cake" id="patissierOvenCake" hidden>🧁</span>
+            </span>
+            <span class="patissier-oven-glow" id="patissierOvenGlow"></span>
           </div>
-          <div class="patissier-giryong-wrap">
+          <div class="patissier-tray-wrap" id="patissierTrayWrap">
+            <div class="patissier-serving-tray">
+              <div id="patissierTrayRhythm" class="patissier-tray-rhythm"></div>
+              <span class="patissier-tray-cake" id="patissierTrayCake" hidden aria-hidden="true">🧁</span>
+            </div>
+          </div>
+          <div class="patissier-giryong-wrap" id="patissierGiryongWrap">
             <span class="patissier-chef-hat" aria-hidden="true">
               <span class="chef-hat-top"></span>
               <span class="chef-hat-band"></span>
             </span>
             <img src="/images/giryong/giryong-dressed.png" alt="기룡이 파티시에" class="patissier-giryong">
           </div>
-          <span class="patissier-tray">🧁</span>
         </div>
 
         <div class="throw-maker">
@@ -213,7 +220,7 @@
           </label>
           <div class="throw-grid-label">8분음표 칸 탭해서 리듬 재료 넣기 (1=♪)</div>
           <div class="throw-grid" id="throwGrid"></div>
-          <div class="throw-preview-label">완성 미리보기</div>
+          <div class="throw-preview-label">악보 자세히 보기</div>
           <div id="throwPreview" class="throw-preview"></div>
         </div>
 

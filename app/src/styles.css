@@ -2352,7 +2352,7 @@ body.lesson-open {
   }
 }
 
-/* —— 리듬 수영 (물속 기룡이) —— */
+/* —— 비트 서핑 (물속 기룡이) —— */
 .runner-hud {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

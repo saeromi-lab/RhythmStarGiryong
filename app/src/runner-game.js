@@ -1,4 +1,4 @@
-/** 리듬 러너 — ChordRunner 스타일, 모바일 TAP + 악보 리듬 */
+/** 비트 서핑 — ChordRunner 스타일, 모바일 TAP + 악보 리듬 */
 
 import { MetronomeTrainer } from './metronome-trainer.js';
 

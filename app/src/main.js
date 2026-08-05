@@ -193,7 +193,7 @@ function renderMissions() {
   const quests = [
     { done: checked, label: '진주조개 도장 찍기', reward: '15🪙' },
     { done: profile.dailyQuiz, label: '리듬 퀴즈 1회', reward: '25 XP' },
-    { done: profile.dailyArcade, label: '리듬 수영 1회', reward: '20 XP' },
+    { done: profile.dailyArcade, label: '비트 서핑 1회', reward: '20 XP' },
     { done: profile.dailyCombo10, label: 'COMBO 10+', reward: '보너스' },
   ];
   $('dailyMissions').innerHTML = quests.map((q) => `
@@ -1138,7 +1138,7 @@ function resetRunnerUI() {
 function showRunnerResult(result, { cleared, title, bpm }) {
   $('runnerCard').style.display = 'none';
   $('resultCard').style.display = 'block';
-  $('resultTitle').textContent = cleared ? '수영 완주!' : '수영 종료';
+  $('resultTitle').textContent = cleared ? '서핑 완주!' : '서핑 종료';
   $('resultBody').innerHTML = `
     <div class="result-score">${result.score.toLocaleString()}</div>
     <p class="result-clear-msg">${title} · ${bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
@@ -1165,7 +1165,7 @@ function showRunnerResult(result, { cleared, title, bpm }) {
     renderRank();
   } else {
     setGiryongMood('sad');
-    sayGiryong('miss', '물살을 다시 맞춰보자!');
+    sayGiryong('miss', '파도 타이밍을 다시 맞춰보자!');
   }
   pendingThrowChallenge = null;
 }
@@ -1324,7 +1324,7 @@ function initThrow() {
     const measure = gridToMeasure(throwGrid);
     pendingThrowChallenge = { measure, bpm: throwBpm, grid: [...throwGrid] };
     setPlayMode('runner');
-    sayGiryong('excited', '던진 리듬! 런 시작을 눌러!');
+    sayGiryong('excited', '던진 리듬! 서핑 시작을 눌러!');
   });
 
   renderThrowMaker();

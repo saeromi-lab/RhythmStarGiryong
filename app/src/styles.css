@@ -18,6 +18,9 @@
   --great: #ffd166;
   --good: #7ed4c8;
   --miss: #ff6b6b;
+  --giryong-avatar-size: 64px;
+  --giryong-avatar-wrap-w: 80px;
+  --giryong-avatar-wrap-h: 76px;
 }
 
 body {
@@ -2829,8 +2832,8 @@ body.lesson-open {
   position: absolute;
   left: 4px;
   bottom: 10px;
-  width: 88px;
-  height: 78px;
+  width: var(--giryong-avatar-wrap-w);
+  height: var(--giryong-avatar-wrap-h);
   z-index: 6;
   transform-origin: center bottom;
   animation: surferBob 2.2s ease-in-out infinite;
@@ -2868,16 +2871,22 @@ body.lesson-open {
   box-shadow: 0 2px 4px #0a284044;
 }
 
-.runner-giryong {
-  position: absolute;
-  left: 10px;
-  bottom: 14px;
-  width: 64px;
-  height: auto;
-  z-index: 2;
+.runner-giryong,
+.patissier-giryong {
+  width: var(--giryong-avatar-size);
+  height: var(--giryong-avatar-size);
+  object-fit: contain;
+  object-position: center bottom;
   filter: drop-shadow(0 4px 8px #0a2840aa);
   transform: scaleX(-1);
   transform-origin: center bottom;
+}
+
+.runner-giryong {
+  position: absolute;
+  left: 8px;
+  bottom: 12px;
+  z-index: 2;
 }
 
 .runner-spray {
@@ -3184,8 +3193,8 @@ body.lesson-open {
   position: absolute;
   right: 10px;
   bottom: 0;
-  width: 72px;
-  height: 78px;
+  width: var(--giryong-avatar-wrap-w);
+  height: var(--giryong-avatar-wrap-h);
   z-index: 3;
   transition: transform 0.4s ease;
 }
@@ -3250,13 +3259,9 @@ body.lesson-open {
 
 .patissier-giryong {
   position: absolute;
-  left: 4px;
-  bottom: 2px;
-  width: 64px;
-  height: auto;
+  left: 8px;
+  bottom: 0;
   z-index: 1;
-  filter: drop-shadow(0 4px 8px #3d281866);
-  transform: scaleX(-1);
 }
 
 @keyframes trayBob {

@@ -29,7 +29,7 @@ import {
   QUIZ_SCORE,
 } from './quiz-data.js';
 import { buildQuizRound, buildUnitQuizRound } from './quiz-round.js';
-import { CURRICULUM_UNITS, unitsForLevel } from './rhythm-curriculum.js';
+import { CURRICULUM_UNITS, unitsForLevel, getUnit } from './rhythm-curriculum.js';
 import { QUIZ_TYPE_LABELS } from './quiz-extra.js';
 import {
   PLACEMENT_SIZE,
@@ -817,6 +817,12 @@ function showTrainCountIn(beat, total) {
   el.textContent = `예비박 ${beat} / ${total}`;
   el.className = 'judge-flash show';
   setTimeout(() => el.classList.remove('show'), 200);
+  if (trainSession && total > 0) {
+    setTrainFlashState({
+      phase: `예비박 ${beat} / ${total}`,
+      hint: beat < total ? '박자를 세며 준비하세요' : '곧 TAP! 커서를 따라가요',
+    });
+  }
 }
 
 function setTrainScoreActive(hitIdx) {
@@ -843,7 +849,7 @@ function flashTrainJudge(key, pts, combo, hitIdx, posIdx) {
   }
   el.className = `judge-flash show ${key}`;
   setTimeout(() => el.classList.remove('show'), 380);
-  $('trainScore').textContent = (trainer?.score ?? 0).toLocaleString();
+  $('trainScore').textContent = getTrainDisplayScore().toLocaleString();
   $('trainCombo').textContent = combo;
   if (hitIdx != null) markTrainScoreHit(hitIdx, key);
 }
@@ -862,6 +868,9 @@ function updateTrainPreview() {
       bpmInput.value = ex.bpm;
       if (bpmVal) bpmVal.textContent = ex.bpm;
     }
+  }
+  if ($('trainFlashHint') && !trainSession) {
+    $('trainFlashHint').textContent = '선택한 리듬 미리보기';
   }
 }
 
@@ -930,6 +939,91 @@ function renderTrainPatternPicker() {
       updateTrainPreview();
     });
   });
+}
+
+function getTrainDisplayScore() {
+  if (!trainSession) return trainer?.score ?? 0;
+  return (trainSession.sessionScore ?? 0) + (trainer?.score ?? 0);
+}
+
+function setTrainFlashState({ num, phase, hint, tapHint = false }) {
+  const numEl = $('trainFlashNum');
+  const phaseEl = $('trainFlashPhase');
+  const hintEl = $('trainFlashHint');
+  if (num && numEl) numEl.textContent = num;
+  if (phase && phaseEl) phaseEl.textContent = phase;
+  if (hint && hintEl) {
+    hintEl.textContent = hint;
+    hintEl.classList.toggle('train-flash-hint-tap', tapHint);
+  }
+}
+
+function enterTrainSessionUI() {
+  $('trainSetup')?.classList.add('train-setup-hidden');
+  const intro = $('trainIntroHint');
+  if (intro) intro.textContent = '카드에 나온 리듬을 순서대로 TAP!';
+  const meta = $('trainFlashMeta');
+  if (meta) meta.hidden = false;
+  const start = $('trainStart');
+  if (start) start.hidden = true;
+}
+
+function exitTrainSessionUI() {
+  $('trainSetup')?.classList.remove('train-setup-hidden');
+  const intro = $('trainIntroHint');
+  if (intro) intro.textContent = '플래시카드처럼 리듬을 하나씩 보고 · 예비박 후 TAP! · 5문제 연속';
+  const meta = $('trainFlashMeta');
+  if (meta) meta.hidden = true;
+  const start = $('trainStart');
+  if (start) {
+    start.hidden = false;
+    start.disabled = false;
+  }
+  const card = $('trainFlashCard');
+  if (card) {
+    card.classList.remove(
+      'train-flash-enter',
+      'train-flash-exit',
+      'train-flash-done-ok',
+      'train-flash-done-miss',
+      'train-flash-tap',
+    );
+  }
+  const hintEl = $('trainFlashHint');
+  if (hintEl) {
+    hintEl.textContent = '선택한 리듬 미리보기';
+    hintEl.classList.remove('train-flash-hint-tap');
+  }
+}
+
+function animateTrainFlashCard(className) {
+  const card = $('trainFlashCard');
+  if (!card) return;
+  card.classList.remove(
+    'train-flash-enter',
+    'train-flash-exit',
+    'train-flash-done-ok',
+    'train-flash-done-miss',
+    'train-flash-tap',
+  );
+  if (className) card.classList.add(className);
+}
+
+async function presentTrainFlashCard(round) {
+  const total = trainSession.rounds.length;
+  const idx = trainSession.index;
+  const unit = getUnit(round.exercise.unitId);
+  const unitLabel = unit?.title?.replace(/^\d+과 · /, '') ?? '리듬';
+
+  prepareTrainRoundPreview(round);
+  animateTrainFlashCard('train-flash-enter');
+  setTrainFlashState({
+    num: `문제 ${idx + 1} / ${total}`,
+    phase: '문제 제시',
+    hint: `${unitLabel} · ${round.bars}마디 — 잠시 후 예비박`,
+  });
+  updateTrainRoundHud();
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
 function updateTrainRoundHud() {
@@ -1031,6 +1125,7 @@ function showTrainSessionResult() {
     sayGiryong('miss', `${agg.clearedRounds}/${TRAIN_SESSION_SIZE} 클리어!`);
   }
   trainSession = null;
+  exitTrainSessionUI();
 }
 
 async function handleTrainRoundEnd(result, meta) {
@@ -1047,17 +1142,22 @@ async function handleTrainRoundEnd(result, meta) {
   trainSession.sessionScore = (trainSession.sessionScore ?? 0) + result.score;
   $('trainScore').textContent = trainSession.sessionScore.toLocaleString();
 
+  const cleared = result.cleared;
+  animateTrainFlashCard(cleared ? 'train-flash-done-ok' : 'train-flash-done-miss');
+  setTrainFlashState({
+    phase: cleared ? '무실수 ✓' : `MISS ${result.miss}`,
+    hint: cleared ? '다음 카드로 넘어갈게요!' : '다음 문제에서 다시 맞춰봐요',
+    tapHint: false,
+  });
+
   if (trainSession.index < trainSession.rounds.length - 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    animateTrainFlashCard('train-flash-exit');
+    await new Promise((resolve) => setTimeout(resolve, 380));
     trainSession.index += 1;
-    updateTrainRoundHud();
-    const flash = $('trainJudgeFlash');
-    if (flash) {
-      flash.textContent = `다음 리듬! ${trainSession.index + 1}/${trainSession.rounds.length}`;
-      flash.className = 'judge-flash show perfect';
-      setTimeout(() => flash.classList.remove('show'), 700);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    await runTrainRound();
+    trainSession.tapPhaseShown = false;
+    await presentTrainFlashCard(trainSession.rounds[trainSession.index]);
+    await runTrainRoundPlay();
     return;
   }
 
@@ -1065,7 +1165,7 @@ async function handleTrainRoundEnd(result, meta) {
   showTrainSessionResult();
 }
 
-async function runTrainRound() {
+async function runTrainRoundPlay() {
   const tapBtn = $('trainTap');
   const startBtn = $('trainStart');
   if (!trainSession) return;
@@ -1074,8 +1174,6 @@ async function runTrainRound() {
   const bpm = trainSession.bpm;
   const totalTaps = countTrainNotes(round.measures);
 
-  prepareTrainRoundPreview(round);
-  updateTrainRoundHud();
   $('trainProgress').textContent = `0/${totalTaps}`;
   $('trainCombo').textContent = '0';
   resetTrainScoreHighlights();
@@ -1088,7 +1186,18 @@ async function runTrainRound() {
     strict: false,
     binaryJudge: true,
     onCountIn: showTrainCountIn,
-    onCursor: setTrainCursor,
+    onCursor: (state) => {
+      setTrainCursor(state);
+      if (trainSession && state.phase === 'play' && !trainSession.tapPhaseShown) {
+        trainSession.tapPhaseShown = true;
+        animateTrainFlashCard('train-flash-tap');
+        setTrainFlashState({
+          phase: 'TAP!',
+          hint: '커서가 음표 위에 있을 때 TAP! (스페이스바)',
+          tapHint: true,
+        });
+      }
+    },
     onNote: (idx) => setTrainScoreActive(idx),
     onJudge: flashTrainJudge,
     onProgress: (hit, total) => {
@@ -1108,6 +1217,11 @@ async function runTrainRound() {
   });
 
   await trainer.start();
+}
+
+async function runTrainRound() {
+  await presentTrainFlashCard(trainSession.rounds[trainSession.index]);
+  await runTrainRoundPlay();
 }
 
 function initTrain() {
@@ -1150,6 +1264,7 @@ function initTrain() {
       results: [],
       bpm,
       sessionScore: 0,
+      tapPhaseShown: false,
     };
 
     startBtn.disabled = true;
@@ -1159,6 +1274,7 @@ function initTrain() {
     $('trainProgress').textContent = '0/0';
     updateTrainRoundHud();
     setGiryongMood('focus');
+    enterTrainSessionUI();
 
     await runTrainRound();
   });
@@ -1276,6 +1392,7 @@ function handlePlayAgain() {
   } else if (playMode === 'train') {
     trainSession = null;
     trainer?.stop();
+    exitTrainSessionUI();
     $('trainCard').style.display = 'block';
     $('trainStart').disabled = false;
     $('trainTap').disabled = true;

@@ -1903,6 +1903,46 @@ body.lesson-open {
   align-self: flex-end;
 }
 
+.lesson-prep-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #e8f7fe;
+  border: 2px solid var(--duo-blue);
+  color: var(--duo-blue);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  animation: lesson-prep-pulse 0.9s ease-in-out infinite;
+}
+
+.lesson-prep-banner[hidden] {
+  display: none;
+}
+
+.lesson-prep-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--duo-blue);
+  flex-shrink: 0;
+  animation: lesson-prep-dot 0.9s ease-in-out infinite;
+}
+
+@keyframes lesson-prep-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+
+@keyframes lesson-prep-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
+}
+
 .audio-icon {
   font-size: 26px;
 }
@@ -2076,9 +2116,45 @@ body.lesson-open {
 }
 
 .odd-select {
-  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.odd-option-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--duo-blue);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.odd-option-desc {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--duo-text);
+}
+
+.odd-select.selected .odd-option-letter {
+  background: #1cb0f6;
+}
+
+.odd-select.correct .odd-option-letter {
+  background: var(--duo-green);
+}
+
+.odd-select.wrong .odd-option-letter {
+  background: var(--duo-red);
 }
 
 .odd-select.odd-playing {

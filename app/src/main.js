@@ -47,6 +47,7 @@ import {
   countTrainNotes,
 } from './train-data.js';
 import { renderPatternGridHtml, renderTrainScoreHtml, renderPatternPickerHtml } from './rhythm-display.js';
+import { getQuizMeterConfig } from './fill-quiz.js';
 
 const TIER_LABELS = {
   beginner: '입문',
@@ -375,6 +376,7 @@ function closeLessonOverlay() {
   $('lessonOverlay').hidden = true;
   $('lessonFeedback').hidden = true;
   document.body.classList.remove('lesson-open');
+  hideLessonPrep();
   rhythmPlayer?.stop();
 }
 
@@ -384,11 +386,27 @@ function updateLessonProgress() {
   const pct = (quizState.index / total) * 100;
   $('lessonProgressFill').style.width = `${pct}%`;
   const streakLbl = $('lessonStreakLbl');
-  if (quizState.streak >= 2 && !isPlacementMode()) {
-    streakLbl.textContent = `${quizState.streak}번 연속 정답`;
+  if (quizState.streak >= 2) {
+    streakLbl.textContent = `${quizState.streak}번 연속 정답!`;
   } else {
     streakLbl.textContent = '';
   }
+}
+
+function showLessonPrep(text) {
+  const banner = $('lessonPrepBanner');
+  const textEl = $('lessonPrepText');
+  if (!banner || !textEl) return;
+  textEl.textContent = text;
+  banner.hidden = false;
+  banner.classList.add('active');
+}
+
+function hideLessonPrep() {
+  const banner = $('lessonPrepBanner');
+  if (!banner) return;
+  banner.hidden = true;
+  banner.classList.remove('active');
 }
 
 function renderLessonQuestion() {
@@ -409,14 +427,17 @@ function renderLessonQuestion() {
     listen: '🔊로 듣고, 같은 리듬 칸을 고르세요',
     fill: '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요',
     meter: '이 마디의 박자표는 무엇일까요?',
-    count: '8분음표 칸은 모두 몇 칸일까요?',
+    count: '이 마디는 8분음표 칸이 모두 몇 칸으로 이루어졌을까요?',
     odd: '🔊 A→B→C→D 순서로 듣고, 다른 리듬 1개를 고르세요',
   };
 
   $('lessonInstruction').textContent = instructions[qType] ?? '정답을 고르세요';
   if (metroBtn) {
     metroBtn.hidden = !['listen', 'odd', 'fill', 'count', 'meter'].includes(qType);
-    metroBtn.title = (q.bars ?? 1) >= 2 ? '기본박 8박' : '기본박 4박';
+    const meterCfg = getQuizMeterConfig(q.meter ?? q.meterId ?? '4/4', q.bars ?? 1);
+    const prepLabel = meterCfg.prepKind === 'compound' ? '복박 예비박' : '기본박 예비박';
+    const totalPrep = meterCfg.prepBars * meterCfg.beatsPerBar;
+    metroBtn.title = `${prepLabel} ${totalPrep}번`;
   }
 
   if (qType === 'fill') {
@@ -453,8 +474,11 @@ function renderLessonQuestion() {
     if (qType === 'odd') {
       return `
         <div class="odd-option-row">
-          <button type="button" class="odd-play-mini" data-play-id="${opt.id}" aria-label="${opt.label} 리듬 듣기">🔊</button>
-          <button type="button" class="duo-choice duo-choice-text odd-select" data-id="${opt.id}">${opt.label}</button>
+          <button type="button" class="odd-play-mini" data-play-id="${opt.id}" aria-label="보기 ${opt.id} 리듬 듣기">🔊</button>
+          <button type="button" class="duo-choice duo-choice-text odd-select" data-id="${opt.id}">
+            <span class="odd-option-letter">${opt.id}</span>
+            <span class="odd-option-desc">보기 ${opt.id}</span>
+          </button>
         </div>
       `;
     }
@@ -521,8 +545,28 @@ async function playLessonBasicBeat(slow = false) {
   const q = quizState?.questions[quizState.index];
   if (!q) return;
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
-  const bars = q.bars ?? 1;
-  await rhythmPlayer.playBasicBeats(q.bpm, { bars, slow });
+  const meterCfg = getQuizMeterConfig(q.meter ?? q.meterId ?? '4/4', q.bars ?? 1);
+  const prepLabel = meterCfg.prepKind === 'compound' ? '복박 예비박' : '예비박';
+  const totalPrep = meterCfg.prepBars * meterCfg.beatsPerBar;
+
+  hideLessonPrep();
+  await rhythmPlayer.playBasicBeats(q.bpm, {
+    bars: meterCfg.prepBars,
+    beatsPerBar: meterCfg.beatsPerBar,
+    slow,
+    onBeat: (beat, total) => showLessonPrep(`${prepLabel} ${beat} / ${total}`),
+  });
+  hideLessonPrep();
+}
+
+async function playLessonRhythm(slow = false) {
+  const q = quizState?.questions[quizState.index];
+  if (!q) return;
+  if (q.playTimeline?.length) {
+    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow, countdown: false });
+  } else if (q.correctPattern?.length) {
+    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow, countdown: false });
+  }
 }
 
 async function playOddSequence(slow = false) {
@@ -541,17 +585,20 @@ async function playOddSequence(slow = false) {
     $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
       btn.classList.toggle('odd-playing', btn.dataset.id === opt.id);
     });
+    showLessonPrep(`보기 ${opt.id} 재생 중`);
     if (opt.timeline?.length) {
       await rhythmPlayer.playTimeline(opt.timeline, q.bpm, { slow, countdown: false });
     } else {
       await rhythmPlayer.playPattern(opt.pattern, q.bpm, { slow, countdown: false });
     }
+    hideLessonPrep();
     await new Promise((resolve) => setTimeout(resolve, gapMs));
   }
 
   $('lessonOptions').querySelectorAll('.odd-select').forEach((btn) => {
     btn.classList.remove('odd-playing');
   });
+  hideLessonPrep();
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
     await setLessonAudioBusy(false);
   }
@@ -572,11 +619,7 @@ async function playLessonAudio(slow = false) {
     await new Promise((resolve) => setTimeout(resolve, 320));
   }
 
-  if (q.playTimeline?.length) {
-    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow, countdown: false });
-  } else {
-    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow, countdown: false });
-  }
+  await playLessonRhythm(slow);
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
     await setLessonAudioBusy(false);
   }

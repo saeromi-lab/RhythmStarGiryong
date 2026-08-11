@@ -135,34 +135,46 @@
 
       <div class="card train-card" id="trainCard" style="display:none">
         <div class="sec-label">메트로놈 리듬 탭 훈련</div>
-        <p class="hint">악보를 보고 메트로놈에 맞춰 같은 리듬으로 TAP! 하세요 · 무실수 클리어가 목표</p>
+        <p class="hint" id="trainIntroHint">플래시카드처럼 리듬을 하나씩 보고 · 예비박 후 TAP! · 5문제 연속</p>
 
-        <div class="train-tier-row" id="trainTierRow"></div>
-        <p class="hint train-tier-hint" id="trainTierHint"></p>
+        <div id="trainSetup" class="train-setup">
+          <div class="train-tier-row" id="trainTierRow"></div>
+          <p class="hint train-tier-hint" id="trainTierHint"></p>
 
-        <div class="train-settings">
-          <label class="train-setting train-setting-bpm">
-            <span>BPM</span>
-            <input type="range" id="trainBpm" min="60" max="140" value="88" step="2">
-            <strong id="trainBpmVal">88</strong>
-          </label>
+          <div class="train-settings">
+            <label class="train-setting train-setting-bpm">
+              <span>BPM</span>
+              <input type="range" id="trainBpm" min="60" max="140" value="88" step="2">
+              <strong id="trainBpmVal">88</strong>
+            </label>
+          </div>
+
+          <div class="sec-label sec-label-sm">연습할 리듬 미리보기 (선택)</div>
+          <div id="trainPatternPicker" class="train-pattern-picker"></div>
         </div>
 
-        <div class="sec-label sec-label-sm">리듬 악보 선택</div>
-        <div id="trainPatternPicker" class="train-pattern-picker"></div>
-
-        <div id="trainPatternPreview" class="train-pattern-preview"></div>
+        <div class="train-flash-zone" id="trainFlashZone">
+          <div class="train-flash-meta" id="trainFlashMeta" hidden>
+            <span class="train-flash-num" id="trainFlashNum">1 / 5</span>
+            <span class="train-flash-phase" id="trainFlashPhase">문제 제시</span>
+          </div>
+          <div class="train-flash-card" id="trainFlashCard">
+            <div id="trainPatternPreview" class="train-pattern-preview"></div>
+          </div>
+          <p class="train-flash-hint" id="trainFlashHint">리듬을 확인하세요</p>
+        </div>
 
         <div class="train-hud">
           <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="trainScore">0</span></div>
           <div><span class="hud-lbl">무실수</span><span class="hud-val combo" id="trainCombo">0</span></div>
+          <div><span class="hud-lbl">문제</span><span class="hud-val" id="trainRound">0/5</span></div>
           <div><span class="hud-lbl">TAP</span><span class="hud-val" id="trainProgress">0/0</span></div>
         </div>
 
         <div class="judge-flash" id="trainJudgeFlash"></div>
 
         <div class="arcade-controls">
-          <button id="trainStart" class="primary arcade-btn">훈련 시작</button>
+          <button id="trainStart" class="primary arcade-btn">플래시카드 시작</button>
           <button id="trainTap" class="tap-btn" disabled>TAP!</button>
         </div>
       </div>
@@ -249,6 +261,11 @@
         <button type="button" id="lessonListenSlow" class="lesson-audio-btn lesson-audio-slow" aria-label="느리게 듣기">
           <span class="audio-icon">🐢</span>
         </button>
+      </div>
+
+      <div id="lessonPrepBanner" class="lesson-prep-banner" hidden>
+        <span class="lesson-prep-dot" aria-hidden="true"></span>
+        <span id="lessonPrepText">예비박</span>
       </div>
 
       <div class="lesson-options" id="lessonOptions"></div>

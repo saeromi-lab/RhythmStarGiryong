@@ -23,17 +23,29 @@ const TIER_TYPES = {
 
 export const PLACEMENT_REWARD = { xp: 60, coins: 15 };
 
+function shuffleTierTypes(types, count) {
+  const bag = [...types];
+  const picked = [];
+  for (let i = 0; i < count; i += 1) {
+    if (!bag.length) bag.push(...types);
+    const idx = Math.floor(Math.random() * bag.length);
+    picked.push(bag[idx]);
+    bag.splice(idx, 1);
+  }
+  return picked.sort(() => Math.random() - 0.5);
+}
+
 export function buildPlacementRound() {
   const questions = [];
   let typeIdx = 0;
 
   PLACEMENT_TIERS.forEach(({ levelId, count }) => {
     const listenPool = [...getPatternsForLevel(levelId)].sort(() => Math.random() - 0.5);
-    const types = TIER_TYPES[levelId];
+    const types = shuffleTierTypes(TIER_TYPES[levelId], count);
     let listenIdx = 0;
 
     for (let i = 0; i < count; i += 1) {
-      const type = types[typeIdx % types.length];
+      const type = types[i] ?? TIER_TYPES[levelId][typeIdx % TIER_TYPES[levelId].length];
       typeIdx += 1;
 
       if (type === 'listen') {

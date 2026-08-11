@@ -14,6 +14,8 @@ export const METERS = {
     shortLabel: '4/4',
     eighthsPerBar: 8,
     bpm: 88,
+    beatsPerBar: 4,
+    prepKind: 'simple',
   },
   '6/8': {
     id: '6/8',
@@ -21,8 +23,31 @@ export const METERS = {
     shortLabel: '6/8',
     eighthsPerBar: 6,
     bpm: 96,
+    beatsPerBar: 2,
+    prepKind: 'compound',
   },
 };
+
+/** 퀴즈·레벨테스트 예비박·박자표 UI용 */
+export function getQuizMeterConfig(meterId = '4/4', bars = 1) {
+  const meter = METERS[meterId] ?? METERS['4/4'];
+  const prepBars = bars >= 2 ? 2 : 1;
+  return {
+    meterId: meter.id,
+    beatsPerBar: meter.beatsPerBar ?? 4,
+    prepBars,
+    prepKind: meter.prepKind ?? 'simple',
+    shortLabel: meter.shortLabel,
+    eighthsPerBar: meter.eighthsPerBar,
+  };
+}
+
+export function formatQuizMeterLabel(meterId = '4/4', bars = 1) {
+  const cfg = getQuizMeterConfig(meterId, bars);
+  if (bars >= 2) return `${cfg.shortLabel} · ${bars}마디`;
+  if (meterId === '6/8') return `${cfg.shortLabel} · 1마디 (복박 2)`;
+  return `${cfg.shortLabel} · 1마디 (4박)`;
+}
 
 /** @deprecated — rhythm-curriculum.js 사용 */
 export const FILL_PATTERNS = [];
@@ -292,7 +317,9 @@ export function buildFillQuestion(levelId, patternOverride = null, unitId = null
     blankLen,
     measureHtml: renderMeasureHtml(source.slots, source.meter, blankFrom, blankLen),
     correctFill,
+    meter: source.meter,
     correctPattern: slotsToPlayPattern(source.slots),
+    playTimeline: source.slots.map((s) => ({ kind: 'n', beats: s * 0.5 })),
     correctNotation: slotsToNotation(source.slots),
     options,
     answerId: answerOption.id,

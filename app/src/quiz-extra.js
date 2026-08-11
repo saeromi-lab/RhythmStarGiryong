@@ -11,7 +11,14 @@ import {
   slotSumValid,
   fillSlotsNoteOnly,
 } from './rhythm-curriculum.js';
-import { slotSum, slotsToPlayPattern, slotsToNotation, slotsKey } from './fill-quiz.js';
+import {
+  slotSum,
+  slotsToPlayPattern,
+  slotsToNotation,
+  slotsKey,
+  formatQuizMeterLabel,
+  getQuizMeterConfig,
+} from './fill-quiz.js';
 import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml } from './rhythm-display.js';
 import { patternToSlots } from './rhythm-display.js';
 
@@ -80,10 +87,12 @@ export function buildMeterQuestion(levelId, unitId = null) {
     unitId: source.unitId ?? unitId,
     unitTitle: unit?.title,
     bpm: source.bpm,
-    meterLabel: `${METER_OPTIONS.find((m) => m.id === meter)?.label} · 1마디`,
+    meter,
+    meterLabel: formatQuizMeterLabel(meter, 1),
     bars: 1,
     measureHtml: renderSlotsGridHtml(slots, meter),
     correctPattern: slotsToPlayPattern(slots),
+    playTimeline: playTimelineForEntry(source),
     options,
     answerId: answerOption.id,
     focus: source.focus,
@@ -102,26 +111,30 @@ export function buildCountQuestion(levelId, unitId = null) {
   let focus;
   let bpm = QUIZ_LEVELS.find((l) => l.id === levelId)?.bpm ?? 88;
   let unitTitle;
+  let unitIdResolved = unitId;
+  let source;
 
   if (withSlots.length && (withPattern.length === 0 || Math.random() < 0.6)) {
-    const source = withSlots[Math.floor(Math.random() * withSlots.length)];
+    source = withSlots[Math.floor(Math.random() * withSlots.length)];
     const slots = fillSlotsNoteOnly(source.slots);
     slotCount = slotSum(slots);
     meterId = source.meter;
     focus = source.focus;
     bpm = source.bpm;
     unitTitle = getUnit(source.unitId)?.title;
+    unitIdResolved = source.unitId ?? unitId;
     measureHtml = source.measure
       ? renderGroupsGridHtml(source.measure, meterId)
       : renderSlotsGridHtml(slots, meterId);
     playPattern = slotsToPlayPattern(slots);
   } else if (withPattern.length) {
-    const source = withPattern[Math.floor(Math.random() * withPattern.length)];
+    source = withPattern[Math.floor(Math.random() * withPattern.length)];
     slotCount = patternToSlots(source.pattern).reduce((s, d) => s + d, 0);
     focus = source.focus;
     bpm = source.bpm;
     meterId = source.meter ?? '4/4';
     unitTitle = getUnit(source.unitId)?.title;
+    unitIdResolved = source.unitId ?? unitId;
     measureHtml = source.measure
       ? renderGroupsGridHtml(source.measure, meterId)
       : renderPatternGridHtml(source.pattern, meterId);
@@ -144,13 +157,15 @@ export function buildCountQuestion(levelId, unitId = null) {
   return {
     type: 'count',
     levelId,
-    unitId,
+    unitId: unitIdResolved,
     unitTitle,
     bpm,
-    meterLabel: `8분음표 ${slotCount}칸 · ${meterId}`,
+    meter: meterId,
+    meterLabel: formatQuizMeterLabel(meterId, 1),
     bars: 1,
     measureHtml,
     correctPattern: playPattern,
+    playTimeline: playTimelineForEntry(source),
     options,
     answerId: answerOption.id,
     focus,
@@ -199,6 +214,7 @@ export function buildOddQuestion(levelId, unitId = null) {
     unitId: unitId ?? a.unitId,
     unitTitle: unit?.title,
     bpm: a.bpm ?? level.bpm,
+    meter: a.meter ?? '4/4',
     meterLabel: '청음 · 다른 리듬 1개 찾기',
     bars: 1,
     measureHtml: '',

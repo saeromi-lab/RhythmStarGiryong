@@ -89,8 +89,8 @@ export class RhythmPlayer {
     });
   }
 
-  /** 기본박 메트로놈 — 마디당 4박(4/4) 기준 */
-  async playBasicBeats(bpm, { bars = 1, beatsPerBar = 4, slow = false } = {}) {
+  /** 기본박 메트로놈 — 4/4는 4박, 6/8은 복박 2박 */
+  async playBasicBeats(bpm, { bars = 1, beatsPerBar = 4, slow = false, onBeat } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;
@@ -99,14 +99,26 @@ export class RhythmPlayer {
     const beatSec = 60 / effectiveBpm;
     const start = this.audioCtx.currentTime + 0.12;
     const totalBeats = bars * beatsPerBar;
+    this._beatTimers = [];
 
     for (let i = 0; i < totalBeats; i += 1) {
-      this.playClick(start + i * beatSec, i % beatsPerBar === 0);
+      const beatTime = start + i * beatSec;
+      this.playClick(beatTime, i % beatsPerBar === 0);
+      if (onBeat) {
+        const delayMs = Math.max(0, (beatTime - this.audioCtx.currentTime) * 1000);
+        this._beatTimers.push(setTimeout(() => {
+          if (this.playing) onBeat(i + 1, totalBeats);
+        }, delayMs));
+      }
     }
 
     const totalMs = totalBeats * beatSec * 1000 + 250;
     await new Promise((resolve) => {
       this._timer = setTimeout(() => {
+        if (this._beatTimers) {
+          this._beatTimers.forEach((t) => clearTimeout(t));
+          this._beatTimers = null;
+        }
         this.playing = false;
         resolve();
       }, totalMs);
@@ -118,6 +130,10 @@ export class RhythmPlayer {
     if (this._timer) {
       clearTimeout(this._timer);
       this._timer = null;
+    }
+    if (this._beatTimers) {
+      this._beatTimers.forEach((t) => clearTimeout(t));
+      this._beatTimers = null;
     }
   }
 }

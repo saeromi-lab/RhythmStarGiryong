@@ -121,6 +121,8 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
 
   const correct = patternOverride ?? pool[Math.floor(Math.random() * pool.length)];
   const correctKey = entryKey(correct);
+  const beats = entryBeats(correct.curriculumRef ?? correct);
+  const bars = entryBars(correct.curriculumRef ?? correct);
   const distractors = pickListenDistractors(correct, levelId, unitId);
 
   let fi = 0;
@@ -140,8 +142,6 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
   }
 
   const unit = getUnit(correct.unitId ?? unitId);
-  const beats = entryBeats(correct.curriculumRef ?? correct);
-  const bars = entryBars(correct.curriculumRef ?? correct);
   const options = [correct, ...distractors.slice(0, 3)]
     .map((p, i) => ({
       id: String.fromCharCode(65 + i),
@@ -168,6 +168,7 @@ export function buildListenQuestion(levelId, patternOverride = null, unitId = nu
     unitId: correct.unitId ?? unitId,
     unitTitle: unit?.title,
     bpm: correct.bpm ?? 88,
+    meter: correct.meter ?? '4/4',
     bars,
     meterLabel: beats === 8 ? '4/4 · 2마디 (8박)' : beats === 4 ? '4/4 · 1마디 (4박)' : `${correct.meter ?? '4/4'} · ${bars}마디`,
     correctPattern: playPatternForEntry(correct.curriculumRef ?? correct),

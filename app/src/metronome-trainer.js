@@ -109,6 +109,13 @@ export class MetronomeTrainer {
     return segments;
   }
 
+  computeTotalBeats() {
+    return this.measures.reduce(
+      (sum, bar) => sum + bar.reduce((b, g) => b + g.e * 0.5, 0),
+      0,
+    );
+  }
+
   startCursorLoop() {
     const loop = () => {
       if (!this.running || this.failed || !this.audioCtx) return;
@@ -143,7 +150,7 @@ export class MetronomeTrainer {
     const base = this.audioCtx.currentTime;
     this.countInStart = base;
     this.rhythmStart = base + COUNT_IN_BEATS * this.beatSec;
-    this.totalBeats = this.measures.length * 4;
+    this.totalBeats = this.computeTotalBeats();
     this.segments = this.buildSegments();
 
     for (let b = 0; b < COUNT_IN_BEATS; b += 1) {

@@ -45,6 +45,8 @@ import {
   exercisesForTier,
   buildTrainMeasures,
   countTrainNotes,
+  buildTrainSession,
+  TRAIN_SESSION_SIZE,
 } from './train-data.js';
 import { renderPatternGridHtml, renderTrainScoreHtml, renderPatternPickerHtml } from './rhythm-display.js';
 import { getQuizMeterConfig } from './fill-quiz.js';
@@ -58,6 +60,7 @@ const TIER_LABELS = {
 let profile = null;
 let game = null;
 let trainer = null;
+let trainSession = null;
 let rhythmPlayer = null;
 let selectedLevel = LEVELS[1];
 let selectedTrainExerciseId = TRAIN_EXERCISES[0]?.id ?? 'u1-even8-q4';
@@ -315,6 +318,7 @@ function setPlayMode(mode) {
   $('resultCard').style.display = 'none';
   game?.stop();
   trainer?.stop();
+  trainSession = null;
   rhythmPlayer?.stop();
   if (mode === 'quiz' || mode === 'placement') {
     quizState = null;
@@ -928,55 +932,182 @@ function renderTrainPatternPicker() {
   });
 }
 
-function showTrainResult(result, { exercise, bars, bpm, failed }) {
+function updateTrainRoundHud() {
+  const roundEl = $('trainRound');
+  if (!roundEl || !trainSession) return;
+  roundEl.textContent = `${trainSession.index + 1}/${trainSession.rounds.length}`;
+}
+
+function prepareTrainRoundPreview(round) {
+  const preview = $('trainPatternPreview');
+  if (!preview || !round) return;
+  preview.innerHTML = renderTrainScoreHtml(round.measures);
+  resetTrainScoreHighlights();
+}
+
+function aggregateTrainSessionResults(results) {
+  const agg = {
+    score: 0,
+    xp: 0,
+    coins: 0,
+    maxCombo: 0,
+    perfect: 0,
+    great: 0,
+    good: 0,
+    miss: 0,
+    clearedRounds: 0,
+    totalRounds: results.length,
+  };
+  for (const r of results) {
+    agg.score += r.score;
+    agg.xp += r.xp;
+    agg.coins += r.coins;
+    agg.maxCombo = Math.max(agg.maxCombo, r.maxCombo);
+    agg.perfect += r.perfect;
+    agg.great += r.great;
+    agg.good += r.good;
+    agg.miss += r.miss;
+    if (r.cleared) agg.clearedRounds += 1;
+  }
+  agg.allClear = agg.clearedRounds === agg.totalRounds;
+  return agg;
+}
+
+function showTrainSessionResult() {
+  const results = trainSession?.results ?? [];
+  const agg = aggregateTrainSessionResults(results);
+  const bpm = trainSession?.bpm ?? 88;
+  const bars = getTrainBars();
+
   $('trainCard').style.display = 'none';
   $('resultCard').style.display = 'block';
-  if (failed || !result.cleared) {
-    $('resultTitle').textContent = '훈련 실패';
+
+  if (agg.allClear) {
+    const xp = Math.round(agg.xp * 1.2) + TRAIN_SESSION_SIZE * 5;
+    profile = addPlayResult(profile, {
+      score: agg.score,
+      xpGained: xp,
+      coinsGained: agg.coins + 10,
+      maxCombo: agg.maxCombo,
+    });
+    results.forEach((r) => {
+      if (r.exercise) {
+        profile = saveTrainClear(profile, {
+          exerciseId: r.exercise.id,
+          bars: r.bars,
+          tier: selectedTrainTier,
+        });
+      }
+    });
+    $('resultTitle').textContent = '세션 완료!';
     $('resultBody').innerHTML = `
-      <div class="result-score result-fail">MISS</div>
-      <p class="result-fail-msg">한 번이라도 빗나가면 처음부터예요. 악보 표시를 보며 박자에 맞춰 다시!</p>
+      <div class="result-score">${agg.score.toLocaleString()}</div>
+      <p class="result-clear-msg">${TRAIN_SESSION_SIZE}개 리듬 모두 무실수 클리어!</p>
       <div class="result-grid">
-        <span>${bpm} BPM · ${bars}마디</span>
-        <span>PERFECT ${result.perfect}</span>
-        <span>MISS ${result.miss}</span>
+        <span>PERFECT ${agg.perfect}</span>
+        <span>MISS ${agg.miss}</span>
+        <span>${bpm} BPM · ${bars}마디 × ${TRAIN_SESSION_SIZE}</span>
+        <span>+${xp} XP · +${agg.coins + 10} 🪙</span>
       </div>
     `;
-    setGiryongMood('sad');
-    sayGiryong('miss', '다시 천천히 맞춰봐요!');
+    setGiryongMood('celebrate');
+    sayGiryong('perfect', `${TRAIN_SESSION_SIZE}라운드 완주!`);
+    renderProfile();
+    renderRank();
+    renderTrainTierRow();
+  } else {
+    $('resultTitle').textContent = '세션 종료';
+    $('resultBody').innerHTML = `
+      <div class="result-score result-fail">${agg.clearedRounds}/${agg.totalRounds}</div>
+      <p class="result-fail-msg">무실수 클리어 ${agg.clearedRounds}개 · MISS ${agg.miss}개. 다시 도전해서 ${TRAIN_SESSION_SIZE}개 모두 맞춰보세요!</p>
+      <div class="result-grid">
+        <span>PERFECT ${agg.perfect}</span>
+        <span>MISS ${agg.miss}</span>
+        <span>${bpm} BPM · ${bars}마디</span>
+        <span>점수 ${agg.score.toLocaleString()}</span>
+      </div>
+    `;
+    setGiryongMood(agg.clearedRounds >= TRAIN_SESSION_SIZE / 2 ? 'happy' : 'sad');
+    sayGiryong('miss', `${agg.clearedRounds}/${TRAIN_SESSION_SIZE} 클리어!`);
+  }
+  trainSession = null;
+}
+
+async function handleTrainRoundEnd(result, meta) {
+  const tapBtn = $('trainTap');
+  const startBtn = $('trainStart');
+  tapBtn.disabled = true;
+
+  trainSession.results.push({
+    ...result,
+    exercise: meta.exercise,
+    bars: meta.bars,
+    cleared: result.cleared,
+  });
+  trainSession.sessionScore = (trainSession.sessionScore ?? 0) + result.score;
+  $('trainScore').textContent = trainSession.sessionScore.toLocaleString();
+
+  if (trainSession.index < trainSession.rounds.length - 1) {
+    trainSession.index += 1;
+    updateTrainRoundHud();
+    const flash = $('trainJudgeFlash');
+    if (flash) {
+      flash.textContent = `다음 리듬! ${trainSession.index + 1}/${trainSession.rounds.length}`;
+      flash.className = 'judge-flash show perfect';
+      setTimeout(() => flash.classList.remove('show'), 700);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    await runTrainRound();
     return;
   }
 
-  const xp = Math.round(result.xp * 1.2);
-  profile = addPlayResult(profile, {
-    score: result.score,
-    xpGained: xp,
-    coinsGained: result.coins + 5,
-    maxCombo: result.maxCombo,
-  });
-  profile = saveTrainClear(profile, {
-    exerciseId: exercise.id,
-    bars,
-    tier: selectedTrainTier,
+  startBtn.disabled = false;
+  showTrainSessionResult();
+}
+
+async function runTrainRound() {
+  const tapBtn = $('trainTap');
+  const startBtn = $('trainStart');
+  if (!trainSession) return;
+
+  const round = trainSession.rounds[trainSession.index];
+  const bpm = trainSession.bpm;
+  const totalTaps = countTrainNotes(round.measures);
+
+  prepareTrainRoundPreview(round);
+  updateTrainRoundHud();
+  $('trainProgress').textContent = `0/${totalTaps}`;
+  $('trainCombo').textContent = '0';
+  resetTrainScoreHighlights();
+  tapBtn.disabled = false;
+  startBtn.disabled = true;
+
+  trainer = new MetronomeTrainer({
+    bpm,
+    measures: round.measures,
+    strict: false,
+    binaryJudge: true,
+    onCountIn: showTrainCountIn,
+    onCursor: setTrainCursor,
+    onNote: (idx) => setTrainScoreActive(idx),
+    onJudge: flashTrainJudge,
+    onProgress: (hit, total) => {
+      $('trainProgress').textContent = `${hit}/${total}`;
+      $('trainCombo').textContent = trainer?.combo ?? 0;
+    },
+    onFail: (result) => handleTrainRoundEnd(result, {
+      exercise: round.exercise,
+      bars: round.bars,
+      bpm,
+    }),
+    onEnd: (result) => handleTrainRoundEnd(result, {
+      exercise: round.exercise,
+      bars: round.bars,
+      bpm,
+    }),
   });
 
-  $('resultTitle').textContent = '무실수 클리어!';
-  $('resultBody').innerHTML = `
-    <div class="result-score">${result.score.toLocaleString()}</div>
-    <p class="result-clear-msg">처음부터 끝까지 MISS 없이 완주했어요!</p>
-    <div class="result-grid">
-      <span>PERFECT ${result.perfect}</span>
-      <span>GREAT ${result.great}</span>
-      <span>GOOD ${result.good}</span>
-      <span>${bpm} BPM · ${bars}마디</span>
-      <span>+${xp} XP · +${result.coins + 5} 🪙</span>
-    </div>
-  `;
-  setGiryongMood('celebrate');
-  sayGiryong('perfect', `무실수 클리어 ${result.score}점!`);
-  renderProfile();
-  renderRank();
-  renderTrainTierRow();
+  await trainer.start();
 }
 
 function initTrain() {
@@ -990,6 +1121,7 @@ function initTrain() {
   renderTrainTierRow();
   renderTrainPatternPicker();
   updateTrainPreview();
+  if ($('trainRound')) $('trainRound').textContent = `0/${TRAIN_SESSION_SIZE}`;
 
   const startBtn = $('trainStart');
   const tapBtn = $('trainTap');
@@ -1010,45 +1142,25 @@ function initTrain() {
   startBtn.addEventListener('click', async () => {
     trainer?.stop();
     const exercise = getTrainExercise();
-    const bars = getTrainBars();
-    const measures = buildTrainMeasures(exercise, bars);
     const bpm = Number(bpmInput.value) || exercise.bpm || 80;
-    const totalTaps = countTrainNotes(measures);
+
+    trainSession = {
+      rounds: buildTrainSession(selectedTrainTier, TRAIN_SESSION_SIZE),
+      index: 0,
+      results: [],
+      bpm,
+      sessionScore: 0,
+    };
 
     startBtn.disabled = true;
     tapBtn.disabled = false;
     $('trainScore').textContent = '0';
     $('trainCombo').textContent = '0';
-    $('trainProgress').textContent = `0/${totalTaps}`;
-    resetTrainScoreHighlights();
+    $('trainProgress').textContent = '0/0';
+    updateTrainRoundHud();
     setGiryongMood('focus');
 
-    trainer = new MetronomeTrainer({
-      bpm,
-      measures,
-      strict: true,
-      binaryJudge: true,
-      onCountIn: showTrainCountIn,
-      onCursor: setTrainCursor,
-      onNote: (idx) => setTrainScoreActive(idx),
-      onJudge: flashTrainJudge,
-      onProgress: (hit, total) => {
-        $('trainProgress').textContent = `${hit}/${total}`;
-        $('trainCombo').textContent = trainer?.combo ?? 0;
-      },
-      onFail: (result) => {
-        tapBtn.disabled = true;
-        startBtn.disabled = false;
-        showTrainResult(result, { exercise, bars, bpm, failed: true });
-      },
-      onEnd: (result) => {
-        tapBtn.disabled = true;
-        startBtn.disabled = false;
-        showTrainResult(result, { exercise, bars, bpm, failed: false });
-      },
-    });
-
-    await trainer.start();
+    await runTrainRound();
   });
 }
 
@@ -1162,11 +1274,14 @@ function handlePlayAgain() {
     $('gameStart').disabled = false;
     $('gameTap').disabled = true;
   } else if (playMode === 'train') {
+    trainSession = null;
+    trainer?.stop();
     $('trainCard').style.display = 'block';
     $('trainStart').disabled = false;
     $('trainTap').disabled = true;
     $('trainScore').textContent = '0';
     $('trainCombo').textContent = '0';
+    if ($('trainRound')) $('trainRound').textContent = `0/${TRAIN_SESSION_SIZE}`;
     renderTrainTierRow();
     renderTrainPatternPicker();
     updateTrainPreview();

@@ -1042,7 +1042,7 @@ body {
 .train-bar-num {
   font-size: 11px;
   font-weight: 700;
-  color: var(--muted);
+  color: #6b6b6b;
 }
 
 .train-score-card .measure-slot {
@@ -2320,6 +2320,8 @@ body.lesson-open {
 }
 
 .lesson-options-odd {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
@@ -2390,6 +2392,14 @@ body.lesson-open {
   font-weight: 800;
   letter-spacing: 0.02em;
   padding: 10px 14px;
+}
+
+.lesson-options-odd .odd-option-desc {
+  display: none;
+}
+
+.lesson-options-odd .odd-select {
+  padding: 12px 8px;
 }
 
 .odd-option-letter {

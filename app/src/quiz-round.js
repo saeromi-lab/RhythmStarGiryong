@@ -9,14 +9,14 @@ export { QUIZ_ROUND_SIZE };
 
 /** 단원별 유형 순서 — 같은 단원 패턴으로 집중 훈련 */
 const UNIT_TYPE_ORDER = {
-  'u1-even8': ['echo', 'fill', 'count', 'listen', 'odd'],
-  'u2-8mix': ['echo', 'fill', 'count', 'listen', 'odd'],
-  'u3-rests': ['echo', 'fill', 'meter', 'count', 'odd'],
-  'u4-sync': ['echo', 'listen', 'count', 'fill', 'odd'],
+  'u1-even8': ['odd', 'echo', 'fill', 'count', 'listen'],
+  'u2-8mix': ['odd', 'echo', 'fill', 'count', 'listen'],
+  'u3-rests': ['odd', 'echo', 'fill', 'meter', 'count'],
+  'u4-sync': ['odd', 'echo', 'listen', 'count', 'fill'],
   'u5-68': ['echo', 'meter', 'fill', 'count', 'listen'],
-  'u6-2bar': ['echo', 'listen', 'fill', 'count', 'odd'],
-  'u7-jazz': ['echo', 'listen', 'odd', 'count', 'echo'],
-  'u8-sixteenth': ['echo', 'listen', 'count', 'listen', 'odd'],
+  'u6-2bar': ['odd', 'echo', 'listen', 'fill', 'count'],
+  'u7-jazz': ['odd', 'echo', 'listen', 'count', 'echo'],
+  'u8-sixteenth': ['odd', 'echo', 'listen', 'count', 'listen'],
 };
 
 export function buildQuestionByType(levelId, type, listenOverride = null, unitId = null) {

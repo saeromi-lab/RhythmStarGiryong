@@ -958,7 +958,7 @@ function showTrainCountIn(beat, total) {
   if (playMode === 'train' && trainSession && total > 0) {
     setTrainFlashState({
       phase: `기본박 ${beat} / ${total}`,
-      hint: beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '이제 음표에서 TAP! 메트로놈과 같이 칩니다',
+      hint: beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 커서가 음표 위에 오면 TAP! 쉼표는 치지 마세요',
     });
   }
 }
@@ -1060,14 +1060,14 @@ function trainStyleCopy(style = selectedTrainStyle) {
       intro: '메트로놈을 켜 두고 악보와 같이 TAP · 5문제',
       hint: '같이 치기 — 기본박 후 노란 커서가 음표에 닿을 때 TAP합니다',
       lock: `${currentTrainLabel()} — 기본박 4번 후 음표에서 TAP!`,
-      listenHint: '커서가 음표에 닿을 때 TAP! (버튼·스페이스·화면)',
+      listenHint: '노란 커서가 음표(♩♪) 위에 있을 때 TAP! 쉼표는 건너뛰세요',
     };
   }
   return {
     intro: '같이 친 뒤, 같은 리듬을 따라 칩니다 · 5문제',
     hint: '같이 치고 → 따라 치기 — 메트로놈을 켠 채 한 번 같이 치고, 같은 리듬을 혼자 다시 TAP합니다',
     lock: `${currentTrainLabel()} — 같이 친 다음 따라 치기`,
-    listenHint: '노란 커서가 음표에 닿을 때 TAP!',
+    listenHint: '노란 커서가 음표(♩♪) 위에 있을 때 TAP!',
   };
 }
 

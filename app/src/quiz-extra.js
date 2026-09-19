@@ -172,6 +172,18 @@ export function buildCountQuestion(levelId, unitId = null) {
   };
 }
 
+function shuffleInPlace(list) {
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+/** 다른 리듬 찾기 — 항상 A·B·C·D 4보기 (같은 리듬 3 + 다른 리듬 1) */
+export const ODD_OPTION_COUNT = 4;
+const ODD_SAME_COUNT = ODD_OPTION_COUNT - 1;
+
 export function buildOddQuestion(levelId, unitId = null) {
   const pool = poolForUnit(levelId, unitId).filter((p) => p.pattern || p.slots);
   if (pool.length < 2) throw new Error('다른리듬 문제용 패턴 부족');
@@ -190,11 +202,15 @@ export function buildOddQuestion(levelId, unitId = null) {
   const commonTimeline = playTimelineForEntry(a);
   const oddTimeline = playTimelineForEntry(b);
 
-  const sameCount = 2 + Math.floor(Math.random() * 2);
   const raw = [
-    ...Array(sameCount).fill({ pattern: commonPattern, timeline: commonTimeline, isOdd: false }),
-    { pattern: oddPattern, timeline: oddTimeline, isOdd: true },
-  ].sort(() => Math.random() - 0.5);
+    ...Array.from({ length: ODD_SAME_COUNT }, () => ({
+      pattern: [...commonPattern],
+      timeline: commonTimeline,
+      isOdd: false,
+    })),
+    { pattern: [...oddPattern], timeline: oddTimeline, isOdd: true },
+  ];
+  shuffleInPlace(raw);
 
   const options = raw.map((item, i) => ({
     id: String.fromCharCode(65 + i),

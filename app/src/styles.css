@@ -575,6 +575,37 @@ body {
   margin: 14px 0;
 }
 
+.train-style-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
+.train-style-btn {
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.train-style-btn.active {
+  border-color: var(--duo-green);
+  background: var(--duo-green-bg);
+  color: var(--duo-text);
+}
+
+.train-style-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-align: center;
+}
+
 .train-tier-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2205,6 +2236,10 @@ body.lesson-open {
   gap: 10px;
 }
 
+.lesson-options-odd {
+  gap: 8px;
+}
+
 .duo-choice {
   width: 100%;
   padding: 16px 18px;
@@ -2244,8 +2279,8 @@ body.lesson-open {
 
 .odd-option-row {
   display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 8px;
+  grid-template-columns: 44px 1fr;
+  gap: 6px;
   align-items: stretch;
 }
 
@@ -2253,7 +2288,7 @@ body.lesson-open {
   border: 2px solid var(--duo-border);
   border-radius: 14px;
   background: #fff;
-  font-size: 22px;
+  font-size: 20px;
   cursor: pointer;
   font-family: inherit;
 }
@@ -2267,10 +2302,11 @@ body.lesson-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  font-size: 20px;
+  gap: 10px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  padding: 10px 14px;
 }
 
 .odd-option-letter {

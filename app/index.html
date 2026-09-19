@@ -105,7 +105,7 @@
           <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
           <button class="mode-btn" data-mode="placement">레벨 테스트</button>
         </div>
-        <p class="hint mode-hint">파도 위에서 기룡이가 서핑하며 TAP! · 화면을 눌러도 됩니다</p>
+        <p class="hint mode-hint">기본박을 몸에 익히는 훈련 · 노란 선에 음표가 올 때 TAP!</p>
       </div>
 
       <div class="card" id="levelSelectCard">
@@ -189,9 +189,15 @@
 
       <div class="card train-card" id="trainCard" style="display:none">
         <div class="sec-label">메트로놈 리듬 탭 훈련</div>
-        <p class="hint" id="trainIntroHint">플래시카드처럼 리듬을 하나씩 보고 · 기본박 후 TAP! · 5문제 연속</p>
+        <p class="hint" id="trainIntroHint">리듬을 먼저 듣고 · 같은 리듬을 따라 TAP! · 5문제 연속</p>
 
         <div id="trainSetup" class="train-setup">
+          <div class="train-style-row" id="trainStyleRow">
+            <button type="button" class="train-style-btn active" data-style="echo">듣고 따라 치기</button>
+            <button type="button" class="train-style-btn" data-style="sight">보고 치기</button>
+          </div>
+          <p class="hint train-style-hint" id="trainStyleHint">듣고 따라 치기 — 귀로 기억한 뒤 같은 리듬을 TAP합니다. 리듬감에 가장 도움이 됩니다</p>
+
           <div class="train-tier-row" id="trainTierRow"></div>
           <p class="hint train-tier-hint" id="trainTierHint"></p>
 
@@ -236,7 +242,7 @@
       <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
         <div class="duo-path-giryong">
           <img src="./images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
-          <div class="duo-path-bubble">8단원 커리큘럼 · 단원별 5문제 집중 훈련 + 메트로놈</div>
+          <div class="duo-path-bubble">8단원 확인 퀴즈 · 리듬감은 비트 서핑·메트로놈에서 키워요</div>
         </div>
         <button id="quizStart" class="duo-btn duo-btn-green">단원 퀴즈 시작</button>
         <p class="hint" id="quizHint" style="margin-top:10px">단원을 고르고 5문제 집중 훈련</p>

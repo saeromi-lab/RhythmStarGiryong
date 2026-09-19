@@ -10,9 +10,6 @@ function restGroupSymbol(eighths) {
 
 function renderGroupCell(group, { hitIdx, posIdx, compact = false } = {}) {
   const sym = group.t === 'n' ? slotGroupSymbol(group.e) : restGroupSymbol(group.e);
-  const ties = group.e > 1
-    ? Array.from({ length: group.e - 1 }, () => '<span class="measure-slot tie"></span>').join('')
-    : '';
   const cls = [
     'measure-slot',
     group.t === 'n' ? 'filled' : 'rest',
@@ -20,14 +17,13 @@ function renderGroupCell(group, { hitIdx, posIdx, compact = false } = {}) {
     compact ? 'compact' : '',
   ].filter(Boolean).join(' ');
   const hitAttr = group.t === 'n' ? ` data-hit="${hitIdx}"` : '';
-  return `<span class="${cls}" data-pos="${posIdx}"${hitAttr}>${sym}</span>${ties}`;
+  return `<span class="${cls}" style="flex:${group.e}" data-pos="${posIdx}"${hitAttr}>${sym}</span>`;
 }
 
 function renderMeasureGroups(groups, meter, { compact = false, startHit = 0, startPos = 0 } = {}) {
   let hitIdx = startHit;
   let posIdx = startPos;
   const cells = [];
-  let eighths = 0;
 
   for (const group of groups) {
     cells.push(renderGroupCell(group, {
@@ -37,12 +33,6 @@ function renderMeasureGroups(groups, meter, { compact = false, startHit = 0, sta
     }));
     if (group.t === 'n') hitIdx += 1;
     posIdx += 1;
-    eighths += group.e;
-  }
-
-  while (eighths < meter.eighthsPerBar) {
-    cells.push('<span class="measure-slot tie"></span>');
-    eighths += 1;
   }
 
   return { html: cells.join(''), nextHit: hitIdx, nextPos: posIdx };
@@ -61,32 +51,30 @@ export function slotsForPattern(pattern) {
   return patternToSlots(pattern);
 }
 
-function expandSlotsToGrid(slots, totalCells) {
-  const grid = Array(totalCells).fill(null);
+function renderSlotParts(slots, { blankFrom = -1, blankLen = 0 } = {}) {
   let pos = 0;
-  for (const len of slots) {
-    for (let i = 0; i < len; i += 1) {
-      if (pos >= totalCells) break;
-      grid[pos] = {
-        type: i === 0 ? 'note' : 'tie',
-        symbol: i === 0 ? slotGroupSymbol(len) : '',
-      };
-      pos += 1;
-    }
-  }
-  return grid;
-}
-
-function renderCells(grid, { blankFrom = -1, blankLen = 0 } = {}) {
-  return grid.map((cell, i) => {
-    const inBlank = blankFrom >= 0 && i >= blankFrom && i < blankFrom + blankLen;
+  const parts = [];
+  for (const raw of slots) {
+    const len = Math.abs(raw);
+    const rest = raw < 0;
+    const inBlank = blankFrom >= 0 && pos >= blankFrom && pos < blankFrom + blankLen;
     if (inBlank) {
-      return '<span class="measure-slot blank">□</span>';
+      const prev = parts[parts.length - 1];
+      if (prev?.kind === 'blank') prev.span += len;
+      else parts.push({ kind: 'blank', span: len });
+    } else if (rest) {
+      parts.push({ kind: 'rest', span: len, symbol: restGroupSymbol(len) });
+    } else {
+      parts.push({ kind: 'note', span: len, symbol: slotGroupSymbol(len) });
     }
-    if (!cell || cell.type === 'tie') {
-      return '<span class="measure-slot tie"></span>';
+    pos += len;
+  }
+  return parts.map((part) => {
+    if (part.kind === 'blank') {
+      return `<span class="measure-slot blank" style="flex:${part.span}">□</span>`;
     }
-    return `<span class="measure-slot filled">${cell.symbol}</span>`;
+    const cls = part.kind === 'rest' ? 'rest' : 'filled';
+    return `<span class="measure-slot ${cls}" style="flex:${part.span}">${part.symbol}</span>`;
   }).join('');
 }
 
@@ -99,11 +87,10 @@ export function renderPatternGridHtml(pattern, meterId = '4/4', opts = {}) {
   const bars = Math.max(1, Math.round(beats / 4));
 
   if (bars === 1) {
-    const grid = expandSlotsToGrid(slots, slotsPerBar);
     return `
       <div class="rhythm-grid-wrap">
         <div class="measure-sig">${meter.shortLabel}</div>
-        <div class="measure-slots" style="--slots:${slotsPerBar}">${renderCells(grid, opts)}</div>
+        <div class="measure-slots" style="--slots:${slotsPerBar}">${renderSlotParts(slots, opts)}</div>
       </div>
     `;
   }
@@ -118,7 +105,6 @@ export function renderPatternGridHtml(pattern, meterId = '4/4', opts = {}) {
       barSum += slots[offset] * 0.5;
       offset += 1;
     }
-    const grid = expandSlotsToGrid(barSlots, slotsPerBar);
     const blankFrom = opts.blankFrom ?? -1;
     const blankLen = opts.blankLen ?? 0;
     const barStart = b * slotsPerBar;
@@ -127,7 +113,7 @@ export function renderPatternGridHtml(pattern, meterId = '4/4', opts = {}) {
       : -1;
     barHtml.push(`
       <div class="measure-slots measure-slots-bar" style="--slots:${slotsPerBar}">
-        ${renderCells(grid, localBlankFrom >= 0 ? { blankFrom: localBlankFrom, blankLen } : {})}
+        ${renderSlotParts(barSlots, localBlankFrom >= 0 ? { blankFrom: localBlankFrom, blankLen } : {})}
       </div>
     `);
   }
@@ -170,7 +156,7 @@ export function renderTrainScoreHtml(measures, meterId = '4/4', { idPrefix = 'tr
           <div class="train-score-bars">${barsHtml.join('')}</div>
         </div>
       </div>
-      <p class="train-score-hint">훈련 시작 → 기본박 4번(♩♩♩♩) → 커서 따라 TAP! · PERFECT / MISS</p>
+      <div class="train-score-hint">♩ 4분음표 · ♪ 8분음표 · 폭이 길수록 음이 길어요</div>
     </div>
   `;
 }
@@ -247,11 +233,10 @@ export function listenAnswerInOptions(question) {
 /** 슬롯 배열(8분 칸) 그리드 */
 export function renderSlotsGridHtml(slots, meterId = '4/4') {
   const meter = METERS[meterId] ?? METERS['4/4'];
-  const grid = expandSlotsToGrid(slots, meter.eighthsPerBar);
   return `
     <div class="rhythm-grid-wrap">
       <div class="measure-sig">${meter.shortLabel}</div>
-      <div class="measure-slots" style="--slots:${meter.eighthsPerBar}">${renderCells(grid)}</div>
+      <div class="measure-slots" style="--slots:${meter.eighthsPerBar}">${renderSlotParts(slots)}</div>
     </div>
   `;
 }

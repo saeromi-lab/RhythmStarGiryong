@@ -29,7 +29,7 @@ import {
   QUIZ_SCORE,
 } from './quiz-data.js';
 import { buildQuizRound, buildUnitQuizRound } from './quiz-round.js';
-import { CURRICULUM_UNITS, unitsForLevel, getUnit } from './rhythm-curriculum.js';
+import { CURRICULUM_UNITS, unitsForLevel, getUnit, patternsForUnit } from './rhythm-curriculum.js';
 import { QUIZ_TYPE_LABELS } from './quiz-extra.js';
 import {
   PLACEMENT_SIZE,
@@ -50,7 +50,6 @@ import {
 } from './train-data.js';
 import { renderPatternGridHtml, renderTrainScoreHtml, renderPatternPickerHtml } from './rhythm-display.js';
 import { getQuizMeterConfig } from './fill-quiz.js';
-import { groupsToTimeline } from './rhythm-groups.js';
 
 const TIER_LABELS = {
   beginner: '입문',
@@ -66,11 +65,11 @@ let rhythmPlayer = null;
 let selectedLevel = LEVELS[0];
 let selectedTrainExerciseId = TRAIN_EXERCISES[0]?.id ?? 'u1-even8-q4';
 let selectedTrainTier = 1;
-/** echo: 듣고 따라 치기 (리듬감) / sight: 보고 치기 */
-let selectedTrainStyle = 'echo';
+/** lesson: 같이 치고 따라 치기 / together: 같이 치기만 */
+let selectedTrainStyle = 'lesson';
 let selectedQuizLevel = QUIZ_LEVELS[0];
 let selectedQuizUnitId = 'u1-even8';
-let playMode = 'runner';
+let playMode = 'learn';
 let quizState = null;
 let lessonSelectedId = null;
 let selectedPath = 'placement';
@@ -314,10 +313,11 @@ function setPlayMode(mode) {
   document.querySelectorAll('.mode-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
+  if ($('learnCard')) $('learnCard').style.display = mode === 'learn' ? 'block' : 'none';
   $('runnerCard').style.display = mode === 'runner' ? 'block' : 'none';
   $('trainCard').style.display = mode === 'train' ? 'block' : 'none';
   $('quizCard').style.display = mode === 'quiz' || mode === 'placement' ? 'block' : 'none';
-  $('levelSelectCard').style.display = (mode === 'placement' || mode === 'train') ? 'none' : 'block';
+  $('levelSelectCard').style.display = mode === 'runner' ? 'block' : 'none';
   $('resultCard').style.display = 'none';
   runnerGame?.stop();
   trainer?.stop();
@@ -326,9 +326,10 @@ function setPlayMode(mode) {
   const modeHint = document.querySelector('.mode-hint');
   if (modeHint) {
     const hints = {
-      runner: '기본박을 몸에 익히는 훈련 · 노란 선에 음표가 올 때 TAP!',
-      train: '리듬감 훈련 · 먼저 듣고 같은 리듬을 따라 TAP!',
-      quiz: '듣고 고르는 확인 퀴즈 · 리듬감은 비트 서핑·메트로놈에서',
+      learn: '먼저 오늘의 개념을 읽고, 메트로놈과 함께 따라 칩니다',
+      train: '메트로놈을 켜 두고 악보와 같이 TAP한 뒤, 같은 리듬을 따라 칩니다',
+      quiz: '학습한 내용을 확인하는 퀴즈입니다. 리듬감 연습은 연습 탭에서',
+      runner: '게임입니다. 화면 아무 곳이나 누르면 TAP됩니다',
       placement: '지금 실력을 가늠하는 10문제 · 시작 전 스스로 한 번 확인해 보세요',
     };
     modeHint.textContent = hints[mode] ?? '';
@@ -338,6 +339,7 @@ function setPlayMode(mode) {
     $('quizStart').style.display = 'block';
   }
   renderLevels();
+  if (mode === 'learn') renderLearnCard();
   if (mode === 'train') {
     renderTrainTierRow();
     renderTrainStyleRow();
@@ -357,7 +359,7 @@ function updateQuizModeUI() {
   if (hint) {
     hint.textContent = isPlacement
       ? '청음·박자표·칸세기 등 10문제 레벨 테스트'
-      : '단원을 고르고 5문제 집중 확인 (청음·빈칸·박자표·칸세기·다른리듬). 리듬감은 비트 서핑·메트로놈에서';
+      : '단원을 고르고 5문제로 확인합니다. 리듬감 연습은 연습 탭의 메트로놈에서';
   }
   const startBtn = $('quizStart');
   if (startBtn) {
@@ -384,8 +386,53 @@ function renderQuizUnitList() {
     btn.addEventListener('click', () => {
       selectedQuizUnitId = btn.dataset.unit;
       renderQuizUnitList();
+      if (playMode === 'learn') renderLearnCard();
     });
   });
+}
+
+function renderLearnCard() {
+  const body = $('learnBody');
+  const list = $('learnUnitList');
+  if (!body) return;
+  const units = unitsForLevel(selectedQuizLevel.id);
+  if (!units.some((u) => u.id === selectedQuizUnitId)) {
+    selectedQuizUnitId = units[0]?.id ?? 'u1-even8';
+  }
+  if (list) {
+    list.innerHTML = units.map((u) => `
+      <button type="button" class="quiz-unit-card ${u.id === selectedQuizUnitId ? 'active' : ''}" data-unit="${u.id}">
+        <strong>${u.title}</strong>
+        <span>${u.subtitle}</span>
+      </button>
+    `).join('');
+    list.querySelectorAll('.quiz-unit-card').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedQuizUnitId = btn.dataset.unit;
+        renderLearnCard();
+      });
+    });
+  }
+
+  const unit = getUnit(selectedQuizUnitId);
+  const example = patternsForUnit(selectedQuizUnitId).find((p) => p.measure || p.measures);
+  const exampleHtml = example
+    ? renderTrainScoreHtml(
+      example.measures ?? [example.measure],
+      example.meter ?? unit?.meter ?? '4/4',
+      { idPrefix: 'learn' },
+    )
+    : '';
+  body.innerHTML = `
+    <p class="learn-goal">${unit?.subtitle ?? '오늘의 리듬'}</p>
+    <p class="learn-text">${unit?.learn ?? '기본박을 듣고, 음표가 있는 순간에 TAP한 뒤 같은 리듬을 따라 칩니다.'}</p>
+    <ol class="learn-steps">
+      <li>기본박(메트로놈) 4번을 듣습니다. 이때는 TAP하지 않습니다.</li>
+      <li>음표가 나오면 메트로놈과 같이 TAP합니다. TAP하면 소리가 납니다.</li>
+      <li>같은 리듬을 한 번 더, 기억해서 따라 칩니다.</li>
+    </ol>
+    <div class="learn-example">${exampleHtml}</div>
+  `;
 }
 
 function openLessonOverlay() {
@@ -450,7 +497,7 @@ function renderLessonQuestion() {
     listen: '🔊로 듣고, 같은 리듬 칸을 고르세요',
     fill: '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요',
     meter: '박자표가 가려져 있어요. 리듬을 보고 들어 4/4인지 6/8인지 고르세요',
-    count: '음표 개수가 아니라, 8분음표로 나눈 칸은 몇 칸일까요? (♩=2칸, ♪=1칸)',
+    count: '빈 칸이 아니라 음표 길이입니다. ♩=♪♪, 이 마디는 8분음표로 몇 개 길이일까요?',
     odd: '🔊 A→B→C→D 네 개를 순서대로 듣고, 다른 리듬 1개를 고르세요',
   };
 
@@ -836,7 +883,7 @@ function showTrainCountIn(beat, total) {
   if (playMode === 'train' && trainSession && total > 0) {
     setTrainFlashState({
       phase: `기본박 ${beat} / ${total}`,
-      hint: beat < total ? '박자를 세며 준비하세요' : '곧 TAP! 커서를 따라가요',
+      hint: beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '이제 음표에서 TAP! 메트로놈과 같이 칩니다',
     });
   }
 }
@@ -933,19 +980,19 @@ function renderTrainTierRow() {
 }
 
 function trainStyleCopy(style = selectedTrainStyle) {
-  if (style === 'sight') {
+  if (style === 'together') {
     return {
-      intro: '악보를 보고 · 기본박 후 커서에 맞춰 TAP! · 5문제 연속',
-      hint: '보고 치기 — 악보와 커서를 따라 바로 TAP합니다',
-      lock: `${currentTrainLabel()} — 기본박 4번 후 커서가 지나갈 때 TAP!`,
-      listenHint: '커서가 음표 위에 있을 때 TAP! (스페이스바)',
+      intro: '메트로놈을 켜 두고 악보와 같이 TAP · 5문제',
+      hint: '같이 치기 — 기본박 후 노란 커서가 음표에 닿을 때 TAP합니다',
+      lock: `${currentTrainLabel()} — 기본박 4번 후 음표에서 TAP!`,
+      listenHint: '커서가 음표에 닿을 때 TAP! (버튼·스페이스·화면)',
     };
   }
   return {
-    intro: '리듬을 먼저 듣고 · 같은 리듬을 따라 TAP! · 5문제 연속',
-    hint: '듣고 따라 치기 — 귀로 기억한 뒤 같은 리듬을 TAP합니다. 리듬감에 가장 도움이 됩니다',
-    lock: `${currentTrainLabel()} — 먼저 듣고, 기본박 후 따라 TAP!`,
-    listenHint: '방금 들은 리듬을 따라 TAP! (스페이스바)',
+    intro: '같이 친 뒤, 같은 리듬을 따라 칩니다 · 5문제',
+    hint: '같이 치고 → 따라 치기 — 메트로놈을 켠 채 한 번 같이 치고, 같은 리듬을 혼자 다시 TAP합니다',
+    lock: `${currentTrainLabel()} — 같이 친 다음 따라 치기`,
+    listenHint: '노란 커서가 음표에 닿을 때 TAP!',
   };
 }
 
@@ -973,10 +1020,6 @@ function renderTrainStyleRow() {
     btn.classList.toggle('active', btn.dataset.style === selectedTrainStyle);
   });
   updateTrainIntroCopy();
-}
-
-function measuresToTimeline(measures) {
-  return measures.flatMap((bar) => groupsToTimeline(bar));
 }
 
 function renderTrainPatternPicker() {
@@ -1087,13 +1130,13 @@ async function presentTrainFlashCard(round) {
   animateTrainFlashCard('train-flash-enter');
   setTrainFlashState({
     num: `문제 ${idx + 1} / ${total}`,
-    phase: trainSession.style === 'echo' ? '먼저 듣기' : '문제 제시',
-    hint: trainSession.style === 'echo'
-      ? `${unitLabel} · ${round.bars}마디 — 기본박 후 리듬을 귀로 기억하세요`
-      : `${unitLabel} · ${round.bars}마디 — 잠시 후 기본박`,
+    phase: '같이 치기',
+    hint: trainSession.style === 'lesson'
+      ? `${unitLabel} · ${round.bars}마디 — 기본박 후 같이 TAP, 다음에 따라 치기`
+      : `${unitLabel} · ${round.bars}마디 — 기본박 후 TAP`,
   });
   updateTrainRoundHud();
-  const dwell = trainSession.style === 'echo' ? 450 : 1500;
+  const dwell = 700;
   await new Promise((resolve) => setTimeout(resolve, dwell));
 }
 
@@ -1200,8 +1243,25 @@ function showTrainSessionResult() {
 }
 
 async function handleTrainRoundEnd(result, meta) {
+  if (!trainSession) return;
   const tapBtn = $('trainTap');
   const startBtn = $('trainStart');
+
+  if (trainSession.style === 'lesson' && trainSession.phase !== 'echo') {
+    trainSession.phase = 'echo';
+    trainSession.tapPhaseShown = false;
+    tapBtn.disabled = true;
+    setTrainFlashState({
+      phase: '따라 치기',
+      hint: '방금 같이 친 리듬을 혼자 다시 TAP하세요',
+    });
+    animateTrainFlashCard('train-flash-enter');
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    if (!trainSession) return;
+    await runTrainRoundPlay();
+    return;
+  }
+
   tapBtn.disabled = true;
 
   trainSession.results.push({
@@ -1256,6 +1316,7 @@ async function runTrainRoundPlay() {
     measures: round.measures,
     strict: false,
     binaryJudge: true,
+    clickTrack: $('trainClickTrack')?.checked !== false,
     onCountIn: showTrainCountIn,
     onCursor: (state) => {
       setTrainCursor(state);
@@ -1264,7 +1325,9 @@ async function runTrainRoundPlay() {
         animateTrainFlashCard('train-flash-tap');
         setTrainFlashState({
           phase: 'TAP!',
-          hint: trainStyleCopy(trainSession.style).listenHint,
+          hint: trainSession.phase === 'echo'
+          ? '방금 친 리듬을 기억해서 TAP!'
+          : trainStyleCopy(trainSession.style).listenHint,
           tapHint: true,
         });
       }
@@ -1290,50 +1353,13 @@ async function runTrainRoundPlay() {
   await trainer.start();
 }
 
-async function playTrainListenPreview(round, bpm) {
-  if (!trainSession) return;
-  if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
-  const tapBtn = $('trainTap');
-  if (tapBtn) tapBtn.disabled = true;
-
-  setTrainFlashState({
-    phase: '먼저 듣기',
-    hint: '기본박 후 리듬을 귀로 기억하세요 — 아직 TAP하지 마세요',
-  });
-
-  await rhythmPlayer.playBasicBeats(bpm, {
-    bars: 1,
-    beatsPerBar: 4,
-    onBeat: (beat, total) => {
-      if (trainSession) {
-        setTrainFlashState({ phase: `기본박 ${beat} / ${total}` });
-      }
-    },
-  });
-  if (!trainSession) return;
-  await new Promise((resolve) => setTimeout(resolve, 220));
-  if (!trainSession) return;
-
-  setTrainFlashState({
-    phase: '리듬 재생',
-    hint: '이 리듬을 기억하세요',
-  });
-  const timeline = measuresToTimeline(round.measures);
-  if (timeline.length) {
-    await rhythmPlayer.playTimeline(timeline, bpm, { countdown: false });
-  }
-}
-
 async function runTrainRound() {
   if (!trainSession) return;
   const round = trainSession.rounds[trainSession.index];
+  trainSession.phase = 'together';
+  trainSession.tapPhaseShown = false;
   await presentTrainFlashCard(round);
   if (!trainSession) return;
-  if (trainSession.style === 'echo') {
-    await playTrainListenPreview(round, trainSession.bpm);
-    if (!trainSession) return;
-    rhythmPlayer?.stop();
-  }
   await runTrainRoundPlay();
 }
 
@@ -1358,7 +1384,7 @@ function initTrain() {
     styleRow.querySelectorAll('.train-style-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         if (trainSession) return;
-        selectedTrainStyle = btn.dataset.style === 'sight' ? 'sight' : 'echo';
+        selectedTrainStyle = btn.dataset.style === 'together' ? 'together' : 'lesson';
         renderTrainStyleRow();
         renderTrainTierRow();
       });
@@ -1370,6 +1396,14 @@ function initTrain() {
   };
 
   tapBtn.addEventListener('click', doTrainTap);
+  $('trainFlashCard')?.addEventListener('pointerdown', (e) => {
+    if (playMode !== 'train' || !trainer?.running) return;
+    e.preventDefault();
+    doTrainTap();
+  });
+  $('trainClickTrack')?.addEventListener('change', () => {
+    if (trainer) trainer.clickTrack = $('trainClickTrack').checked;
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' || !$('panel-play').classList.contains('active')) return;
@@ -1391,6 +1425,7 @@ function initTrain() {
       sessionScore: 0,
       tapPhaseShown: false,
       style: selectedTrainStyle,
+      phase: 'together',
     };
 
     startBtn.disabled = true;
@@ -1756,6 +1791,19 @@ function initLesson() {
   $('quizStart').addEventListener('click', () => {
     startLesson(playMode === 'placement' ? 'placement' : 'quiz');
   });
+
+  $('learnPracticeBtn')?.addEventListener('click', () => {
+    const unit = getUnit(selectedQuizUnitId);
+    if (unit?.level === 'beginner') selectedTrainTier = 1;
+    else if (unit?.level === 'basic') selectedTrainTier = 2;
+    else selectedTrainTier = 3;
+    const first = patternsForUnit(selectedQuizUnitId).find((p) => p.measure || p.measures);
+    if (first) selectedTrainExerciseId = first.id;
+    setPlayMode('train');
+  });
+  $('learnQuizBtn')?.addEventListener('click', () => {
+    setPlayMode('quiz');
+  });
 }
 
 function initModeSwitch() {
@@ -1832,6 +1880,7 @@ function init() {
   initTrain();
   initLesson();
   renderQuizUnitList();
+  renderLearnCard();
   renderCurriculum();
   renderRank();
   sayGiryong(profile.placement ? 'welcome' : 'placementStart', profile.placement ? undefined : '처음이면 레벨 테스트부터 해볼까?');

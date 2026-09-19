@@ -73,23 +73,14 @@ export function slotsToNotation(slots) {
 }
 
 export function renderFillOptionHtml(fillSlots) {
-  const cells = fillSlots.map((len) => {
-    const sym = slotGroupSymbol(len);
-    if (len === 1) {
-      return `<span class="measure-slot filled">${sym}</span>`;
-    }
-    let html = `<span class="measure-slot filled">${sym}</span>`;
-    for (let i = 1; i < len; i += 1) {
-      html += '<span class="measure-slot tie"></span>';
-    }
-    return html;
-  }).join('');
+  const cells = fillSlots.map((len) => (
+    `<span class="measure-slot filled" style="flex:${len}">${slotGroupSymbol(len)}</span>`
+  )).join('');
 
-  const total = fillSlots.reduce((s, d) => s + d, 0);
   return `
     <div class="rhythm-grid-wrap rhythm-grid-option">
       <span class="choice-prefix">□ →</span>
-      <div class="measure-slots" style="--slots:${total}">${cells}</div>
+      <div class="measure-slots">${cells}</div>
     </div>
   `;
 }
@@ -102,7 +93,7 @@ export function getMeterLabel(meterId, slots) {
   const meter = METERS[meterId];
   const total = slotSum(slots);
   const beats = total / 2;
-  return `${meter.label} · 1마디 (${beats}박 · 8분음표 ${total}칸)`;
+  return `${meter.label} · 1마디 (${beats}박)`;
 }
 
 function getNoteGroups(slots) {
@@ -171,16 +162,24 @@ export function expandToGrid(slots, meterId) {
 
 export function renderMeasureHtml(slots, meterId, blankFrom, blankLen) {
   const meter = METERS[meterId];
-  const grid = expandToGrid(slots, meterId);
-  const cells = grid.map((cell, i) => {
-    const inBlank = i >= blankFrom && i < blankFrom + blankLen;
+  let pos = 0;
+  const parts = [];
+  for (const len of slots) {
+    const inBlank = pos >= blankFrom && pos < blankFrom + blankLen;
     if (inBlank) {
-      return '<span class="measure-slot blank" aria-hidden="true">□</span>';
+      const prev = parts[parts.length - 1];
+      if (prev?.kind === 'blank') prev.span += len;
+      else parts.push({ kind: 'blank', span: len });
+    } else {
+      parts.push({ kind: 'note', span: len, symbol: slotGroupSymbol(len) });
     }
-    if (!cell || cell.type === 'tie') {
-      return '<span class="measure-slot tie" aria-hidden="true"></span>';
+    pos += len;
+  }
+  const cells = parts.map((part) => {
+    if (part.kind === 'blank') {
+      return `<span class="measure-slot blank" style="flex:${part.span}">□</span>`;
     }
-    return `<span class="measure-slot filled">${cell.symbol}</span>`;
+    return `<span class="measure-slot filled" style="flex:${part.span}">${part.symbol}</span>`;
   }).join('');
 
   return `

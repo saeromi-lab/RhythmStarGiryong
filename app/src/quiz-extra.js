@@ -26,7 +26,7 @@ export const QUIZ_TYPE_LABELS = {
   listen: '청음',
   fill: '마디 채우기',
   meter: '박자표 맞추기',
-  count: '칸 수 세기',
+  count: '음표 길이',
   odd: '다른 리듬 찾기',
 };
 
@@ -143,12 +143,12 @@ export function buildCountQuestion(levelId, unitId = null) {
     throw new Error('칸세기 문제용 패턴 없음');
   }
 
-  const correct = { value: slotCount, label: `${slotCount}칸` };
+  const correct = { value: slotCount, label: `♪ ${slotCount}개 길이` };
   const candidates = [slotCount - 2, slotCount - 1, slotCount + 1, slotCount + 2]
     .filter((n) => n > 0 && n !== slotCount && n <= 16);
   const distractors = [...new Set(candidates)].map((n) => ({
     value: n,
-    label: `${n}칸`,
+    label: `♪ ${n}개 길이`,
   }));
 
   const options = pickOptions(correct, distractors, (o) => o.label);

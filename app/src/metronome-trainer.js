@@ -30,6 +30,7 @@ export class MetronomeTrainer {
     prepBeats = 0,
     missGraceSec = 0.04,
     tapLeadMs = TRAIN_EARLY_MS,
+    clickTrack = true,
     onCountIn,
     onPrep,
     onCursor,
@@ -46,6 +47,7 @@ export class MetronomeTrainer {
     this.prepBeats = prepBeats;
     this.missGraceSec = missGraceSec;
     this.tapLeadMs = tapLeadMs;
+    this.clickTrack = clickTrack;
     this.onCountIn = onCountIn ?? (() => {});
     this.onPrep = onPrep ?? (() => {});
     this.onCursor = onCursor ?? (() => {});
@@ -102,6 +104,24 @@ export class MetronomeTrainer {
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
     osc.start(time);
     osc.stop(time + 0.07);
+  }
+
+  playTap(time = this.audioCtx.currentTime) {
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 1320;
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    gain.gain.setValueAtTime(0.1, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+    osc.start(time);
+    osc.stop(time + 0.05);
+  }
+
+  beatsPerBar() {
+    const eighths = this.measures[0]?.reduce((sum, group) => sum + group.e, 0) ?? 8;
+    return eighths === 6 ? 2 : 4;
   }
 
   scheduleAt(when, fn) {
@@ -197,6 +217,15 @@ export class MetronomeTrainer {
       });
     }
 
+    const barBeats = this.beatsPerBar();
+    const playClicks = Math.max(1, Math.round(this.totalBeats));
+    for (let b = 0; b < playClicks; b += 1) {
+      const t = this.rhythmStart + b * this.beatSec;
+      this.scheduleAt(t, () => {
+        if (this.clickTrack) this.playClick(this.audioCtx.currentTime, b % barBeats === 0);
+      });
+    }
+
     let hitIdx = 0;
     for (const seg of this.segments) {
       if (!seg.isNote) continue;
@@ -243,6 +272,7 @@ export class MetronomeTrainer {
 
   judgeTap() {
     if (!this.running || !this.audioCtx || this.failed) return null;
+    this.playTap();
     if (this.nowAudio() < this.rhythmStart - 0.2) return null;
 
     const now = this.nowAudio();

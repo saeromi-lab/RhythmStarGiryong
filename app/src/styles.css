@@ -600,10 +600,57 @@ body {
   color: var(--duo-text);
 }
 
-.train-style-hint {
+.train-click-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.train-click-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.learn-body {
+  margin: 12px 0 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fffef8;
+  border: 1px solid var(--border);
+}
+
+.learn-goal {
   margin: 0 0 8px;
-  font-size: 12px;
-  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.learn-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.learn-steps {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.learn-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.learn-example {
+  margin-top: 10px;
 }
 
 .train-tier-row {
@@ -2106,10 +2153,10 @@ body.lesson-open {
 }
 
 .measure-slots {
-  display: grid;
-  grid-template-columns: repeat(var(--slots), minmax(0, 1fr));
-  gap: 4px;
+  display: flex;
+  gap: 6px;
   flex: 1;
+  align-items: stretch;
 }
 
 .measure-slot {
@@ -2117,10 +2164,12 @@ body.lesson-open {
   align-items: center;
   justify-content: center;
   min-height: 40px;
+  min-width: 28px;
   border-radius: 8px;
   font-size: 20px;
   background: #fff;
   border: 1px solid #ddd;
+  flex: 1 1 0;
 }
 
 .measure-slot.filled {
@@ -2137,8 +2186,7 @@ body.lesson-open {
 }
 
 .measure-slot.tie {
-  background: transparent;
-  border-color: transparent;
+  display: none;
 }
 
 .choice-prefix {

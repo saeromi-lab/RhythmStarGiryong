@@ -62,7 +62,7 @@ let runnerGame = null;
 let trainer = null;
 let trainSession = null;
 let rhythmPlayer = null;
-let selectedLevel = LEVELS[1];
+let selectedLevel = LEVELS[0];
 let selectedTrainExerciseId = TRAIN_EXERCISES[0]?.id ?? 'u1-even8-q4';
 let selectedTrainTier = 1;
 let selectedQuizLevel = QUIZ_LEVELS[0];
@@ -1289,16 +1289,24 @@ function initTrain() {
 }
 
 function getRunnerExercise() {
+  const preferred = TRAIN_EXERCISES.find((ex) => ex.id === 'q4')
+    ?? TRAIN_EXERCISES.find((ex) => ex.measure?.length === 4);
+  if (selectedLevel.id === 'beginner' && preferred) return preferred;
   const tierMap = { beginner: 1, basic: 2, intermediate: 3, advanced: 3 };
   const tier = tierMap[selectedLevel.id] ?? 1;
   const list = exercisesForTier(tier);
-  return list[Math.floor(Math.random() * list.length)] ?? TRAIN_EXERCISES[0];
+  const even = list.filter((ex) => {
+    const groups = ex.measure ?? ex.measures?.[0] ?? [];
+    return groups.length > 0 && groups.every((g) => g.t === 'n' && (g.e === 1 || g.e === 2));
+  });
+  const pool = even.length ? even : list;
+  return pool[Math.floor(Math.random() * pool.length)] ?? TRAIN_EXERCISES[0];
 }
 
 function getRunnerStage() {
   const ex = getRunnerExercise();
   return {
-    measures: buildTrainMeasures(ex, 1),
+    measures: buildTrainMeasures(ex, selectedLevel.id === 'beginner' ? 2 : 1),
     bpm: selectedLevel.bpm,
     title: ex.focus ?? '리듬 스테이지',
   };
@@ -1342,6 +1350,12 @@ function updateRunnerStats() {
 
 function flashRunnerJudge(key, pts) {
   const el = $('runnerJudgeFlash');
+  if (key === 'prep') {
+    el.textContent = '예비박';
+    el.className = 'judge-flash show prep';
+    setTimeout(() => el.classList.remove('show'), 280);
+    return;
+  }
   const j = JUDGE[key];
   el.textContent = key === 'miss' ? 'MISS' : `${j?.label ?? key} +${pts}`;
   el.className = `judge-flash show ${key}`;
@@ -1362,12 +1376,12 @@ function resetRunnerUI() {
   $('runnerLane')?.classList.remove('playing');
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerFx')?.replaceChildren();
+  if ($('runnerCue')) $('runnerCue').hidden = true;
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
 }
 
 function showRunnerResult(result, { cleared, title, bpm }) {
-  $('runnerCard').style.display = 'none';
   $('resultCard').style.display = 'block';
   $('resultTitle').textContent = cleared ? '서핑 완주!' : '서핑 종료';
   $('resultBody').innerHTML = `
@@ -1407,6 +1421,11 @@ function initRunner() {
 
   const doTap = () => {
     if (!runnerGame?.running) return;
+    if (runnerGame.inCountIn) {
+      flashRunnerJudge('prep', 0);
+      $('runnerJudgeFlash').textContent = '예비박 — 곧 TAP!';
+      return;
+    }
     const key = runnerGame.judgeTap();
     if (key && key !== 'miss') {
       const j = JUDGE[key];
@@ -1454,6 +1473,8 @@ function initRunner() {
       onCursor: ({ phase, progress, activePos }) => {
         setTrainCursor({ phase, progress, activePos });
         $('runnerLane')?.classList.toggle('playing', phase === 'play');
+        const cue = $('runnerCue');
+        if (cue) cue.hidden = phase !== 'play';
         if (phase === 'play') {
           $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
           $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
@@ -1487,7 +1508,7 @@ function initRunner() {
         tapBtn.disabled = true;
         startBtn.disabled = false;
         showRunnerResult(result, {
-          cleared: true,
+          cleared: (runnerGame?.lives ?? 0) > 0,
           title: stage.title,
           bpm,
         });

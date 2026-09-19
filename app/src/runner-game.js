@@ -7,11 +7,12 @@ export const RUNNER_PREP_BEATS = 2;
 
 export class RhythmRunnerGame {
   constructor(options) {
+    this.lives = RUNNER_LIVES;
     this.trainer = new MetronomeTrainer({
       ...options,
       strict: false,
       binaryJudge: false,
-      prepBeats: options.prepBeats ?? RUNNER_PREP_BEATS,
+      prepBeats: options.prepBeats ?? 0,
       missGraceSec: options.missGraceSec ?? 0.55,
       tapLeadMs: options.tapLeadMs ?? 220,
       onCountIn: options.onCountIn,
@@ -20,12 +21,8 @@ export class RhythmRunnerGame {
       onNote: options.onNote,
       onJudge: (key, pts, combo, hitIdx, pos) => {
         if (key === 'miss') {
-          this.lives -= 1;
+          if (this.lives > 0) this.lives -= 1;
           options.onLifeChange?.(this.lives);
-          if (this.lives <= 0) {
-            this.trainer.fail();
-            return;
-          }
         } else if (key === 'perfect') {
           options.onJump?.(hitIdx, pos);
         }
@@ -35,11 +32,15 @@ export class RhythmRunnerGame {
       onFail: options.onFail,
       onEnd: options.onEnd,
     });
-    this.lives = RUNNER_LIVES;
   }
 
   get running() {
     return this.trainer.running;
+  }
+
+  get inCountIn() {
+    if (!this.trainer.running) return false;
+    return this.trainer.nowAudio() < this.trainer.rhythmStart - 0.2;
   }
 
   get score() {

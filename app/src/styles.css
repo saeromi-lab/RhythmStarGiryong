@@ -1229,6 +1229,14 @@ body {
   gap: 10px;
 }
 
+.runner-card .arcade-controls {
+  position: sticky;
+  bottom: 0;
+  z-index: 9;
+  padding: 8px 0 4px;
+  background: linear-gradient(180deg, transparent, var(--card) 30%);
+}
+
 .arcade-btn,
 .tap-btn {
   flex: 1;
@@ -3147,3 +3155,21 @@ body.lesson-open {
   top: auto;
   left: auto;
 }
+
+.runner-cue {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  z-index: 8;
+  background: #ffc857;
+  color: #1a1830;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px #0a284088;
+  pointer-events: none;
+  animation: hitLinePulse 0.8s ease-in-out infinite;
+}
+

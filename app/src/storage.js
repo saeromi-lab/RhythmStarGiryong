@@ -42,10 +42,8 @@ export function saveProfile(profile) {
 
 export function ensureNickname() {
   const profile = loadProfile();
-  if (profile.nickname) return profile;
-  const name = prompt('닉네임을 입력해 주세요 (랭킹에 표시됩니다)', '기룡친구');
-  if (name?.trim()) {
-    profile.nickname = name.trim().slice(0, 12);
+  if (!profile.nickname) {
+    profile.nickname = '기룡친구';
     saveProfile(profile);
   }
   return profile;

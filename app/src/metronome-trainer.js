@@ -72,6 +72,19 @@ export class MetronomeTrainer {
     this.coins = 0;
     this.totalNotes = countTrainNotes(measures);
     this._cursorRaf = null;
+    this.wallStart = 0;
+    this.audioBase = 0;
+  }
+
+  nowAudio() {
+    if (!this.audioCtx) return 0;
+    const audioNow = this.audioCtx.currentTime;
+    const audioElapsed = audioNow - this.audioBase;
+    const wallElapsed = (performance.now() - this.wallStart) / 1000;
+    if (this.wallStart && audioElapsed < wallElapsed * 0.6) {
+      return this.audioBase + wallElapsed;
+    }
+    return audioNow;
   }
 
   async ensureAudio() {
@@ -92,8 +105,7 @@ export class MetronomeTrainer {
   }
 
   scheduleAt(when, fn) {
-    const base = this.audioCtx.currentTime;
-    const delayMs = Math.max(0, (when - base) * 1000);
+    const delayMs = Math.max(0, (when - this.nowAudio()) * 1000);
     const timer = setTimeout(() => {
       if (!this.running) return;
       fn();
@@ -128,7 +140,7 @@ export class MetronomeTrainer {
   startCursorLoop() {
     const loop = () => {
       if (!this.running || this.failed || !this.audioCtx) return;
-      const now = this.audioCtx.currentTime;
+      const now = this.nowAudio();
 
       if (now < this.countInStart + COUNT_IN_BEATS * this.beatSec) {
         const p = Math.max(0, (now - this.countInStart) / (COUNT_IN_BEATS * this.beatSec));
@@ -160,11 +172,14 @@ export class MetronomeTrainer {
   }
 
   schedule() {
-    const base = this.audioCtx.currentTime;
+    const base = this.nowAudio();
+    this.audioBase = this.audioCtx.currentTime;
+    this.wallStart = performance.now();
     this.countInStart = base;
     this.rhythmStart = base + (COUNT_IN_BEATS + this.prepBeats) * this.beatSec;
-    this.totalBeats = this.computeTotalBeats();
     this.segments = this.buildSegments();
+    const segBeats = this.segments.reduce((s, seg) => s + seg.durBeat, 0);
+    this.totalBeats = Math.max(this.computeTotalBeats(), segBeats, 4);
 
     for (let b = 0; b < COUNT_IN_BEATS; b += 1) {
       const t = base + b * this.beatSec;
@@ -228,9 +243,9 @@ export class MetronomeTrainer {
 
   judgeTap() {
     if (!this.running || !this.audioCtx || this.failed) return null;
-    if (this.audioCtx.currentTime < this.rhythmStart) return null;
+    if (this.nowAudio() < this.rhythmStart - 0.2) return null;
 
-    const now = this.audioCtx.currentTime;
+    const now = this.nowAudio();
     let best = null;
     let bestDelta = Infinity;
 
@@ -304,6 +319,8 @@ export class MetronomeTrainer {
 
   async start() {
     await this.ensureAudio();
+    this.timers.forEach((t) => clearTimeout(t));
+    this.timers = [];
     this.running = true;
     this.failed = false;
     this.targets = [];
@@ -313,6 +330,13 @@ export class MetronomeTrainer {
 
   finish() {
     if (!this.running || this.failed) return;
+    const minMs = (COUNT_IN_BEATS + this.prepBeats + Math.max(this.totalBeats, 1)) * this.beatSec * 1000;
+    const remain = this.wallStart ? minMs - (performance.now() - this.wallStart) : 0;
+    if (remain > 80) {
+      const timer = setTimeout(() => this.finish(), remain + 40);
+      this.timers.push(timer);
+      return;
+    }
     this.running = false;
     this.timers.forEach((t) => clearTimeout(t));
     this.timers = [];

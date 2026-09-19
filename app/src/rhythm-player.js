@@ -58,7 +58,7 @@ export class RhythmPlayer {
 
   /**
    * 패턴 재생. pattern = 박 단위 음표 길이 배열
-   * countdown: 시작 전 1박 예비박
+   * countdown: 시작 전 1박 기본박
    */
   async playPattern(pattern, bpm, { countdown = false, onHit, slow = false } = {}) {
     await this.ensureAudio();

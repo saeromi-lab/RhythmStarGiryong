@@ -63,7 +63,7 @@ export function checkIn(profile) {
   const today = todayKey();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yKey = yesterday.toISOString().slice(0, 10);
+  const yKey = todayKey(yesterday);
 
   const continued = profile.lastCheckIn === yKey;
   profile.streak = continued ? profile.streak + 1 : 1;
@@ -183,8 +183,8 @@ export function getCurrentWeekDates() {
     d.setDate(monday.getDate() + i);
     return {
       label,
-      date: d.toISOString().slice(0, 10),
-      isToday: d.toISOString().slice(0, 10) === todayKey(),
+      date: todayKey(d),
+      isToday: todayKey(d) === todayKey(),
     };
   });
 }

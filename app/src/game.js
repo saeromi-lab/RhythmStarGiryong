@@ -1,4 +1,5 @@
 import { JUDGE } from './data.js';
+import { createAudioContext, resumeAudio } from './audio.js';
 
 export class RhythmGame {
   constructor({ bpm, noteCount, onBeat, onJudge, onEnd }) {
@@ -26,8 +27,8 @@ export class RhythmGame {
   }
 
   async ensureAudio() {
-    if (!this.audioCtx) this.audioCtx = new AudioContext();
-    if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
+    if (!this.audioCtx) this.audioCtx = createAudioContext();
+    await resumeAudio(this.audioCtx);
   }
 
   playTone(freq, time, dur = 0.06) {

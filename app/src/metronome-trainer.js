@@ -1,5 +1,6 @@
 import { JUDGE } from './data.js';
 import { countTrainNotes } from './train-data.js';
+import { createAudioContext, resumeAudio } from './audio.js';
 
 /** 메트로놈 박자에 맞춰 악보 리듬을 탭하는 훈련 */
 
@@ -15,8 +16,8 @@ function trainPerfectWindowMs(target) {
   return Math.max(140, noteDurMs * TRAIN_PERFECT_RATIO);
 }
 
-function trainEarliestSec(target) {
-  const earlyMs = target.index === 0 ? TRAIN_EARLY_MS + 40 : TRAIN_EARLY_MS;
+function trainEarliestSec(target, tapLeadMs = TRAIN_EARLY_MS) {
+  const earlyMs = target.index === 0 ? tapLeadMs + 40 : tapLeadMs;
   return target.time - earlyMs / 1000;
 }
 
@@ -26,7 +27,11 @@ export class MetronomeTrainer {
     measures,
     strict = true,
     binaryJudge = true,
+    prepBeats = 0,
+    missGraceSec = 0.04,
+    tapLeadMs = TRAIN_EARLY_MS,
     onCountIn,
+    onPrep,
     onCursor,
     onNote,
     onJudge,
@@ -38,7 +43,11 @@ export class MetronomeTrainer {
     this.measures = measures;
     this.strict = strict;
     this.binaryJudge = binaryJudge;
+    this.prepBeats = prepBeats;
+    this.missGraceSec = missGraceSec;
+    this.tapLeadMs = tapLeadMs;
     this.onCountIn = onCountIn ?? (() => {});
+    this.onPrep = onPrep ?? (() => {});
     this.onCursor = onCursor ?? (() => {});
     this.onNote = onNote ?? (() => {});
     this.onJudge = onJudge ?? (() => {});
@@ -66,8 +75,8 @@ export class MetronomeTrainer {
   }
 
   async ensureAudio() {
-    if (!this.audioCtx) this.audioCtx = new AudioContext();
-    if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
+    if (!this.audioCtx) this.audioCtx = createAudioContext();
+    await resumeAudio(this.audioCtx);
   }
 
   playClick(time, accent = false) {
@@ -121,9 +130,13 @@ export class MetronomeTrainer {
       if (!this.running || this.failed || !this.audioCtx) return;
       const now = this.audioCtx.currentTime;
 
-      if (now < this.rhythmStart) {
+      if (now < this.countInStart + COUNT_IN_BEATS * this.beatSec) {
         const p = Math.max(0, (now - this.countInStart) / (COUNT_IN_BEATS * this.beatSec));
         this.onCursor({ phase: 'count-in', progress: p, activePos: -1 });
+      } else if (now < this.rhythmStart) {
+        const prepElapsed = now - (this.countInStart + COUNT_IN_BEATS * this.beatSec);
+        const p = Math.max(0, prepElapsed / (Math.max(this.prepBeats, 1) * this.beatSec));
+        this.onCursor({ phase: 'prep', progress: p, activePos: -1 });
       } else {
         const elapsed = now - this.rhythmStart;
         const totalSec = this.totalBeats * this.beatSec;
@@ -149,7 +162,7 @@ export class MetronomeTrainer {
   schedule() {
     const base = this.audioCtx.currentTime;
     this.countInStart = base;
-    this.rhythmStart = base + COUNT_IN_BEATS * this.beatSec;
+    this.rhythmStart = base + (COUNT_IN_BEATS + this.prepBeats) * this.beatSec;
     this.totalBeats = this.computeTotalBeats();
     this.segments = this.buildSegments();
 
@@ -158,6 +171,14 @@ export class MetronomeTrainer {
       this.scheduleAt(t, () => {
         this.playClick(this.audioCtx.currentTime, b === 0);
         this.onCountIn(b + 1, COUNT_IN_BEATS);
+      });
+    }
+
+    for (let b = 0; b < this.prepBeats; b += 1) {
+      const t = base + (COUNT_IN_BEATS + b) * this.beatSec;
+      this.scheduleAt(t, () => {
+        this.playClick(this.audioCtx.currentTime, false);
+        this.onPrep(b + 1, this.prepBeats);
       });
     }
 
@@ -182,7 +203,7 @@ export class MetronomeTrainer {
       });
 
       // 커서가 음표를 지나갈 때까지 탭 대기 (55ms가 아니라 음표 길이 기준)
-      const missAt = endTime + 0.04;
+      const missAt = endTime + this.missGraceSec;
       this.scheduleAt(missAt, () => {
         const tgt = this.targets[idx];
         if (tgt && !tgt.hit) this.registerMiss(tgt);
@@ -215,7 +236,7 @@ export class MetronomeTrainer {
 
     for (const t of this.targets) {
       if (t.hit) continue;
-      if (now < trainEarliestSec(t) || now > t.endTime) continue;
+      if (now < trainEarliestSec(t, this.tapLeadMs) || now > t.endTime + this.missGraceSec) continue;
       const deltaMs = Math.abs(now - t.time) * 1000;
       if (deltaMs < bestDelta) {
         bestDelta = deltaMs;

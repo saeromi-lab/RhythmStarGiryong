@@ -141,7 +141,7 @@ export function renderPatternGridHtml(pattern, meterId = '4/4', opts = {}) {
 }
 
 /** N마디 연습 악보 (메트로놈 훈련용) — measures: 그룹 배열의 배열 */
-export function renderTrainScoreHtml(measures, meterId = '4/4') {
+export function renderTrainScoreHtml(measures, meterId = '4/4', { idPrefix = 'train' } = {}) {
   const meter = METERS[meterId] ?? METERS['4/4'];
   const bars = measures.length;
   let hitIdx = 0;
@@ -161,12 +161,12 @@ export function renderTrainScoreHtml(measures, meterId = '4/4') {
   }
 
   return `
-    <div class="train-score-card" id="trainScoreCard">
+    <div class="train-score-card" id="${idPrefix}ScoreCard">
       <div class="train-score-label">연습 악보 · ${meter.shortLabel} · ${bars}마디</div>
       <div class="train-score-body">
         <div class="measure-sig train-score-sig">${meter.shortLabel}</div>
-        <div class="train-score-track" id="trainScoreTrack">
-          <div class="train-cursor" id="trainCursor" aria-hidden="true"></div>
+        <div class="train-score-track" id="${idPrefix}ScoreTrack">
+          <div class="train-cursor" id="${idPrefix}Cursor" aria-hidden="true"></div>
           <div class="train-score-bars">${barsHtml.join('')}</div>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { createAudioContext, resumeAudio } from './audio.js';
+
 export class RhythmPlayer {
   constructor() {
     this.audioCtx = null;
@@ -5,8 +7,8 @@ export class RhythmPlayer {
   }
 
   async ensureAudio() {
-    if (!this.audioCtx) this.audioCtx = new AudioContext();
-    if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
+    if (!this.audioCtx) this.audioCtx = createAudioContext();
+    await resumeAudio(this.audioCtx);
     return this.audioCtx;
   }
 

@@ -1,17 +1,19 @@
+const giryongImg = (file) => `${import.meta.env.BASE_URL}images/giryong/${file}`;
+
 export const GIRYONG_IMAGES = {
-  hero: '/images/giryong/giryong-hero.png',
-  basic: '/images/giryong/giryong-basic.png',
-  main: '/images/giryong/giryong-main.png',
-  logo: '/images/giryong/giryong-logo.png',
-  dressed: '/images/giryong/giryong-dressed.png',
-  happy: '/images/giryong/emote-1.png',
-  cheer: '/images/giryong/emote-2.png',
-  sad: '/images/giryong/emote-3.png',
-  excited: '/images/giryong/emote-4.png',
-  celebrate: '/images/giryong/emote-5.png',
-  pearlCatching: '/images/giryong/pearl-catching.png',
-  pearlStamp: '/images/giryong/pearl-stamp.png',
-  withPearl: '/images/giryong/giryong-main.png',
+  hero: giryongImg('giryong-hero.png'),
+  basic: giryongImg('giryong-basic.png'),
+  main: giryongImg('giryong-main.png'),
+  logo: giryongImg('giryong-logo.png'),
+  dressed: giryongImg('giryong-dressed.png'),
+  happy: giryongImg('emote-1.png'),
+  cheer: giryongImg('emote-2.png'),
+  sad: giryongImg('emote-3.png'),
+  excited: giryongImg('emote-4.png'),
+  celebrate: giryongImg('emote-5.png'),
+  pearlCatching: giryongImg('pearl-catching.png'),
+  pearlStamp: giryongImg('pearl-stamp.png'),
+  withPearl: giryongImg('giryong-main.png'),
 };
 
 export const GIRYONG_MOOD_IMAGES = {
@@ -107,8 +109,13 @@ export function levelFromXp(xp) {
   return { level: lvl, progress: rest, need };
 }
 
-export function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+export function todayKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 export function randomLine(key) {

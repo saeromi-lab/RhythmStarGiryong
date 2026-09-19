@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>RhythmStarGiryong — 경기대 실용음악 리듬 트레이닝</title>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
@@ -34,7 +35,7 @@
             <img
               id="giryongImg"
               class="giryong-img"
-              src="/images/giryong/giryong-hero.png"
+              src="./images/giryong/giryong-hero.png"
               alt="경기대학교 마스코트 기룡이"
             >
           </div>
@@ -45,7 +46,7 @@
 
       <div class="card attendance-card duo-streak-card">
         <div class="duo-streak-hero">
-          <img src="/images/giryong/pearl-stamp.png" alt="" class="duo-streak-pearl" aria-hidden="true">
+          <img src="./images/giryong/pearl-stamp.png" alt="" class="duo-streak-pearl" aria-hidden="true">
           <div class="duo-streak-num" id="streakNum">0</div>
           <div class="duo-streak-lbl">일 연속 출석</div>
         </div>
@@ -56,7 +57,7 @@
         </div>
 
         <button id="checkInBtn" class="duo-btn duo-btn-green pearl-stamp-btn">
-          <img src="/images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
+          <img src="./images/giryong/pearl-stamp.png" alt="" class="btn-pearl-icon" aria-hidden="true">
           진주조개 도장 찍기
         </button>
         <div id="checkInMsg" class="check-in-msg"></div>
@@ -65,7 +66,7 @@
 
       <div class="card duo-path-card" id="placementHomeCard">
         <div class="duo-path-giryong">
-          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <img src="./images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
           <div class="duo-path-bubble" id="pathBubble">이제 가장 알맞은 시작점을 찾아보아요!</div>
         </div>
         <div id="placementHomeStatus" class="placement-home-status"></div>
@@ -99,11 +100,12 @@
       <div class="card">
         <div class="sec-label">플레이 모드</div>
         <div class="mode-switch mode-switch-4" id="modeSwitch">
-          <button class="mode-btn active" data-mode="arcade">아케이드</button>
+          <button class="mode-btn active" data-mode="runner">비트 서핑</button>
           <button class="mode-btn" data-mode="train">메트로놈 훈련</button>
           <button class="mode-btn" data-mode="quiz">리듬 퀴즈</button>
           <button class="mode-btn" data-mode="placement">레벨 테스트</button>
         </div>
+        <p class="hint mode-hint">파도 위에서 기룡이가 서핑하며 TAP! · 화면을 눌러도 됩니다</p>
       </div>
 
       <div class="card" id="levelSelectCard">
@@ -111,26 +113,77 @@
         <div id="levelSelect" class="level-grid"></div>
       </div>
 
-      <div class="card arcade-card" id="arcadeCard">
-        <div class="arcade-hud">
-          <div><span class="hud-lbl">SCORE</span><span class="hud-val" id="gameScore">0</span></div>
-          <div><span class="hud-lbl">COMBO</span><span class="hud-val combo" id="gameCombo">0</span></div>
-          <div><span class="hud-lbl">BEAT</span><span class="hud-val" id="gameBeat">0/0</span></div>
+      <div class="card runner-card" id="runnerCard">
+        <div class="sec-label">비트 서핑 — 기룡이와 파도 타기</div>
+        <p class="hint">예비박 4번 → 준비 2박 → 기룡이 옆 노란 선에 음표가 올 때 TAP! (화면을 눌러도 됩니다)</p>
+
+        <div class="runner-hud">
+          <div class="runner-stat"><span>Correct</span><strong id="runnerCorrect">0</strong></div>
+          <div class="runner-stat"><span>Wrong</span><strong id="runnerWrong">0</strong></div>
+          <div class="runner-stat"><span>Accuracy</span><strong id="runnerAccuracy">100%</strong></div>
+          <div class="runner-stat runner-stat-score"><span>SCORE</span><strong id="runnerScore">0</strong></div>
         </div>
 
-        <div class="arcade-lane" id="arcadeLane">
-          <img src="/images/giryong/giryong-basic.png" alt="" class="arcade-giryong" aria-hidden="true">
-          <div class="hit-line"></div>
-          <div class="note-ring" id="noteRing"></div>
+        <div class="runner-pearl-bar">
+          <img src="./images/giryong/pearl-stamp.png" alt="" class="runner-pearl-icon" aria-hidden="true">
+          <span class="runner-pearl-lbl">진주</span>
+          <strong id="runnerPearls">0</strong>
         </div>
 
-        <div class="judge-flash" id="judgeFlash"></div>
+        <div class="runner-lives" id="runnerLives" aria-label="남은 목숨">♥♥♥</div>
+
+        <div class="runner-stage runner-surf-scene" id="runnerStage">
+          <div class="runner-sky-glow"></div>
+          <div class="runner-wave runner-wave-back" aria-hidden="true"></div>
+          <div class="runner-wave runner-wave-front" aria-hidden="true"></div>
+          <div class="runner-fishies" aria-hidden="true">
+            <span class="runner-fish runner-fish-1">🐟</span>
+            <span class="runner-fish runner-fish-2">🐠</span>
+            <span class="runner-fish runner-fish-3">🐡</span>
+          </div>
+          <div class="runner-bubbles" aria-hidden="true">
+            <span class="runner-bubble runner-bubble-a"></span>
+            <span class="runner-bubble runner-bubble-b"></span>
+            <span class="runner-bubble runner-bubble-c"></span>
+            <span class="runner-bubble runner-bubble-d"></span>
+          </div>
+          <div class="runner-ocean">
+            <div class="runner-floor-deco" aria-hidden="true">
+              <span class="runner-clam runner-clam-a">🦪</span>
+              <span class="runner-clam runner-clam-b">🦪</span>
+              <span class="runner-coral">🪸</span>
+            </div>
+            <div class="runner-lane" id="runnerLane">
+              <div class="runner-hit-line" aria-hidden="true">
+                <span class="runner-hit-glow"></span>
+              </div>
+              <div class="runner-surfer" id="runnerSurfer">
+                <div class="runner-surfboard" aria-hidden="true">
+                  <span class="runner-board-deck"></span>
+                  <span class="runner-board-fin"></span>
+                </div>
+                <img src="./images/giryong/giryong-basic.png" alt="기룡이" class="runner-giryong" id="runnerGiryong">
+                <span class="runner-spray" aria-hidden="true"></span>
+              </div>
+              <div class="runner-lane-scroll" id="runnerLaneScroll">
+                <div id="runnerScorePreview" class="runner-score-inline"></div>
+              </div>
+              <div class="runner-fx" id="runnerFx" aria-hidden="true"></div>
+            </div>
+            <div class="runner-seaweed runner-seaweed-a" aria-hidden="true"></div>
+            <div class="runner-seaweed runner-seaweed-b" aria-hidden="true"></div>
+          </div>
+          <div class="runner-progress-wrap">
+            <div class="runner-progress-bar" id="runnerProgressBar"></div>
+          </div>
+        </div>
+
+        <div class="judge-flash" id="runnerJudgeFlash"></div>
 
         <div class="arcade-controls">
-          <button id="gameStart" class="primary arcade-btn">START</button>
-          <button id="gameTap" class="tap-btn" disabled>TAP!</button>
+          <button id="runnerStart" class="primary arcade-btn">서핑 시작!</button>
+          <button id="runnerTap" class="tap-btn" disabled>TAP!</button>
         </div>
-        <p class="hint">박자에 맞춰 TAP! 버튼을 누르거나 스페이스바를 누르세요</p>
       </div>
 
       <div class="card train-card" id="trainCard" style="display:none">
@@ -181,7 +234,7 @@
 
       <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
         <div class="duo-path-giryong">
-          <img src="/images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
+          <img src="./images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
           <div class="duo-path-bubble">8단원 커리큘럼 · 단원별 5문제 집중 훈련 + 메트로놈</div>
         </div>
         <button id="quizStart" class="duo-btn duo-btn-green">단원 퀴즈 시작</button>
@@ -229,6 +282,7 @@
 
     <footer class="footer">
       경기대학교 실용음악학과 · 기룡이와 함께하는 리듬 트레이닝<br>
+      미리보기 · 검색에 공개되지 않으며, 링크를 받은 분만 접속할 수 있습니다<br>
       <a href="https://www.kyonggi.ac.kr/www/contents.do?key=9819" target="_blank" rel="noopener">기룡이 캐릭터 출처: 경기대학교 공식 홈페이지</a>
     </footer>
   </div>
@@ -243,7 +297,7 @@
           <div id="lessonProgressFill" class="lesson-progress-fill"></div>
         </div>
       </div>
-      <img src="/images/giryong/giryong-logo.png" alt="" class="lesson-giryong-mini" aria-hidden="true">
+      <img src="./images/giryong/giryong-logo.png" alt="" class="lesson-giryong-mini" aria-hidden="true">
     </header>
 
     <main class="lesson-main" id="lessonMain">
@@ -288,7 +342,7 @@
   <!-- 레슨 완료 화면 -->
   <div id="lessonCompleteOverlay" class="lesson-overlay lesson-complete-overlay" hidden>
     <div class="lesson-complete-body">
-      <img src="/images/giryong/emote-5.png" alt="기룡이" class="lesson-complete-giryong">
+      <img src="./images/giryong/emote-5.png" alt="기룡이" class="lesson-complete-giryong">
       <h2 class="lesson-complete-title">레슨 완료!</h2>
       <div class="lesson-complete-cards" id="lessonCompleteCards"></div>
       <button type="button" id="lessonCompleteBtn" class="duo-btn duo-btn-green">계속하기</button>

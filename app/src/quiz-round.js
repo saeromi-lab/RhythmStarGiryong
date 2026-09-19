@@ -3,20 +3,20 @@ import { buildFillQuestion } from './fill-quiz.js';
 import { buildExtraQuestion } from './quiz-extra.js';
 import { getUnit } from './rhythm-curriculum.js';
 
-export const QUIZ_ROUND_TYPES = ['listen', 'fill', 'meter', 'count', 'odd'];
+export const QUIZ_ROUND_TYPES = ['echo', 'listen', 'fill', 'meter', 'count', 'odd'];
 
 export { QUIZ_ROUND_SIZE };
 
 /** 단원별 유형 순서 — 같은 단원 패턴으로 집중 훈련 */
 const UNIT_TYPE_ORDER = {
-  'u1-even8': ['listen', 'fill', 'count', 'listen', 'odd'],
-  'u2-8mix': ['listen', 'fill', 'count', 'listen', 'odd'],
-  'u3-rests': ['listen', 'fill', 'meter', 'count', 'odd'],
-  'u4-sync': ['listen', 'fill', 'count', 'listen', 'odd'],
-  'u5-68': ['meter', 'fill', 'listen', 'count', 'fill'],
-  'u6-2bar': ['listen', 'listen', 'fill', 'count', 'odd'],
-  'u7-jazz': ['listen', 'odd', 'listen', 'count', 'odd'],
-  'u8-sixteenth': ['listen', 'listen', 'count', 'listen', 'odd'],
+  'u1-even8': ['echo', 'fill', 'count', 'listen', 'odd'],
+  'u2-8mix': ['echo', 'fill', 'count', 'listen', 'odd'],
+  'u3-rests': ['echo', 'fill', 'meter', 'count', 'odd'],
+  'u4-sync': ['echo', 'listen', 'count', 'fill', 'odd'],
+  'u5-68': ['echo', 'meter', 'fill', 'count', 'listen'],
+  'u6-2bar': ['echo', 'listen', 'fill', 'count', 'odd'],
+  'u7-jazz': ['echo', 'listen', 'odd', 'count', 'echo'],
+  'u8-sixteenth': ['echo', 'listen', 'count', 'listen', 'odd'],
 };
 
 export function buildQuestionByType(levelId, type, listenOverride = null, unitId = null) {

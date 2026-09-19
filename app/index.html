@@ -127,6 +127,11 @@
       <div class="card runner-card" id="runnerCard" style="display:none">
         <div class="sec-label">게임 · 비트 서핑</div>
         <p class="hint">학습·연습 후에 게임으로 풀어보세요. <strong>화면 아무 곳이나</strong> 누르거나 아래 TAP을 누르세요.</p>
+        <ol class="runner-how">
+          <li>게임 시작을 누릅니다.</li>
+          <li>기본박 4번이 들립니다. <strong>아직 누르지 마세요.</strong></li>
+          <li>음표가 <strong>노란 세로선</strong>에 닿으면 화면을 누릅니다. 기룡이가 그 선을 지나가는 음표를 타는 게임입니다.</li>
+        </ol>
 
         <div class="runner-hud">
           <div class="runner-stat"><span>Correct</span><strong id="runnerCorrect">0</strong></div>
@@ -345,6 +350,11 @@
       </div>
 
       <div class="lesson-options" id="lessonOptions"></div>
+
+      <div id="lessonTapWrap" class="lesson-tap-wrap" hidden>
+        <p class="lesson-tap-hint" id="lessonTapHint">먼저 리듬을 듣고, 기본박 후 똑같이 TAP하세요</p>
+        <button type="button" id="lessonTapBtn" class="tap-btn">TAP!</button>
+      </div>
     </main>
 
     <footer class="lesson-footer">

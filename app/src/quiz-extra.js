@@ -10,6 +10,7 @@ import {
   getUnit,
   slotSumValid,
   fillSlotsNoteOnly,
+  groupsFromPattern,
 } from './rhythm-curriculum.js';
 import {
   slotSum,
@@ -19,7 +20,7 @@ import {
   formatQuizMeterLabel,
   getQuizMeterConfig,
 } from './fill-quiz.js';
-import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml, renderMeterGuessHtml } from './rhythm-display.js';
+import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml, renderMeterGuessHtml, renderTrainScoreHtml } from './rhythm-display.js';
 import { patternToSlots } from './rhythm-display.js';
 
 export const QUIZ_TYPE_LABELS = {
@@ -28,6 +29,7 @@ export const QUIZ_TYPE_LABELS = {
   meter: '박자표 맞추기',
   count: '음표 길이',
   odd: '다른 리듬 찾기',
+  echo: '따라 치기',
 };
 
 const METER_OPTIONS = [
@@ -240,6 +242,37 @@ export function buildOddQuestion(levelId, unitId = null) {
   };
 }
 
+export function buildEchoQuestion(levelId, unitId = null) {
+  const pool = poolForUnit(levelId, unitId).filter((p) => p.measure || p.measures || p.pattern || p.slots);
+  if (!pool.length) throw new Error('따라치기 문제용 패턴 없음');
+  const source = pool[Math.floor(Math.random() * pool.length)];
+  const measures = source.measures
+    ?? (source.measure ? [source.measure] : [groupsFromPattern(source)]);
+  if (!measures[0]?.length) throw new Error('따라치기 마디 없음');
+
+  const unit = getUnit(source.unitId ?? unitId);
+  const level = QUIZ_LEVELS.find((l) => l.id === levelId);
+  const meterId = source.meter ?? '4/4';
+
+  return {
+    type: 'echo',
+    levelId,
+    unitId: source.unitId ?? unitId,
+    unitTitle: unit?.title,
+    bpm: source.bpm ?? level.bpm,
+    meter: meterId,
+    meterLabel: '주관식 · 듣고 따라 TAP',
+    bars: measures.length,
+    measures,
+    measureHtml: renderTrainScoreHtml(measures, meterId, { idPrefix: 'lessonEcho' }),
+    playTimeline: playTimelineForEntry(source),
+    correctPattern: playPatternForEntry(source),
+    options: [],
+    answerId: 'tap',
+    focus: '들은 리듬을 메트로놈에 맞춰 그대로 TAP',
+  };
+}
+
 function samePattern(a, b) {
   if (a.pattern && b.pattern) return patternKey(a.pattern) === patternKey(b.pattern);
   if (a.slots && b.slots) return slotsKey(fillSlotsNoteOnly(a.slots)) === slotsKey(fillSlotsNoteOnly(b.slots));
@@ -250,5 +283,6 @@ export function buildExtraQuestion(type, levelId, unitId = null) {
   if (type === 'meter') return buildMeterQuestion(levelId, unitId);
   if (type === 'count') return buildCountQuestion(levelId, unitId);
   if (type === 'odd') return buildOddQuestion(levelId, unitId);
+  if (type === 'echo') return buildEchoQuestion(levelId, unitId);
   throw new Error(`알 수 없는 유형: ${type}`);
 }

@@ -16,7 +16,7 @@ const PLACEMENT_TIERS = [
 ];
 
 const TIER_TYPES = {
-  beginner: ['listen', 'fill', 'count'],
+  beginner: ['echo', 'listen', 'fill'],
   basic: ['listen', 'fill', 'meter', 'count'],
   intermediate: QUIZ_ROUND_TYPES,
 };

@@ -649,8 +649,37 @@ body {
   gap: 8px;
 }
 
-.learn-example {
-  margin-top: 10px;
+.runner-how {
+  margin: 8px 0 14px;
+  padding: 12px 12px 12px 28px;
+  border-radius: 12px;
+  background: #fff8e6;
+  border: 1px solid #ffd27a;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.lesson-tap-wrap {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.lesson-tap-wrap[hidden] {
+  display: none !important;
+}
+
+.lesson-tap-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--duo-text);
+}
+
+#lessonTapBtn {
+  width: 100%;
 }
 
 .train-tier-row {

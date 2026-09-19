@@ -130,18 +130,32 @@
 
       <div class="card runner-card" id="runnerCard" style="display:none">
         <div class="sec-label">게임으로 복습 · 비트 서핑 (선택)</div>
-        <p class="hint">리듬 연습의 본편은 <strong>2. 연습</strong>(메트로놈 + 같이 치기 → 따라 치기)입니다. 이 게임은 같은 TAP을 파도 위에서 복습하는 것입니다. <strong>화면 아무 곳이나</strong> 누르세요.</p>
-        <ol class="runner-how">
-          <li>게임 시작을 누릅니다.</li>
-          <li>기본박 4번이 들립니다. <strong>아직 누르지 마세요.</strong></li>
-          <li>음표가 <strong>노란 세로선</strong>에 닿으면 화면을 누릅니다. 기룡이가 그 선을 지나가는 음표를 타는 게임입니다.</li>
-        </ol>
+        <p class="hint">피아노 타일처럼, <strong>음표가 노란 TAP선에 닿는 순간</strong> 화면을 누르는 게임입니다. 리듬 본편은 <strong>2. 연습</strong>입니다.</p>
+        <div class="runner-explain" id="runnerExplain">
+          <div class="runner-step">
+            <span class="runner-step-num">1</span>
+            <strong>기본박 4번</strong>
+            <small>듣기만 · 손 금지</small>
+          </div>
+          <span class="runner-step-arrow" aria-hidden="true">→</span>
+          <div class="runner-step">
+            <span class="runner-step-num">2</span>
+            <strong>음표가 선으로</strong>
+            <small>오른쪽 → 왼쪽</small>
+          </div>
+          <span class="runner-step-arrow" aria-hidden="true">→</span>
+          <div class="runner-step">
+            <span class="runner-step-num">3</span>
+            <strong>닿으면 TAP</strong>
+            <small>화면 아무 곳이나</small>
+          </div>
+        </div>
 
         <div class="runner-hud">
-          <div class="runner-stat"><span>Correct</span><strong id="runnerCorrect">0</strong></div>
-          <div class="runner-stat"><span>Wrong</span><strong id="runnerWrong">0</strong></div>
-          <div class="runner-stat"><span>Accuracy</span><strong id="runnerAccuracy">100%</strong></div>
-          <div class="runner-stat runner-stat-score"><span>SCORE</span><strong id="runnerScore">0</strong></div>
+          <div class="runner-stat"><span>맞춤</span><strong id="runnerCorrect">0</strong></div>
+          <div class="runner-stat"><span>놓침</span><strong id="runnerWrong">0</strong></div>
+          <div class="runner-stat"><span>정확도</span><strong id="runnerAccuracy">100%</strong></div>
+          <div class="runner-stat runner-stat-score"><span>점수</span><strong id="runnerScore">0</strong></div>
         </div>
 
         <div class="runner-pearl-bar">
@@ -176,7 +190,7 @@
             <div class="runner-lane" id="runnerLane">
               <div class="runner-hit-line" aria-hidden="true">
                 <span class="runner-hit-glow"></span>
-                <span class="runner-hit-label">TAP</span>
+                <span class="runner-hit-label">TAP선</span>
               </div>
               <div class="runner-surfer" id="runnerSurfer">
                 <div class="runner-surfboard" aria-hidden="true">
@@ -197,14 +211,17 @@
           <div class="runner-progress-wrap">
             <div class="runner-progress-bar" id="runnerProgressBar"></div>
           </div>
-          <div class="runner-cue" id="runnerCue" hidden>화면을 누르세요!</div>
+        </div>
+
+        <div class="runner-status" id="runnerStatus" data-phase="idle">
+          <span id="runnerStatusText">시작을 누르면 음표가 노란 TAP선으로 옵니다</span>
         </div>
 
         <div class="judge-flash" id="runnerJudgeFlash"></div>
 
         <div class="arcade-controls">
-          <button id="runnerStart" class="primary arcade-btn">게임 시작</button>
-          <button id="runnerTap" class="tap-btn" disabled>화면 또는 여기 TAP!</button>
+          <button id="runnerStart" class="primary arcade-btn">서핑 시작</button>
+          <button id="runnerTap" class="tap-btn" disabled>음표가 선에 오면 TAP</button>
         </div>
       </div>
 

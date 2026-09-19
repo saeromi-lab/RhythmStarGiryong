@@ -395,7 +395,7 @@ function setPlayMode(mode) {
       learn: '먼저 오늘의 강의를 읽고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.',
       train: '메트로놈을 켜 두고 악보와 같이 TAP한 뒤, 같은 리듬을 따라 칩니다',
       quiz: '강의를 확인하는 퀴즈입니다. 리듬감 연습은 연습에서',
-      runner: '선택 복습 게임입니다. 화면 아무 곳이나 누르면 TAP됩니다',
+      runner: '음표가 노란 TAP선에 닿으면 화면을 누르는 복습 게임입니다',
       placement: '지금 실력을 가늠하는 10문제 · 끝나면 추천 단원 강의로 이어집니다',
     };
     modeHint.textContent = hints[mode] ?? '';
@@ -412,7 +412,9 @@ function setPlayMode(mode) {
     renderTrainPatternPicker();
     updateTrainIntroCopy();
   }
-  if (mode !== 'runner' && $('runnerScorePreview')) {
+  if (mode === 'runner') {
+    previewRunnerIdle();
+  } else if ($('runnerScorePreview')) {
     $('runnerScorePreview').innerHTML = '';
   }
   updateTrainPreview();
@@ -1139,6 +1141,16 @@ function showTrainCountIn(beat, total) {
       hint: beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 커서가 음표 위에 오면 TAP! 쉼표는 치지 마세요',
     });
   }
+  if (playMode === 'runner') {
+    setRunnerStatus(
+      'count-in',
+      beat < total
+        ? `기본박 ${beat} / ${total} · 아직 누르지 마세요`
+        : '이제 음표가 노란선에 닿으면 TAP',
+    );
+    $('runnerLane')?.classList.add('count-in');
+    $('runnerLane')?.classList.remove('playing');
+  }
 }
 
 function showRunnerPrep(beat, total) {
@@ -1147,6 +1159,26 @@ function showRunnerPrep(beat, total) {
   el.textContent = `준비 ${beat} / ${total} — 곧 시작!`;
   el.className = 'judge-flash show prep';
   setTimeout(() => el.classList.remove('show'), 280);
+  setRunnerStatus('prep', `곧 시작 · 음표가 노란선에 오면 TAP`);
+}
+
+function setRunnerStatus(phase, text) {
+  const el = $('runnerStatus');
+  const textEl = $('runnerStatusText');
+  if (!el || !textEl) return;
+  el.hidden = false;
+  el.dataset.phase = phase;
+  textEl.textContent = text;
+}
+
+function previewRunnerIdle() {
+  const preview = $('runnerScorePreview');
+  if (!preview) return;
+  const stage = getRunnerStage();
+  preview.innerHTML = renderTrainScoreHtml(stage.measures, '4/4', { idPrefix: 'runnerIdle' });
+  $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
+  $('runnerLane')?.classList.remove('playing', 'count-in');
+  setRunnerStatus('idle', '시작을 누르면 음표가 노란 TAP선으로 옵니다');
 }
 
 function setTrainScoreActive(hitIdx) {
@@ -1785,6 +1817,7 @@ function resetRunnerUI() {
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerFx')?.replaceChildren();
   if ($('runnerCue')) $('runnerCue').hidden = true;
+  setRunnerStatus('idle', '시작을 누르면 음표가 노란 TAP선으로 옵니다');
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
 }
@@ -1881,11 +1914,15 @@ function initRunner() {
       onCursor: ({ phase, progress, activePos }) => {
         setTrainCursor({ phase, progress, activePos });
         $('runnerLane')?.classList.toggle('playing', phase === 'play');
-        const cue = $('runnerCue');
-        if (cue) cue.hidden = phase !== 'play';
+        $('runnerLane')?.classList.toggle('count-in', phase === 'count-in' || phase === 'prep');
         if (phase === 'play') {
           $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
           $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
+          const noteNow = $('runnerScorePreview')?.querySelector('.train-hit-slot.playhead');
+          setRunnerStatus(
+            'play',
+            noteNow ? '지금 TAP! · 음표가 노란선에 닿았습니다' : '쉼표 · 기다렸다가 다음 음에서 TAP',
+          );
         } else if (phase === 'count-in' || phase === 'ready' || phase === 'prep') {
           $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
           $('runnerProgressBar').style.width = '0%';
@@ -1910,11 +1947,13 @@ function initRunner() {
       onFail: (result) => {
         tapBtn.disabled = true;
         startBtn.disabled = false;
+        setRunnerStatus('idle', '목숨이 끝났어요. 다시 서핑 시작해 보세요');
         showRunnerResult(result, { cleared: false, title: stage.title, bpm });
       },
       onEnd: (result) => {
         tapBtn.disabled = true;
         startBtn.disabled = false;
+        setRunnerStatus('idle', '끝! 다시 하려면 서핑 시작을 누르세요');
         showRunnerResult(result, {
           cleared: (runnerGame?.lives ?? 0) > 0,
           title: stage.title,
@@ -1943,6 +1982,7 @@ function handlePlayAgain() {
     $('runnerStart').disabled = false;
     $('runnerTap').disabled = true;
     resetRunnerUI();
+    previewRunnerIdle();
   } else if (playMode === 'train') {
     trainSession = null;
     trainer?.stop();

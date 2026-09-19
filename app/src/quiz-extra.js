@@ -19,7 +19,7 @@ import {
   formatQuizMeterLabel,
   getQuizMeterConfig,
 } from './fill-quiz.js';
-import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml } from './rhythm-display.js';
+import { renderPatternGridHtml, renderSlotsGridHtml, renderGroupsGridHtml, renderMeterGuessHtml } from './rhythm-display.js';
 import { patternToSlots } from './rhythm-display.js';
 
 export const QUIZ_TYPE_LABELS = {
@@ -88,9 +88,9 @@ export function buildMeterQuestion(levelId, unitId = null) {
     unitTitle: unit?.title,
     bpm: source.bpm,
     meter,
-    meterLabel: formatQuizMeterLabel(meter, 1),
+    meterLabel: '박자표 맞히기',
     bars: 1,
-    measureHtml: renderSlotsGridHtml(slots, meter),
+    measureHtml: renderMeterGuessHtml(slots),
     correctPattern: slotsToPlayPattern(slots),
     playTimeline: playTimelineForEntry(source),
     options,

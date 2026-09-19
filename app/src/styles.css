@@ -2134,6 +2134,49 @@ body.lesson-open {
   min-width: 36px;
 }
 
+.meter-guess {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 8px;
+}
+
+.meter-guess-sig {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #bbb;
+  border-radius: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #888;
+  background: #fff;
+}
+
+.meter-guess-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.meter-guess-note {
+  min-width: 36px;
+  min-height: 40px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 22px;
+}
+
 .rhythm-grid-multi .rhythm-grid-bars {
   display: flex;
   flex-direction: column;

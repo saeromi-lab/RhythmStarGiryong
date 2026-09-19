@@ -255,3 +255,17 @@ export function renderSlotsGridHtml(slots, meterId = '4/4') {
     </div>
   `;
 }
+
+/** 박자표 맞히기 — 정답(4/4·6/8)과 칸 수가 보이지 않게 음표만 표시 */
+export function renderMeterGuessHtml(slots) {
+  const notes = slots.map((len) => (
+    `<span class="meter-guess-note">${slotGroupSymbol(len)}</span>`
+  )).join('');
+  return `
+    <div class="meter-guess">
+      <span class="meter-guess-sig" aria-hidden="true">?</span>
+      <div class="meter-guess-notes">${notes}</div>
+    </div>
+    <p class="lesson-measure-hint">박자표는 가렸어요. 음표 묶음과 소리를 듣고 고르세요.</p>
+  `;
+}

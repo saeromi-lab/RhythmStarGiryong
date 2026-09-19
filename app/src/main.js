@@ -423,7 +423,9 @@ function renderLessonQuestion() {
   $('lessonCheckBtn').disabled = true;
   $('lessonFeedback').hidden = true;
 
-  const meterText = q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)');
+  const meterText = qType === 'meter'
+    ? '박자표 숨김'
+    : (q.meterLabel ?? (q.bars >= 2 ? '4/4 · 2마디 (8박)' : '4/4 · 1마디 (4박)'));
   const typeLabel = QUIZ_TYPE_LABELS[qType] ?? '퀴즈';
   const measureEl = $('lessonMeasure');
   const audioRow = $('lessonAudioRow');
@@ -432,8 +434,8 @@ function renderLessonQuestion() {
   const instructions = {
     listen: '🔊로 듣고, 같은 리듬 칸을 고르세요',
     fill: '위 마디의 빈칸(□)에 들어갈 리듬을 고르세요',
-    meter: '이 마디의 박자표는 무엇일까요?',
-    count: '이 마디는 8분음표 칸이 모두 몇 칸으로 이루어졌을까요?',
+    meter: '박자표가 가려져 있어요. 리듬을 보고 들어 4/4인지 6/8인지 고르세요',
+    count: '음표 개수가 아니라, 8분음표로 나눈 칸은 몇 칸일까요? (♩=2칸, ♪=1칸)',
     odd: '🔊 A→B→C→D 순서로 듣고, 다른 리듬 1개를 고르세요',
   };
 
@@ -470,10 +472,12 @@ function renderLessonQuestion() {
   }
 
   if (isPlacementMode()) {
-    $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel} · ${meterText} · ${quizState.index + 1}/${quizState.questions.length}`;
+    const extra = qType === 'meter' ? '' : ` · ${meterText}`;
+    $('lessonSub').textContent = `${TIER_LABELS[q.levelId]} · ${typeLabel}${extra} · ${quizState.index + 1}/${quizState.questions.length}`;
   } else {
     const unitPart = q.unitTitle ? `${q.unitTitle} · ` : '';
-    $('lessonSub').textContent = `${unitPart}${typeLabel} · ${meterText} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
+    const extra = qType === 'meter' ? '' : ` · ${meterText}`;
+    $('lessonSub').textContent = `${unitPart}${typeLabel}${extra} · ${q.bpm} BPM · ${quizState.index + 1}/${quizState.questions.length}`;
   }
 
   $('lessonOptions').innerHTML = q.options.map((opt) => {

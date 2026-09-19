@@ -106,7 +106,7 @@ export function evaluatePlacement(answers) {
   let arcadeLevelId = quizLevelId;
   if (intermediate.rate === 1 && totalCorrect >= 9) {
     arcadeLevelId = 'advanced';
-    detail += ' 아케이드는 실전 난이도도 도전해 볼 만해요!';
+    detail += ' 게임 복습은 실전 난이도도 도전해 볼 만해요!';
   } else if (quizLevelId === 'intermediate') {
     arcadeLevelId = 'intermediate';
   }

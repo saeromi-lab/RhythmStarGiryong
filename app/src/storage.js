@@ -16,6 +16,8 @@ const defaultProfile = () => ({
   totalPlays: 0,
   totalQuizzes: 0,
   dailyDate: null,
+  dailyLearn: false,
+  dailyTrain: false,
   dailyArcade: false,
   dailyQuiz: false,
   dailyCombo10: false,
@@ -105,10 +107,22 @@ export function resetDailyIfNeeded(profile) {
   const today = todayKey();
   if (profile.dailyDate !== today) {
     profile.dailyDate = today;
+    profile.dailyLearn = false;
+    profile.dailyTrain = false;
     profile.dailyArcade = false;
     profile.dailyQuiz = false;
     profile.dailyCombo10 = false;
   }
+  return profile;
+}
+
+export function markDailyActivity(profile, key) {
+  profile = resetDailyIfNeeded(profile);
+  if (key === 'learn') profile.dailyLearn = true;
+  if (key === 'train') profile.dailyTrain = true;
+  if (key === 'quiz') profile.dailyQuiz = true;
+  if (key === 'arcade') profile.dailyArcade = true;
+  saveProfile(profile);
   return profile;
 }
 
@@ -118,6 +132,19 @@ export function addPlayResult(profile, { score, xpGained, coinsGained, maxCombo 
   profile.coins += coinsGained;
   profile.totalPlays += 1;
   profile.dailyArcade = true;
+  if (maxCombo >= 10) profile.dailyCombo10 = true;
+  if (score > profile.bestScore) profile.bestScore = score;
+  saveProfile(profile);
+  saveWeeklyScore(profile.nickname, score);
+  return profile;
+}
+
+export function addTrainResult(profile, { score, xpGained, coinsGained, maxCombo = 0 }) {
+  profile = resetDailyIfNeeded(profile);
+  profile.xp += xpGained;
+  profile.coins += coinsGained;
+  profile.totalPlays += 1;
+  profile.dailyTrain = true;
   if (maxCombo >= 10) profile.dailyCombo10 = true;
   if (score > profile.bestScore) profile.bestScore = score;
   saveProfile(profile);

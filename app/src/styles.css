@@ -649,6 +649,186 @@ body {
   gap: 8px;
 }
 
+.learn-kicker,
+.today-lesson-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #8a7040;
+  text-transform: uppercase;
+}
+
+.learn-sub,
+.today-lesson-sub {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #6b5e4a;
+}
+
+.learn-points,
+.today-lesson-points {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #3c3c3c;
+}
+
+.learn-section-lbl {
+  margin: 12px 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #8a7040;
+  text-transform: uppercase;
+}
+
+.learn-example {
+  margin-top: 8px;
+}
+
+.learn-card,
+.today-lesson-card,
+.daily-path-card {
+  background: #fffef8;
+  color: #3c3c3c;
+  border-color: #ead9a8;
+}
+
+.learn-card .sec-label,
+.learn-card .hint,
+.today-lesson-card .sec-label,
+.daily-path-card .sec-label,
+.daily-path-hint {
+  color: #6b5e4a;
+}
+
+.today-lesson-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #3c3c3c;
+}
+
+.today-lesson-text {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3c3c3c;
+}
+
+.daily-path {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.daily-step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  color: #3c3c3c;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.daily-step-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #f0f0f0;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.daily-step-body {
+  display: grid;
+  gap: 2px;
+}
+
+.daily-step-body strong {
+  font-size: 14px;
+}
+
+.daily-step-body small {
+  font-size: 12px;
+  color: #777;
+}
+
+.daily-step.current {
+  border-color: var(--duo-green);
+  background: #f3ffe8;
+}
+
+.daily-step.current .daily-step-mark {
+  background: var(--duo-green);
+  color: #fff;
+}
+
+.daily-step.done {
+  border-color: #c8e6a0;
+  background: #f7ffef;
+}
+
+.daily-step.done .daily-step-mark {
+  background: var(--duo-green-bg);
+  color: var(--duo-green-dark);
+}
+
+.daily-step.optional {
+  border-style: dashed;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.mode-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--accent2);
+}
+
+.mode-btn.active .mode-num {
+  color: var(--accent3);
+}
+
+.duo-btn-ghost {
+  background: transparent;
+  color: #6b5e4a;
+  border: 2px dashed #cbb98a;
+  box-shadow: none;
+  text-transform: none;
+}
+
+.duo-btn:not(.duo-btn-green):not(.duo-btn-ghost) {
+  background: #fff;
+  color: var(--duo-text);
+  border: 2px solid var(--duo-border);
+  box-shadow: 0 4px 0 var(--duo-border);
+  text-transform: none;
+}
+
+.curriculum-learn {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 6px 0;
+}
+
 .how-steps,
 .runner-how {
   margin: 8px 0 14px;
@@ -760,8 +940,6 @@ body {
 }
 
 .measure-slot.rest {
-  background: #f0f4f8;
-  border-color: #b8c5d4;
   color: #5a6a7a;
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "rhythm-star-giryong",
   "version": "1.0.0",
-  "description": "경기대학교 스포츠리듬트레이닝(STAR) 훈련 프로그램",
+  "description": "경기대학교 실용음악학과 리듬 트레이닝 — 매일 강의 후 메트로놈 연습",
   "type": "module",
   "scripts": {
     "setup": "bash setup.sh",

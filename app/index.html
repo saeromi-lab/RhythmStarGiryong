@@ -272,10 +272,10 @@
       <div class="card quiz-card duo-path-card" id="quizCard" style="display:none">
         <div class="duo-path-giryong">
           <img src="./images/giryong/giryong-logo.png" alt="기룡이" class="duo-path-img">
-          <div class="duo-path-bubble">강의를 확인하는 퀴즈입니다. 리듬감은 메트로놈 연습에서 키워요</div>
+          <div class="duo-path-bubble">5문제 중 주관식 따라 치기가 두 문제 · 듣고 메트로놈에 맞춰 TAP</div>
         </div>
         <button id="quizStart" class="duo-btn duo-btn-green">단원 퀴즈 시작</button>
-        <p class="hint" id="quizHint" style="margin-top:10px">단원을 고르고 5문제 집중 훈련</p>
+        <p class="hint" id="quizHint" style="margin-top:10px">단원당 5문제 · 주관식 따라 치기가 두 문제입니다</p>
         <div id="quizUnitList" class="quiz-unit-list"></div>
       </div>
 
@@ -363,7 +363,8 @@
 
       <div id="lessonTapWrap" class="lesson-tap-wrap" hidden>
         <p class="lesson-tap-hint" id="lessonTapHint">먼저 리듬을 듣고, 기본박 후 똑같이 TAP하세요</p>
-        <button type="button" id="lessonTapBtn" class="tap-btn">TAP!</button>
+        <p class="lesson-tap-phase" id="lessonTapPhase">1. 듣기</p>
+        <button type="button" id="lessonTapBtn" class="tap-btn echo-tap-btn" disabled>듣는 중</button>
       </div>
     </main>
 

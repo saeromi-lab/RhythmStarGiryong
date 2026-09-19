@@ -425,7 +425,7 @@ function updateQuizModeUI() {
   if (hint) {
     hint.textContent = isPlacement
       ? '청음·박자표·칸세기 등 10문제 레벨 테스트'
-      : '단원을 고르고 5문제로 확인합니다. 리듬감 연습은 메트로놈 연습에서';
+      : '단원 5문제 중 주관식 따라 치기가 두 문제입니다. 듣고 메트로놈에 맞춰 TAP하세요';
   }
   const startBtn = $('quizStart');
   if (startBtn) {
@@ -554,6 +554,34 @@ function hideLessonPrep() {
   banner.classList.remove('active');
 }
 
+function setEchoPhase(phase) {
+  if (!quizState) return;
+  quizState.echoPhase = phase;
+  const hint = $('lessonTapHint');
+  const phaseEl = $('lessonTapPhase');
+  const tapBtn = $('lessonTapBtn');
+  if (phase === 'listen') {
+    if (hint) hint.textContent = '시범을 들으세요. 보기를 고르는 문제가 아닙니다.';
+    if (phaseEl) phaseEl.textContent = '1. 듣기 · 아직 TAP 금지';
+    if (tapBtn) {
+      tapBtn.disabled = true;
+      tapBtn.textContent = '듣는 중';
+    }
+  } else if (phase === 'tap') {
+    if (hint) hint.textContent = '기본박 후, 들은 리듬을 메트로놈에 맞춰 TAP하세요.';
+    if (phaseEl) phaseEl.textContent = '2. 따라 치기 · 음이 있는 순간만';
+    if (tapBtn) {
+      tapBtn.disabled = false;
+      tapBtn.textContent = 'TAP!';
+    }
+  } else if (phase === 'done') {
+    if (tapBtn) {
+      tapBtn.disabled = true;
+      tapBtn.textContent = '완료';
+    }
+  }
+}
+
 function renderLessonQuestion() {
   lessonTrainer?.stop();
   const q = quizState.questions[quizState.index];
@@ -577,7 +605,7 @@ function renderLessonQuestion() {
     meter: '박자표가 가려져 있어요. 리듬을 보고 들어 4/4인지 6/8인지 고르세요',
     count: '빈 칸이 아니라 음표 길이입니다. ♩=♪♪, 이 마디는 8분음표로 몇 개 길이일까요?',
     odd: '🔊 A→B→C→D 네 개를 순서대로 듣고, 다른 리듬 1개를 고르세요',
-    echo: '리듬을 듣고, 메트로놈에 맞춰 똑같이 TAP하세요. 보기 없이 직접 칩니다',
+    echo: '주관식입니다. 들려주는 리듬을 듣고, 메트로놈에 맞춰 그대로 TAP하세요. 보기를 고르지 않습니다',
   };
 
   $('lessonInstruction').textContent = instructions[qType] ?? '정답을 고르세요';
@@ -602,9 +630,19 @@ function renderLessonQuestion() {
     $('lessonListenSlow').setAttribute('aria-label', '느리게 순서대로 듣기');
   } else if (qType === 'echo') {
     measureEl.hidden = false;
-    measureEl.innerHTML = q.measureHtml;
+    measureEl.innerHTML = `
+      <div class="echo-listen-card">
+        <p class="echo-listen-title">주관식 · 듣고 따라 치기</p>
+        <p class="echo-listen-body">악보와 보기 없이, 들려주는 리듬만 귀로 기억합니다.</p>
+        <ol class="echo-how">
+          <li>메트로놈과 함께 시범이 나옵니다. <strong>아직 TAP하지 마세요.</strong></li>
+          <li>기본박 4번 후, 들은 그대로 TAP합니다. 음이 있는 순간만 칩니다.</li>
+        </ol>
+      </div>
+    `;
     audioRow.hidden = false;
     $('lessonListen').setAttribute('aria-label', '따라 칠 리듬 다시 듣기');
+    setEchoPhase('listen');
   } else if (qType === 'meter' || qType === 'count') {
     measureEl.hidden = false;
     measureEl.innerHTML = q.measureHtml;
@@ -629,7 +667,11 @@ function renderLessonQuestion() {
   const tapWrap = $('lessonTapWrap');
   if (tapWrap) tapWrap.hidden = qType !== 'echo';
   const echoTap = $('lessonTapBtn');
-  if (echoTap) echoTap.disabled = qType !== 'echo';
+  if (echoTap && qType !== 'echo') {
+    echoTap.disabled = true;
+    echoTap.textContent = 'TAP!';
+  }
+  if (qType === 'echo') setEchoPhase(quizState.echoPhase || 'listen');
   const checkBtn = $('lessonCheckBtn');
   if (checkBtn) {
     checkBtn.hidden = qType === 'echo';
@@ -729,10 +771,22 @@ async function playLessonBasicBeat(slow = false) {
 async function playLessonRhythm(slow = false) {
   const q = quizState?.questions[quizState.index];
   if (!q) return;
+  const meterCfg = getQuizMeterConfig(q.meter ?? q.meterId ?? '4/4', q.bars ?? 1);
+  const withClicks = q.type === 'echo';
   if (q.playTimeline?.length) {
-    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, { slow, countdown: false });
+    await rhythmPlayer.playTimeline(q.playTimeline, q.bpm, {
+      slow,
+      countdown: false,
+      clickTrack: withClicks,
+      beatsPerBar: meterCfg.beatsPerBar,
+    });
   } else if (q.correctPattern?.length) {
-    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, { slow, countdown: false });
+    await rhythmPlayer.playPattern(q.correctPattern, q.bpm, {
+      slow,
+      countdown: false,
+      clickTrack: withClicks,
+      beatsPerBar: meterCfg.beatsPerBar,
+    });
   }
 }
 
@@ -782,11 +836,17 @@ async function playLessonAudio(slow = false) {
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
 
   if (q.type === 'listen' || q.type === 'echo') {
+    if (q.type === 'echo') {
+      setEchoPhase('listen');
+      showLessonPrep('시범 듣는 중 · 아직 TAP 금지');
+    }
     await playLessonBasicBeat(slow);
     await new Promise((resolve) => setTimeout(resolve, 320));
+    if (q.type === 'echo') showLessonPrep('시범 리듬 · 메트로놈에 맞춰 들으세요');
   }
 
   await playLessonRhythm(slow);
+  hideLessonPrep();
   if (quizState?.questions[quizState.index] === q && !quizState.answered) {
     await setLessonAudioBusy(false);
   }
@@ -803,13 +863,26 @@ async function playLessonThenMaybeEcho() {
   }
 }
 
+async function replayLessonAudio(slow = false) {
+  const q = quizState?.questions[quizState.index];
+  if (!q || quizState.answered) return;
+  if (q.type === 'echo') {
+    lessonTrainer?.stop();
+    setEchoPhase('listen');
+    await playLessonAudio(slow);
+    if (quizState && !quizState.answered && quizState.questions[quizState.index] === q) {
+      await startLessonEchoTap();
+    }
+    return;
+  }
+  await playLessonAudio(slow);
+}
+
 async function startLessonEchoTap() {
   const q = quizState?.questions[quizState.index];
   if (!q?.measures?.length) return;
-  const tapBtn = $('lessonTapBtn');
-  const hint = $('lessonTapHint');
-  if (hint) hint.textContent = '기본박 후, 들은 리듬을 메트로놈에 맞춰 TAP!';
-  if (tapBtn) tapBtn.disabled = false;
+  setEchoPhase('tap');
+  showLessonPrep('기본박 후 TAP · 보기를 고르지 마세요');
   lessonTrainer?.stop();
   lessonTrainer = new MetronomeTrainer({
     bpm: q.bpm,
@@ -831,11 +904,10 @@ async function startLessonEchoTap() {
 
 function finishLessonEcho(result) {
   if (!quizState || quizState.answered) return;
+  setEchoPhase('done');
   lessonSelectedId = result.miss === 0 ? 'tap' : 'miss';
   quizState.echoMiss = result.miss;
   quizState.echoPerfect = result.perfect;
-  const tapBtn = $('lessonTapBtn');
-  if (tapBtn) tapBtn.disabled = true;
   hideLessonPrep();
   submitLessonAnswer();
 }
@@ -848,6 +920,7 @@ function submitLessonAnswer() {
   const correct = q.type === 'echo'
     ? lessonSelectedId === 'tap'
     : lessonSelectedId === q.answerId;
+  const alreadyScored = q.type === 'echo' && quizState.echoScored;
 
   $('lessonOptions').querySelectorAll('.duo-choice').forEach((btn) => {
     btn.disabled = true;
@@ -856,39 +929,55 @@ function submitLessonAnswer() {
   });
   $('lessonCheckBtn').disabled = true;
 
-  if (correct) {
-    quizState.correct += 1;
-    if (!isPlacementMode()) {
-      quizState.streak += 1;
-      const bonus = quizState.streak >= 2 ? QUIZ_SCORE.streakBonus * (quizState.streak - 1) : 0;
-      quizState.score += QUIZ_SCORE.correct.points + bonus;
-      quizState.xp += QUIZ_SCORE.correct.xp;
-      quizState.coins += QUIZ_SCORE.correct.coins;
+  if (!alreadyScored) {
+    if (q.type === 'echo') quizState.echoScored = true;
+    if (correct) {
+      quizState.correct += 1;
+      if (!isPlacementMode()) {
+        quizState.streak += 1;
+        const bonus = quizState.streak >= 2 ? QUIZ_SCORE.streakBonus * (quizState.streak - 1) : 0;
+        quizState.score += QUIZ_SCORE.correct.points + bonus;
+        quizState.xp += QUIZ_SCORE.correct.xp;
+        quizState.coins += QUIZ_SCORE.correct.coins;
+      }
+      setGiryongMood('happy');
+    } else {
+      if (!isPlacementMode()) {
+        quizState.streak = 0;
+        quizState.xp += QUIZ_SCORE.wrong.xp;
+      }
+      setGiryongMood('sad');
     }
-    setGiryongMood('happy');
-  } else {
-    if (!isPlacementMode()) {
-      quizState.streak = 0;
-      quizState.xp += QUIZ_SCORE.wrong.xp;
-    }
-    setGiryongMood('sad');
-  }
 
-  if (isPlacementMode()) {
-    quizState.answers.push({ levelId: q.levelId, correct });
+    if (isPlacementMode()) {
+      quizState.answers.push({ levelId: q.levelId, correct });
+    }
+  } else {
+    setGiryongMood(correct ? 'happy' : 'sad');
   }
 
   $('lessonFeedback').hidden = false;
   $('lessonFeedback').className = `lesson-feedback ${correct ? 'ok' : 'ng'}`;
-  $('lessonFeedbackTitle').textContent = correct ? '참 잘했어요!' : '정답이 아니에요';
+  $('lessonFeedbackTitle').textContent = alreadyScored && correct
+    ? '이제 맞춰졌어요!'
+    : (correct ? '참 잘했어요!' : '정답이 아니에요');
   if (q.type === 'echo') {
-    $('lessonFeedbackDetail').textContent = correct
-      ? `MISS 없이 따라 쳤어요 · PERFECT ${quizState.echoPerfect ?? 0}`
-      : `MISS ${quizState.echoMiss ?? 1}번 · 메트로놈에 맞춰 다시 따라 쳐 보세요`;
+    const scoreHtml = q.measureHtml ? `<div class="echo-answer-score">${q.measureHtml}</div>` : '';
+    $('lessonFeedbackDetail').innerHTML = correct
+      ? `MISS 없이 따라 쳤어요 · PERFECT ${quizState.echoPerfect ?? 0}${scoreHtml}`
+      : `MISS ${quizState.echoMiss ?? 1}번. 정답 리듬은 아래와 같아요.${scoreHtml}`;
+    const cont = $('lessonContinueBtn');
+    if (cont) {
+      cont.textContent = correct ? '계속하기' : '다시 따라 치기';
+    }
+    quizState.echoRetry = !correct;
   } else {
     $('lessonFeedbackDetail').textContent = correct
       ? (isPlacementMode() ? '' : `+${QUIZ_SCORE.correct.points}점`)
       : `정답: ${q.answerId} · ${q.options.find((o) => o.id === q.answerId)?.label ?? q.options.find((o) => o.id === q.answerId)?.notation ?? q.correctNotation}`;
+    quizState.echoRetry = false;
+    const cont = $('lessonContinueBtn');
+    if (cont) cont.textContent = '계속하기';
   }
   updateLessonProgress();
 }
@@ -910,7 +999,19 @@ async function goBackLesson() {
 async function continueLesson() {
   lessonTrainer?.stop();
   $('lessonFeedback').hidden = true;
+  if (quizState?.echoRetry) {
+    quizState.echoRetry = false;
+    quizState.answered = false;
+    lessonSelectedId = null;
+    const cont = $('lessonContinueBtn');
+    if (cont) cont.textContent = '계속하기';
+    renderLessonQuestion();
+    await playLessonThenMaybeEcho();
+    return;
+  }
   quizState.index += 1;
+  quizState.echoScored = false;
+  quizState.echoRetry = false;
   $('lessonProgressFill').style.width = `${(quizState.index / quizState.questions.length) * 100}%`;
 
   if (quizState.index >= quizState.questions.length) {
@@ -947,6 +1048,9 @@ async function startLesson(mode) {
     coins: 0,
     answers: [],
     answered: false,
+    echoPhase: null,
+    echoRetry: false,
+    echoScored: false,
   };
   setGiryongMood('focus');
   openLessonOverlay();
@@ -1925,17 +2029,18 @@ function initLesson() {
     }
   });
 
-  $('lessonListen').addEventListener('click', () => playLessonAudio(false));
-  $('lessonListenSlow').addEventListener('click', () => playLessonAudio(true));
+  $('lessonListen').addEventListener('click', () => replayLessonAudio(false));
+  $('lessonListenSlow').addEventListener('click', () => replayLessonAudio(true));
   $('lessonMetronome')?.addEventListener('click', () => playLessonBasicBeat(false));
   $('lessonTapBtn')?.addEventListener('click', () => {
-    if (lessonTrainer?.running) lessonTrainer.judgeTap();
+    if (quizState?.echoPhase !== 'tap' || !lessonTrainer?.running) return;
+    lessonTrainer.judgeTap();
   });
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space') return;
     if ($('lessonOverlay')?.hidden) return;
     const q = quizState?.questions[quizState.index];
-    if (q?.type !== 'echo' || !lessonTrainer?.running) return;
+    if (q?.type !== 'echo' || quizState.echoPhase !== 'tap' || !lessonTrainer?.running) return;
     e.preventDefault();
     lessonTrainer.judgeTap();
   });

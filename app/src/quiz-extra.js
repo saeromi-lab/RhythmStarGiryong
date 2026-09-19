@@ -29,7 +29,7 @@ export const QUIZ_TYPE_LABELS = {
   meter: '박자표 맞추기',
   count: '음표 길이',
   odd: '다른 리듬 찾기',
-  echo: '따라 치기',
+  echo: '주관식 따라 치기',
 };
 
 const METER_OPTIONS = [
@@ -269,7 +269,9 @@ export function buildEchoQuestion(levelId, unitId = null) {
     correctPattern: playPatternForEntry(source),
     options: [],
     answerId: 'tap',
-    focus: '들은 리듬을 메트로놈에 맞춰 그대로 TAP',
+    hideScoreUntilAnswer: true,
+    constructed: true,
+    focus: '악보·보기 없이, 들려주는 리듬을 메트로놈에 맞춰 TAP',
   };
 }
 

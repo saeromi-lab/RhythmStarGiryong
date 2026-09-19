@@ -15,16 +15,41 @@ export class RhythmPlayer {
   playClick(time, accent = false) {
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
-    osc.frequency.value = accent ? 720 : 520;
+    osc.frequency.value = accent ? 720 : 480;
     osc.connect(gain);
     gain.connect(this.audioCtx.destination);
-    gain.gain.setValueAtTime(accent ? 0.18 : 0.12, time);
+    gain.gain.setValueAtTime(accent ? 0.18 : 0.11, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
     osc.start(time);
     osc.stop(time + 0.07);
   }
 
-  async playTimeline(timeline, bpm, { countdown = false, slow = false } = {}) {
+  playNote(time, accent = false) {
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = accent ? 1180 : 980;
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    gain.gain.setValueAtTime(accent ? 0.16 : 0.13, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+    osc.start(time);
+    osc.stop(time + 0.1);
+  }
+
+  scheduleClickTrack(start, totalBeats, beatSec, beatsPerBar) {
+    const clicks = Math.max(1, Math.round(totalBeats));
+    for (let b = 0; b < clicks; b += 1) {
+      this.playClick(start + b * beatSec, b % beatsPerBar === 0);
+    }
+  }
+
+  async playTimeline(timeline, bpm, {
+    countdown = false,
+    slow = false,
+    clickTrack = false,
+    beatsPerBar = 4,
+  } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;
@@ -39,11 +64,13 @@ export class RhythmPlayer {
       t += beatSec;
     }
 
+    const notesStart = t;
+    const totalBeats = timeline.reduce((sum, ev) => sum + ev.beats, 0);
+    if (clickTrack) this.scheduleClickTrack(notesStart, totalBeats, beatSec, beatsPerBar);
+
     timeline.forEach((ev, i) => {
       if (!this.playing) return;
-      if (ev.kind === 'n') {
-        this.playClick(t, i === 0);
-      }
+      if (ev.kind === 'n') this.playNote(t, i === 0);
       t += ev.beats * beatSec;
     });
 
@@ -60,7 +87,13 @@ export class RhythmPlayer {
    * 패턴 재생. pattern = 박 단위 음표 길이 배열
    * countdown: 시작 전 1박 기본박
    */
-  async playPattern(pattern, bpm, { countdown = false, onHit, slow = false } = {}) {
+  async playPattern(pattern, bpm, {
+    countdown = false,
+    onHit,
+    slow = false,
+    clickTrack = false,
+    beatsPerBar = 4,
+  } = {}) {
     await this.ensureAudio();
     this.stop();
     this.playing = true;
@@ -75,9 +108,13 @@ export class RhythmPlayer {
       t += beatSec;
     }
 
+    const notesStart = t;
+    const totalBeats = pattern.reduce((sum, dur) => sum + dur, 0);
+    if (clickTrack) this.scheduleClickTrack(notesStart, totalBeats, beatSec, beatsPerBar);
+
     pattern.forEach((dur, i) => {
       if (!this.playing) return;
-      this.playClick(t, i === 0);
+      this.playNote(t, i === 0);
       onHit?.(i, t);
       t += dur * beatSec;
     });

@@ -1048,14 +1048,14 @@ body {
 }
 
 .train-score-card .measure-slot {
-  min-height: 44px;
-  font-size: 22px;
+  min-height: 48px;
+  font-size: 30px;
 }
 
 .train-score-hint {
   margin: 12px 0 0;
   font-size: 13px;
-  color: var(--muted);
+  color: #6b6b6b;
   text-align: center;
 }
 
@@ -2189,29 +2189,36 @@ body.lesson-open {
 
 .measure-slots {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
-  align-items: stretch;
+  align-items: flex-end;
+  border-bottom: 2px solid #cfcfcf;
+  padding: 6px 4px 8px;
 }
 
 .measure-slot {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   min-height: 40px;
-  min-width: 28px;
+  min-width: 22px;
   border-radius: 8px;
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
+  line-height: 1;
   color: #1a1a1a;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: transparent;
+  border: none;
   flex: 1 1 0;
 }
 
 .measure-slot.filled {
-  background: #fff;
-  border-color: #ccc;
+  background: transparent;
+  border: none;
+}
+
+.measure-slot.rest {
+  color: #5a6a7a;
 }
 
 .measure-slot.blank {
@@ -2220,6 +2227,7 @@ body.lesson-open {
   color: var(--duo-orange);
   font-size: 18px;
   font-weight: 700;
+  min-height: 36px;
 }
 
 .measure-slot.tie {

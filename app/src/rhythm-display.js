@@ -156,7 +156,7 @@ export function renderTrainScoreHtml(measures, meterId = '4/4', { idPrefix = 'tr
           <div class="train-score-bars">${barsHtml.join('')}</div>
         </div>
       </div>
-      <div class="train-score-hint">♩ 4분음표 · ♪ 8분음표 · 폭이 길수록 음이 길어요</div>
+      <div class="train-score-hint">♩ 4분음표 · ♪ 8분음표 · 쉼표는 𝄽 · 폭이 길수록 음이 길어요</div>
     </div>
   `;
 }

@@ -1089,7 +1089,10 @@ function resetTrainScoreHighlights() {
   ['trainCursor', 'runnerCursor'].forEach((id) => {
     const cursor = $(id);
     if (!cursor) return;
-    cursor.style.left = '0%';
+    cursor.style.left = '';
+    cursor.style.top = '';
+    cursor.style.height = '';
+    cursor.style.bottom = '';
     cursor.classList.remove('active', 'count-in');
   });
   getScorePreviewRoots().forEach((root) => {
@@ -1099,23 +1102,41 @@ function resetTrainScoreHighlights() {
   });
 }
 
-function setTrainCursor({ phase, progress, activePos }) {
+function slotPlayheadT(currentBeat, startBeat, durBeat) {
+  if (!(durBeat > 0)) return 0;
+  return Math.min(1, Math.max(0, (currentBeat - startBeat) / durBeat));
+}
+
+function placeCursorOnSlot(cursor, track, slot, t = 0) {
+  if (!cursor || !track || !slot) return false;
+  const trackRect = track.getBoundingClientRect();
+  const slotRect = slot.getBoundingClientRect();
+  if (trackRect.width < 1 || slotRect.width < 1) return false;
+  const x = slotRect.left - trackRect.left + slotRect.width * t;
+  cursor.style.left = `${Math.max(0, x)}px`;
+  cursor.style.top = `${Math.max(0, slotRect.top - trackRect.top)}px`;
+  cursor.style.height = `${slotRect.height}px`;
+  cursor.style.bottom = 'auto';
+  return true;
+}
+
+function setTrainCursor({ phase, activePos, currentBeat = 0, startBeat = 0, durBeat = 1 }) {
   const isRunner = playMode === 'runner';
   const cursor = isRunner ? $('runnerCursor') : $('trainCursor');
   const track = isRunner ? $('runnerScoreTrack') : $('trainScoreTrack');
   if (cursor) {
-    if (!isRunner) {
-      const pct = phase === 'play'
-        ? Math.max(0, Math.min(100, progress * 100))
-        : 0;
-      cursor.style.left = `${pct}%`;
-    }
     cursor.classList.toggle('active', phase === 'play');
-    cursor.classList.toggle('count-in', phase === 'count-in');
+    cursor.classList.toggle('count-in', phase === 'count-in' || phase === 'prep');
     cursor.hidden = isRunner ? phase !== 'play' : (phase === 'ready' || phase === 'end');
+    if (!isRunner && track && !cursor.hidden) {
+      const pos = phase === 'play' && activePos >= 0 ? activePos : 0;
+      const slot = track.querySelector(`[data-pos="${pos}"]`);
+      const t = phase === 'play' ? slotPlayheadT(currentBeat, startBeat, durBeat) : 0;
+      placeCursorOnSlot(cursor, track, slot, t);
+    }
   }
   if (track) {
-    track.classList.toggle('train-count-in', phase === 'count-in');
+    track.classList.toggle('train-count-in', phase === 'count-in' || phase === 'prep');
     track.classList.toggle('train-playing', phase === 'play');
   }
   getScorePreviewRoots().forEach((root) => {
@@ -1619,7 +1640,6 @@ async function runTrainRoundPlay() {
         });
       }
     },
-    onNote: (idx) => setTrainScoreActive(idx),
     onJudge: flashTrainJudge,
     onProgress: (hit, total) => {
       $('trainProgress').textContent = `${hit}/${total}`;

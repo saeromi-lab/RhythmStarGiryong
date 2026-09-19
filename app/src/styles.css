@@ -1274,7 +1274,7 @@ body {
 .train-cursor {
   position: absolute;
   top: 4px;
-  bottom: 4px;
+  height: 48px;
   left: 0;
   width: 3px;
   border-radius: 2px;

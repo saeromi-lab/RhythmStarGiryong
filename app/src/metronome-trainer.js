@@ -174,14 +174,26 @@ export class MetronomeTrainer {
         const totalSec = this.totalBeats * this.beatSec;
         const progress = Math.min(1, elapsed / totalSec);
         const currentBeat = elapsed / this.beatSec;
-        let activePos = -1;
+        let activeSeg = null;
         for (const seg of this.segments) {
           if (currentBeat >= seg.startBeat - 0.001 && currentBeat < seg.startBeat + seg.durBeat) {
-            activePos = seg.pos;
+            activeSeg = seg;
             break;
           }
         }
-        this.onCursor({ phase: 'play', progress, activePos, currentBeat });
+        if (!activeSeg && this.segments.length) {
+          const last = this.segments[this.segments.length - 1];
+          if (currentBeat >= last.startBeat) activeSeg = last;
+          else activeSeg = this.segments[0];
+        }
+        this.onCursor({
+          phase: 'play',
+          progress,
+          activePos: activeSeg?.pos ?? -1,
+          currentBeat,
+          startBeat: activeSeg?.startBeat ?? 0,
+          durBeat: activeSeg?.durBeat ?? 1,
+        });
       }
 
       if (now < this.rhythmStart + this.totalBeats * this.beatSec + 0.4) {

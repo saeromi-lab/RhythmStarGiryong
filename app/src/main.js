@@ -443,7 +443,7 @@ function renderLessonQuestion() {
   if (metroBtn) {
     metroBtn.hidden = !['listen', 'odd', 'fill', 'count', 'meter'].includes(qType);
     const meterCfg = getQuizMeterConfig(q.meter ?? q.meterId ?? '4/4', q.bars ?? 1);
-    const prepLabel = meterCfg.prepKind === 'compound' ? '복박 예비박' : '기본박 예비박';
+    const prepLabel = meterCfg.prepKind === 'compound' ? '복박 기본박' : '기본박';
     const totalPrep = meterCfg.prepBars * meterCfg.beatsPerBar;
     metroBtn.title = `${prepLabel} ${totalPrep}번`;
   }
@@ -556,7 +556,7 @@ async function playLessonBasicBeat(slow = false) {
   if (!q) return;
   if (!rhythmPlayer) rhythmPlayer = new RhythmPlayer();
   const meterCfg = getQuizMeterConfig(q.meter ?? q.meterId ?? '4/4', q.bars ?? 1);
-  const prepLabel = meterCfg.prepKind === 'compound' ? '복박 예비박' : '예비박';
+  const prepLabel = meterCfg.prepKind === 'compound' ? '복박 기본박' : '기본박';
   const totalPrep = meterCfg.prepBars * meterCfg.beatsPerBar;
 
   hideLessonPrep();
@@ -814,12 +814,12 @@ function setTrainCursor({ phase, progress, activePos }) {
 function showTrainCountIn(beat, total) {
   const el = playMode === 'runner' ? $('runnerJudgeFlash') : $('trainJudgeFlash');
   if (!el) return;
-  el.textContent = `예비박 ${beat} / ${total}`;
+  el.textContent = `기본박 ${beat} / ${total}`;
   el.className = 'judge-flash show';
   setTimeout(() => el.classList.remove('show'), 200);
   if (playMode === 'train' && trainSession && total > 0) {
     setTrainFlashState({
-      phase: `예비박 ${beat} / ${total}`,
+      phase: `기본박 ${beat} / ${total}`,
       hint: beat < total ? '박자를 세며 준비하세요' : '곧 TAP! 커서를 따라가요',
     });
   }
@@ -918,7 +918,7 @@ function renderTrainTierRow() {
 
 function lockedTierHint(maxTier, current) {
   if (current.id <= maxTier) {
-    return `${current.label} — 예비박 4번 후 커서가 지나갈 때 TAP! (PERFECT / MISS)`;
+    return `${current.label} — 기본박 4번 후 커서가 지나갈 때 TAP! (PERFECT / MISS)`;
   }
   return '이전 단계를 무실수로 클리어하면 해제됩니다';
 }
@@ -983,7 +983,7 @@ function enterTrainSessionUI() {
 function exitTrainSessionUI() {
   $('trainSetup')?.classList.remove('train-setup-hidden');
   const intro = $('trainIntroHint');
-  if (intro) intro.textContent = '플래시카드처럼 리듬을 하나씩 보고 · 예비박 후 TAP! · 5문제 연속';
+  if (intro) intro.textContent = '플래시카드처럼 리듬을 하나씩 보고 · 기본박 후 TAP! · 5문제 연속';
   const meta = $('trainFlashMeta');
   if (meta) meta.hidden = true;
   const start = $('trainStart');
@@ -1032,7 +1032,7 @@ async function presentTrainFlashCard(round) {
   setTrainFlashState({
     num: `문제 ${idx + 1} / ${total}`,
     phase: '문제 제시',
-    hint: `${unitLabel} · ${round.bars}마디 — 잠시 후 예비박`,
+    hint: `${unitLabel} · ${round.bars}마디 — 잠시 후 기본박`,
   });
   updateTrainRoundHud();
   await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -1355,7 +1355,7 @@ function updateRunnerStats() {
 function flashRunnerJudge(key, pts) {
   const el = $('runnerJudgeFlash');
   if (key === 'prep') {
-    el.textContent = '예비박';
+    el.textContent = '기본박';
     el.className = 'judge-flash show prep';
     setTimeout(() => el.classList.remove('show'), 280);
     return;
@@ -1427,7 +1427,7 @@ function initRunner() {
     if (!runnerGame?.running) return;
     if (runnerGame.inCountIn) {
       flashRunnerJudge('prep', 0);
-      $('runnerJudgeFlash').textContent = '예비박 — 곧 TAP!';
+      $('runnerJudgeFlash').textContent = '기본박 — 곧 TAP!';
       return;
     }
     const key = runnerGame.judgeTap();

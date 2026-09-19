@@ -28,7 +28,7 @@ export const METERS = {
   },
 };
 
-/** 퀴즈·레벨테스트 예비박·박자표 UI용 */
+/** 퀴즈·레벨테스트 기본박·박자표 UI용 */
 export function getQuizMeterConfig(meterId = '4/4', bars = 1) {
   const meter = METERS[meterId] ?? METERS['4/4'];
   const prepBars = bars >= 2 ? 2 : 1;

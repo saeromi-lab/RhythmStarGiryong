@@ -170,7 +170,7 @@ export function renderTrainScoreHtml(measures, meterId = '4/4', { idPrefix = 'tr
           <div class="train-score-bars">${barsHtml.join('')}</div>
         </div>
       </div>
-      <p class="train-score-hint">훈련 시작 → 예비박 4번(♩♩♩♩) → 커서 따라 TAP! · PERFECT / MISS</p>
+      <p class="train-score-hint">훈련 시작 → 기본박 4번(♩♩♩♩) → 커서 따라 TAP! · PERFECT / MISS</p>
     </div>
   `;
 }

@@ -626,21 +626,21 @@ body {
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 800;
-  color: var(--text);
+  color: #3c3c3c;
 }
 
 .learn-text {
   margin: 0 0 12px;
   font-size: 14px;
   line-height: 1.55;
-  color: var(--text);
+  color: #3c3c3c;
 }
 
 .learn-steps {
   margin: 0;
   padding-left: 1.2em;
   font-size: 13px;
-  color: var(--muted);
+  color: #5a5a5a;
   line-height: 1.5;
 }
 
@@ -651,13 +651,17 @@ body {
 
 .runner-how {
   margin: 8px 0 14px;
-  padding: 12px 12px 12px 28px;
+  padding: 12px 16px 12px 32px;
   border-radius: 12px;
   background: #fff8e6;
   border: 1px solid #ffd27a;
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text);
+  color: #3c3c3c;
+}
+
+.runner-how strong {
+  color: #8a5a00;
 }
 
 .lesson-tap-wrap {
@@ -2195,7 +2199,9 @@ body.lesson-open {
   min-height: 40px;
   min-width: 28px;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
   background: #fff;
   border: 1px solid #ddd;
   flex: 1 1 0;

@@ -1328,7 +1328,7 @@ function currentTrainLabel() {
 
 function lockedTierHint(maxTier, current) {
   if (current.id <= maxTier) return trainStyleCopy().lock;
-  return '이전 단계를 무실수로 클리어하면 해제됩니다';
+  return '이전 단계를 클리어하면 해제됩니다';
 }
 
 function updateTrainIntroCopy() {
@@ -1536,7 +1536,7 @@ function showTrainSessionResult() {
     $('resultTitle').textContent = '세션 완료!';
     $('resultBody').innerHTML = `
       <div class="result-score">${agg.score.toLocaleString()}</div>
-      <p class="result-clear-msg">${TRAIN_SESSION_SIZE}개 리듬 모두 무실수 클리어!</p>
+      <p class="result-clear-msg">${TRAIN_SESSION_SIZE}개 리듬 클리어!</p>
       <div class="result-grid">
         <span>PERFECT ${agg.perfect}</span>
         <span>MISS ${agg.miss}</span>
@@ -1553,7 +1553,7 @@ function showTrainSessionResult() {
     $('resultTitle').textContent = '세션 종료';
     $('resultBody').innerHTML = `
       <div class="result-score result-fail">${agg.clearedRounds}/${agg.totalRounds}</div>
-      <p class="result-fail-msg">무실수 클리어 ${agg.clearedRounds}개 · MISS ${agg.miss}개. 다시 도전해서 ${TRAIN_SESSION_SIZE}개 모두 맞춰보세요!</p>
+      <p class="result-fail-msg">클리어 ${agg.clearedRounds}개 · MISS ${agg.miss}개. 다시 도전해서 ${TRAIN_SESSION_SIZE}개 모두 맞춰보세요!</p>
       <div class="result-grid">
         <span>PERFECT ${agg.perfect}</span>
         <span>MISS ${agg.miss}</span>
@@ -1604,7 +1604,7 @@ async function handleTrainRoundEnd(result, meta) {
   const cleared = result.cleared;
   animateTrainFlashCard(cleared ? 'train-flash-done-ok' : 'train-flash-done-miss');
   setTrainFlashState({
-    phase: cleared ? '무실수 ✓' : `MISS ${result.miss}`,
+    phase: cleared ? '클리어 ✓' : `MISS ${result.miss}`,
     hint: cleared ? '다음 카드로 넘어갈게요!' : '다음 문제에서 다시 맞춰봐요',
     tapHint: false,
   });

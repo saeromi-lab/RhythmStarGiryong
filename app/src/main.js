@@ -88,14 +88,11 @@ function sayGiryong(key, custom) {
 }
 
 function setGiryongMood(mood) {
-  const el = $('giryongChar');
-  el.dataset.mood = mood;
+  $('giryongChar').dataset.mood = mood;
   const img = $('giryongImg');
   if (img) {
     img.src = GIRYONG_MOOD_IMAGES[mood] ?? GIRYONG_MOOD_IMAGES.normal;
   }
-  const standing = mood === 'normal' || mood === 'happy' || mood === 'sad';
-  el.classList.toggle('has-gear', standing);
 }
 
 function initTabs() {
@@ -2220,7 +2217,7 @@ function init() {
   renderLearnCard();
   renderCurriculum();
   renderRank();
-  sayGiryong('welcome');
+  sayGiryong('welcome', '시대는 온다!');
 }
 
 init();

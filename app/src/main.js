@@ -524,7 +524,7 @@ function renderLearnCard() {
     <ol class="learn-steps">
       <li>기본박(메트로놈) 4번을 듣습니다. 이때는 TAP하지 않습니다.</li>
       <li>음표가 나오면 메트로놈과 같이 TAP합니다. TAP하면 소리가 납니다.</li>
-      <li>같은 리듬을 한 번 더, 기억해서 따라 칩니다.</li>
+      <li>같은 리듬을 한 번 더, 악보 없이 기억해서 따라 칩니다.</li>
       <li>확인 퀴즈 후, 원하면 게임으로 복습합니다.</li>
     </ol>
     <p class="learn-section-lbl">예제 악보</p>
@@ -1177,9 +1177,12 @@ function showTrainCountIn(beat, total) {
   el.className = 'judge-flash show';
   setTimeout(() => el.classList.remove('show'), 200);
   if (playMode === 'train' && trainSession && total > 0) {
+    const echo = trainSession.phase === 'echo';
     setTrainFlashState({
       phase: `기본박 ${beat} / ${total}`,
-      hint: beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 커서가 음표 위에 오면 TAP! 쉼표는 치지 마세요',
+      hint: echo
+        ? (beat < total ? '기본박만 들으세요. 악보는 없습니다' : '기억해서 TAP! 메트로놈만 들립니다')
+        : (beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 커서가 음표 위에 오면 TAP! 쉼표는 치지 마세요'),
     });
   }
   if (playMode === 'runner') {
@@ -1315,9 +1318,9 @@ function trainStyleCopy(style = selectedTrainStyle) {
     };
   }
   return {
-    intro: '같이 친 뒤, 같은 리듬을 따라 칩니다 · 5문제',
-    hint: '같이 치고 → 따라 치기 — 메트로놈을 켠 채 한 번 같이 치고, 같은 리듬을 혼자 다시 TAP합니다',
-    lock: `${currentTrainLabel()} — 같이 친 다음 따라 치기`,
+    intro: '같이 친 뒤, 악보 없이 기억해서 따라 칩니다 · 5문제',
+    hint: '같이 치고 → 따라 치기 — 한 번은 악보와 같이, 다음은 악보를 가리고 기억해서 TAP합니다',
+    lock: `${currentTrainLabel()} — 같이 친 다음 악보 없이 따라 치기`,
     listenHint: '노란 커서가 음표(♩♪) 위에 있을 때 TAP!',
   };
 }
@@ -1458,7 +1461,7 @@ async function presentTrainFlashCard(round) {
     num: `문제 ${idx + 1} / ${total}`,
     phase: '같이 치기',
     hint: trainSession.style === 'lesson'
-      ? `${unitLabel} · ${round.bars}마디 — 기본박 후 같이 TAP, 다음에 따라 치기`
+    ? `${unitLabel} · ${round.bars}마디 — 기본박 후 같이 TAP, 다음은 악보 없이 따라 치기`
       : `${unitLabel} · ${round.bars}마디 — 기본박 후 TAP`,
   });
   updateTrainRoundHud();
@@ -1477,6 +1480,47 @@ function prepareTrainRoundPreview(round) {
   if (!preview || !round) return;
   preview.innerHTML = renderTrainScoreHtml(round.measures);
   resetTrainScoreHighlights();
+}
+
+function memoryBeatCount(round) {
+  const groups = round?.measures?.[0] ?? [];
+  const eighths = groups.reduce((s, g) => s + (g.e ?? 0), 0);
+  return eighths === 6 ? 2 : 4;
+}
+
+function showTrainMemoryView(round) {
+  const preview = $('trainPatternPreview');
+  if (!preview) return;
+  resetTrainScoreHighlights();
+  const beats = memoryBeatCount(round);
+  const bars = round?.bars ?? 1;
+  const lights = Array.from({ length: beats }, (_, i) => `<span data-beat="${i}"></span>`).join('');
+  preview.innerHTML = `
+    <div class="train-memory-card">
+      <p class="train-memory-kicker">악보 숨김 · ${bars}마디</p>
+      <p class="train-memory-title">기억해서 TAP</p>
+      <p class="train-memory-sub">메트로놈만 듣고, 방금 친 리듬을 떠올리세요</p>
+      <div class="train-memory-beats" aria-hidden="true">${lights}</div>
+    </div>
+  `;
+}
+
+function pulseMemoryBeat(state) {
+  const root = document.querySelector('.train-memory-beats');
+  if (!root) return;
+  const lights = [...root.children];
+  if (!lights.length) return;
+  if (state.phase === 'count-in' || state.phase === 'prep') {
+    const beat = Math.max(0, Math.floor((state.progress ?? 0) * lights.length)) % lights.length;
+    lights.forEach((el, i) => el.classList.toggle('on', i === beat));
+    return;
+  }
+  if (state.phase !== 'play') {
+    lights.forEach((el) => el.classList.remove('on'));
+    return;
+  }
+  const beat = Math.floor(state.currentBeat ?? 0) % lights.length;
+  lights.forEach((el, i) => el.classList.toggle('on', i === beat));
 }
 
 function aggregateTrainSessionResults(results) {
@@ -1579,9 +1623,10 @@ async function handleTrainRoundEnd(result, meta) {
     trainSession.phase = 'echo';
     trainSession.tapPhaseShown = false;
     tapBtn.disabled = true;
+    showTrainMemoryView(trainSession.rounds[trainSession.index]);
     setTrainFlashState({
       phase: '따라 치기',
-      hint: '방금 같이 친 리듬을 혼자 다시 TAP하세요',
+      hint: '악보는 가렸어요. 메트로놈만 듣고 방금 리듬을 기억해서 TAP하세요',
     });
     animateTrainFlashCard('train-flash-enter');
     await new Promise((resolve) => setTimeout(resolve, 900));
@@ -1591,6 +1636,9 @@ async function handleTrainRoundEnd(result, meta) {
   }
 
   tapBtn.disabled = true;
+  if (trainSession.phase === 'echo') {
+    prepareTrainRoundPreview(trainSession.rounds[trainSession.index]);
+  }
 
   trainSession.results.push({
     ...result,
@@ -1647,15 +1695,21 @@ async function runTrainRoundPlay() {
     clickTrack: $('trainClickTrack')?.checked !== false,
     onCountIn: showTrainCountIn,
     onCursor: (state) => {
-      setTrainCursor(state);
+      const echo = trainSession?.phase === 'echo';
+      if (echo) {
+        setTrainCursor({ ...state, phase: state.phase === 'play' ? 'end' : 'ready' });
+        pulseMemoryBeat(state);
+      } else {
+        setTrainCursor(state);
+      }
       if (trainSession && state.phase === 'play' && !trainSession.tapPhaseShown) {
         trainSession.tapPhaseShown = true;
         animateTrainFlashCard('train-flash-tap');
         setTrainFlashState({
           phase: 'TAP!',
-          hint: trainSession.phase === 'echo'
-          ? '방금 친 리듬을 기억해서 TAP!'
-          : trainStyleCopy(trainSession.style).listenHint,
+          hint: echo
+            ? '악보 없이, 기억한 리듬을 메트로놈에 맞춰 TAP!'
+            : trainStyleCopy(trainSession.style).listenHint,
           tapHint: true,
         });
       }

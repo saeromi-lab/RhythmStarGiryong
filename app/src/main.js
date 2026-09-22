@@ -137,14 +137,14 @@ function renderTodayLesson() {
   const unit = currentUnit();
   const points = (unit?.lecturePoints ?? []).map((p) => `<li>${p}</li>`).join('');
   card.innerHTML = `
-    <div class="sec-label">오늘의 강의</div>
+    <div class="sec-label">오늘 배울 것</div>
     <p class="today-lesson-kicker">${unit?.order ?? 1}과 · ${unit?.meter ?? '4/4'} · ${unit?.bpm ?? 80} BPM</p>
     <h2 class="today-lesson-title">${unit?.title ?? '1과 · 2연음 기초'}</h2>
     <p class="today-lesson-sub">${unit?.subtitle ?? ''}</p>
     <p class="today-lesson-text">${unit?.learn ?? ''}</p>
     ${points ? `<ul class="today-lesson-points">${points}</ul>` : ''}
     <button type="button" id="todayLessonStart" class="duo-btn duo-btn-green">
-      ${profile.dailyLearn ? '강의 다시 보기' : '오늘의 강의 시작'}
+      ${profile.dailyLearn ? '다시 보기' : '배우기 시작'}
     </button>
   `;
   $('todayLessonStart')?.addEventListener('click', () => {
@@ -158,7 +158,7 @@ function renderDailyPath() {
   if (!root) return;
   profile = resetDailyIfNeeded(profile);
   const steps = [
-    { id: 'learn', done: profile.dailyLearn, optional: false, label: '1. 강의 읽기', desc: '오늘 단원의 개념을 강의처럼 익힙니다', mode: 'learn' },
+    { id: 'learn', done: profile.dailyLearn, optional: false, label: '1. 배우기', desc: '오늘 단원의 핵심을 익힙니다', mode: 'learn' },
     { id: 'train', done: profile.dailyTrain, optional: false, label: '2. 메트로놈 연습', desc: '같이 치고, 같은 리듬을 따라 칩니다', mode: 'train' },
     { id: 'quiz', done: profile.dailyQuiz, optional: false, label: '3. 확인 퀴즈', desc: '배운 내용을 문제로 확인합니다', mode: 'quiz' },
     { id: 'runner', done: profile.dailyArcade, optional: true, label: '4. 게임으로 복습', desc: '비트 서핑으로 같은 TAP을 연습합니다 (선택)', mode: 'runner' },
@@ -222,7 +222,7 @@ function renderPlacementHome() {
       </div>
     `;
     $('pathBubble').textContent = `${profile.placement.quizLevelName} 구간부터 이어서 훈련해요!`;
-    btn.textContent = '오늘의 강의 이어하기';
+    btn.textContent = '이어서 배우기';
     if ($('pathOptions')) $('pathOptions').style.display = 'none';
   } else {
     status.innerHTML = '';
@@ -392,11 +392,11 @@ function setPlayMode(mode) {
   const modeHint = document.querySelector('.mode-hint');
   if (modeHint) {
     const hints = {
-      learn: '먼저 오늘의 강의를 읽고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.',
+      learn: '먼저 오늘 배울 것을 보고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.',
       train: '메트로놈을 켜 두고 악보와 같이 TAP한 뒤, 같은 리듬을 따라 칩니다',
-      quiz: '강의를 확인하는 퀴즈입니다. 리듬감 연습은 연습에서',
+      quiz: '배운 내용을 확인하는 퀴즈입니다. 리듬감 연습은 연습에서',
       runner: '음표가 노란 TAP선에 닿으면 화면을 누르는 복습 게임입니다',
-      placement: '지금 실력을 가늠하는 10문제 · 끝나면 추천 단원 강의로 이어집니다',
+      placement: '지금 실력을 가늠하는 10문제 · 끝나면 추천 단원으로 이어집니다',
     };
     modeHint.textContent = hints[mode] ?? '';
   }
@@ -2157,7 +2157,7 @@ function renderRank() {
       <span class="rank-major">${row.major ?? '실용음악'}</span>
       <span class="rank-score">${row.score.toLocaleString()}</span>
     </div>
-  `).join('') || '<div class="empty-msg">아직 연습 기록이 없습니다. 오늘의 강의를 시작해 보세요!</div>';
+  `).join('') || '<div class="empty-msg">아직 연습 기록이 없습니다. 오늘 배울 것부터 시작해 보세요!</div>';
 
   const myIdx = board.findIndex((r) => r.isPlayer);
   $('myRankStats').innerHTML = `
@@ -2222,7 +2222,7 @@ function init() {
   renderRank();
   sayGiryong(
     profile.placement ? 'welcome' : 'placementStart',
-    profile.placement ? undefined : '처음이면 레벨을 찾아도 되고, 1과 강의부터 바로 시작해도 돼!',
+    profile.placement ? undefined : '처음이면 레벨을 찾아도 되고, 1과부터 바로 시작해도 돼!',
   );
 }
 

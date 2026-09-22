@@ -14,7 +14,7 @@
         <span class="brand-badge">KGU</span>
         <div>
           <div class="app-title">RhythmStarGiryong</div>
-          <div class="app-sub">경기대학교 실용음악학과 · 매일 강의로 배우는 리듬 트레이닝</div>
+          <div class="app-sub">경기대학교 실용음악학과 · 매일 짧게 배우는 리듬 트레이닝</div>
         </div>
       </div>
       <div class="header-stats" id="headerStats"></div>
@@ -48,7 +48,7 @@
 
       <div class="card daily-path-card">
         <div class="sec-label">오늘 이렇게 연습해요</div>
-        <p class="hint daily-path-hint">매일 강의를 읽고, 메트로놈으로 손을 맞춘 뒤 퀴즈로 확인합니다. 게임은 복습용입니다.</p>
+        <p class="hint daily-path-hint">매일 짧게 배우고, 메트로놈으로 손을 맞춘 뒤 퀴즈로 확인합니다. 게임은 복습용입니다.</p>
         <div id="dailyPath" class="daily-path"></div>
       </div>
 
@@ -61,7 +61,7 @@
 
         <div class="duo-week-card">
           <div class="stamp-board" id="stampBoard"></div>
-          <p class="duo-week-msg">매일 강의를 듣고 연습해 연속 출석을 지켜내세요. 진주조개는 출석 표시입니다.</p>
+          <p class="duo-week-msg">매일 배우고 연습해 연속 출석을 지켜내세요. 진주조개는 출석 표시입니다.</p>
         </div>
 
         <button id="checkInBtn" class="duo-btn duo-btn-green pearl-stamp-btn">
@@ -83,7 +83,7 @@
             <span class="duo-path-icon">📘</span>
             <span class="duo-path-text">
               <strong>기초부터 시작하기</strong>
-              <small>1과 강의부터 차근차근 읽고 연습합니다</small>
+              <small>1과부터 차근차근 배우고 연습합니다</small>
             </span>
           </button>
           <button type="button" class="duo-path-option selected" data-path="placement">
@@ -103,17 +103,17 @@
       <div class="card">
         <div class="sec-label">오늘의 훈련</div>
         <div class="mode-switch mode-switch-4" id="modeSwitch">
-          <button class="mode-btn active" data-mode="learn"><span class="mode-num">1</span>강의</button>
+          <button class="mode-btn active" data-mode="learn"><span class="mode-num">1</span>배우기</button>
           <button class="mode-btn" data-mode="train"><span class="mode-num">2</span>연습</button>
           <button class="mode-btn" data-mode="quiz"><span class="mode-num">3</span>확인</button>
           <button class="mode-btn" data-mode="runner"><span class="mode-num">4</span>게임</button>
         </div>
-        <p class="hint mode-hint">먼저 오늘의 강의를 읽고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.</p>
+        <p class="hint mode-hint">먼저 오늘 배울 것을 보고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.</p>
       </div>
 
       <div class="card learn-card" id="learnCard">
-        <div class="sec-label">오늘의 강의</div>
-        <p class="hint" id="learnIntro">게임보다 먼저, 오늘 단원의 개념을 강의처럼 읽고 예제 악보를 확인하세요.</p>
+        <div class="sec-label">오늘 배울 것</div>
+        <p class="hint" id="learnIntro">게임보다 먼저, 오늘 단원의 핵심을 보고 예제 악보를 확인하세요.</p>
         <div id="learnUnitList" class="quiz-unit-list"></div>
         <div class="learn-body" id="learnBody"></div>
         <div class="learn-actions">
@@ -313,7 +313,7 @@
           <span>#</span><span>이름</span><span>전공</span><span>점수</span>
         </div>
         <div id="rankList" class="rank-list"></div>
-        <p class="hint">매주 월요일 랭킹이 갱신됩니다. 매일 강의와 연습으로 점수를 쌓아 보세요.</p>
+        <p class="hint">매주 월요일 랭킹이 갱신됩니다. 매일 배우고 연습해 점수를 쌓아 보세요.</p>
       </div>
       <div class="card">
         <div class="sec-label">내 기록</div>
@@ -325,7 +325,7 @@
     <section class="tab-panel" id="panel-curriculum">
       <div class="card">
         <div class="sec-label">12주 리듬 트레이닝 커리큘럼</div>
-        <p class="curriculum-intro">매일 단원 강의 → 메트로놈으로 같이 치고 따라 치기 → 확인 퀴즈 → (선택) 게임으로 복습. 2연음부터 16분까지 8단원입니다.</p>
+        <p class="curriculum-intro">매일 배우기 → 메트로놈으로 같이 치고 따라 치기 → 확인 퀴즈 → (선택) 게임으로 복습. 2연음부터 16분까지 8단원입니다.</p>
         <div id="curriculumList" class="curriculum-list"></div>
       </div>
       <div class="card">

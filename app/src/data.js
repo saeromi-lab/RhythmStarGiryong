@@ -66,9 +66,7 @@ export const JUDGE = {
 
 export const GIRYONG_LINES = {
   welcome: [
-    '시대는 온다!',
-    '리듬스타기룡이, 시대는 온다!',
-    '오늘의 박자, 기룡이 차지!',
+    '우리는 리듬스타기룡이의 시대에 살고있따.',
   ],
   checkIn: [
     '출석 완료! 이제 TAP으로 박자를 맞춰보자!',

@@ -2217,7 +2217,7 @@ function init() {
   renderLearnCard();
   renderCurriculum();
   renderRank();
-  sayGiryong('welcome', '시대는 온다!');
+  sayGiryong('welcome', '우리는 리듬스타기룡이의 시대에 살고있따.');
 }
 
 init();

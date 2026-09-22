@@ -6,6 +6,7 @@ import {
   fillSlotsNoteOnly,
   getUnit,
 } from './rhythm-curriculum.js';
+import { noteGlyphHtml } from './note-glyph.js';
 
 export const METERS = {
   '4/4': {
@@ -74,7 +75,7 @@ export function slotsToNotation(slots) {
 
 export function renderFillOptionHtml(fillSlots) {
   const cells = fillSlots.map((len) => (
-    `<span class="measure-slot filled" style="flex:${len}">${slotGroupSymbol(len)}</span>`
+    `<span class="measure-slot filled" style="flex:${len}">${noteGlyphHtml(len)}</span>`
   )).join('');
 
   return `
@@ -171,7 +172,7 @@ export function renderMeasureHtml(slots, meterId, blankFrom, blankLen) {
       if (prev?.kind === 'blank') prev.span += len;
       else parts.push({ kind: 'blank', span: len });
     } else {
-      parts.push({ kind: 'note', span: len, symbol: slotGroupSymbol(len) });
+      parts.push({ kind: 'note', span: len, symbol: noteGlyphHtml(len) });
     }
     pos += len;
   }

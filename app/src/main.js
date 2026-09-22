@@ -24,7 +24,7 @@ import {
   getLeaderboard,
   profileSummary,
 } from './storage.js';
-import { RhythmRunnerGame, RUNNER_LIVES } from './runner-game.js';
+import { RhythmRunnerGame, RUNNER_LIVES, RUNNER_WAVES, buildRunnerPlaylist } from './runner-game.js';
 import {
   QUIZ_LEVELS,
   QUIZ_ROUND_SIZE,
@@ -415,7 +415,7 @@ function setPlayMode(mode) {
       learn: '먼저 오늘 배울 것을 보고, 메트로놈과 함께 따라 칩니다. 게임은 마지막 복습입니다.',
       train: '메트로놈을 켜 두고 악보와 같이 TAP한 뒤, 같은 리듬을 따라 칩니다',
       quiz: '배운 내용을 확인하는 퀴즈입니다. 리듬감 연습은 연습에서',
-      runner: '음표가 노란 TAP선에 닿으면 화면을 누르는 복습 게임입니다',
+      runner: '노란 줄이 지금 박입니다. 음표 위면 TAP, 쉼표는 금지. 파도마다 리듬과 기본박이 바뀝니다',
       placement: '지금 실력을 가늠하는 10문제 · 끝나면 추천 단원으로 이어집니다',
     };
     modeHint.textContent = hints[mode] ?? '';
@@ -1148,8 +1148,8 @@ function setTrainCursor({ phase, activePos, currentBeat = 0, startBeat = 0, durB
   if (cursor) {
     cursor.classList.toggle('active', phase === 'play');
     cursor.classList.toggle('count-in', phase === 'count-in' || phase === 'prep');
-    cursor.hidden = isRunner ? phase !== 'play' : (phase === 'ready' || phase === 'end');
-    if (!isRunner && track && !cursor.hidden) {
+    cursor.hidden = phase === 'ready' || phase === 'end';
+    if (track && !cursor.hidden) {
       const pos = phase === 'play' && activePos >= 0 ? activePos : 0;
       const slot = track.querySelector(`[data-pos="${pos}"]`);
       const t = phase === 'play' ? slotPlayheadT(currentBeat, startBeat, durBeat) : 0;
@@ -1183,15 +1183,17 @@ function showTrainCountIn(beat, total) {
       phase: `기본박 ${beat} / ${total}`,
       hint: echo
         ? (beat < total ? '기본박만 들으세요. 악보는 없습니다' : '기억해서 TAP! 메트로놈만 들립니다')
-        : (beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 커서가 음표 위에 오면 TAP! 쉼표는 치지 마세요'),
+        : (beat < total ? '기본박만 들으세요. 아직 TAP하지 마세요' : '노란 줄이 음표 위에 있으면 TAP! 쉼표는 치지 마세요'),
     });
   }
   if (playMode === 'runner') {
+    const wave = runnerWaveInfo;
+    const faster = wave.index > 1;
     setRunnerStatus(
       'count-in',
       beat < total
-        ? `기본박 ${beat} / ${total} · 아직 누르지 마세요`
-        : '이제 음표가 노란선에 닿으면 TAP',
+        ? `${faster ? '빨라진 ' : ''}기본박 ${beat} / ${total} · ${wave.bpm} BPM · 아직 누르지 마세요`
+        : '이제 노란 줄이 음표 위에 있으면 TAP',
     );
     $('runnerLane')?.classList.add('count-in');
     $('runnerLane')?.classList.remove('playing');
@@ -1204,7 +1206,7 @@ function showRunnerPrep(beat, total) {
   el.textContent = `준비 ${beat} / ${total} — 곧 시작!`;
   el.className = 'judge-flash show prep';
   setTimeout(() => el.classList.remove('show'), 280);
-  setRunnerStatus('prep', `곧 시작 · 음표가 노란선에 오면 TAP`);
+  setRunnerStatus('prep', '곧 시작 · 노란 줄이 음표 위에 있으면 TAP');
 }
 
 function setRunnerStatus(phase, text) {
@@ -1223,7 +1225,9 @@ function previewRunnerIdle() {
   preview.innerHTML = renderTrainScoreHtml(stage.measures, '4/4', { idPrefix: 'runnerIdle' });
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerLane')?.classList.remove('playing', 'count-in');
-  setRunnerStatus('idle', '시작을 누르면 음표가 노란 TAP선으로 옵니다');
+  setRunnerRideX(0);
+  setRunnerHudTempo(stage.bpm, 1, RUNNER_WAVES);
+  setRunnerStatus('idle', '시작을 누르면 노란 줄이 음표를 지나갑니다. 파도마다 리듬과 기본박이 바뀝니다');
 }
 
 function setTrainScoreActive(hitIdx) {
@@ -1313,16 +1317,16 @@ function trainStyleCopy(style = selectedTrainStyle) {
   if (style === 'together') {
     return {
       intro: '메트로놈을 켜 두고 악보와 같이 TAP · 5문제',
-      hint: '같이 치기 — 기본박 후 노란 커서가 음표에 닿을 때 TAP합니다',
+      hint: '같이 치기 — 기본박 후 노란 줄이 음표에 닿을 때 TAP합니다',
       lock: `${currentTrainLabel()} — 기본박 4번 후 음표에서 TAP!`,
-      listenHint: '노란 커서가 음표(♩♪) 위에 있을 때 TAP! 쉼표는 건너뛰세요',
+      listenHint: '노란 줄이 음표 위에 있을 때 TAP! 쉼표는 건너뛰세요',
     };
   }
   return {
     intro: '같이 친 뒤, 악보 없이 기억해서 따라 칩니다 · 5문제',
     hint: '같이 치고 → 따라 치기 — 한 번은 악보와 같이, 다음은 악보를 가리고 기억해서 TAP합니다',
     lock: `${currentTrainLabel()} — 같이 친 다음 악보 없이 따라 치기`,
-    listenHint: '노란 커서가 음표(♩♪) 위에 있을 때 TAP!',
+    listenHint: '노란 줄이 음표 위에 있을 때 TAP!',
   };
 }
 
@@ -1824,26 +1828,17 @@ function initTrain() {
 }
 
 function getRunnerExercise() {
-  const preferred = TRAIN_EXERCISES.find((ex) => ex.id === 'q4')
-    ?? TRAIN_EXERCISES.find((ex) => ex.measure?.length === 4);
-  if (selectedLevel.id === 'beginner' && preferred) return preferred;
-  const tierMap = { beginner: 1, basic: 2, intermediate: 3, advanced: 3 };
-  const tier = tierMap[selectedLevel.id] ?? 1;
-  const list = exercisesForTier(tier);
-  const even = list.filter((ex) => {
-    const groups = ex.measure ?? ex.measures?.[0] ?? [];
-    return groups.length > 0 && groups.every((g) => g.t === 'n' && (g.e === 1 || g.e === 2));
-  });
-  const pool = even.length ? even : list;
-  return pool[Math.floor(Math.random() * pool.length)] ?? TRAIN_EXERCISES[0];
+  return buildRunnerPlaylist(selectedLevel.id)[0];
 }
 
 function getRunnerStage() {
-  const ex = getRunnerExercise();
+  const playlist = buildRunnerPlaylist(selectedLevel.id);
+  const first = playlist[0];
   return {
-    measures: buildTrainMeasures(ex, selectedLevel.id === 'beginner' ? 2 : 1),
+    playlist,
+    measures: first.measures,
     bpm: selectedLevel.bpm,
-    title: ex.focus ?? '리듬 스테이지',
+    title: first.title ?? '리듬 스테이지',
   };
 }
 
@@ -1854,6 +1849,22 @@ function renderRunnerLives(lives) {
 }
 
 let runnerPearls = 0;
+let runnerWaveInfo = { index: 1, total: RUNNER_WAVES, bpm: 80, baseBpm: 80 };
+
+function setRunnerHudTempo(bpm, wave, total = RUNNER_WAVES) {
+  runnerWaveInfo = { index: wave, total, bpm, baseBpm: runnerWaveInfo.baseBpm };
+  if ($('runnerBpm')) $('runnerBpm').textContent = String(bpm);
+  if ($('runnerWaveLbl')) $('runnerWaveLbl').textContent = `${wave} / ${total} 파도`;
+}
+
+function setRunnerRideX(progress01) {
+  const surfer = $('runnerSurfer');
+  if (!surfer) return;
+  const start = 3;
+  const end = 78;
+  const x = start + Math.max(0, Math.min(1, progress01)) * (end - start);
+  surfer.style.left = `${x}%`;
+}
 
 function pulseRunnerSurfer(kind = 'carve') {
   const surfer = $('runnerSurfer');
@@ -1907,12 +1918,17 @@ function resetRunnerUI() {
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
   $('runnerSurfer')?.classList.remove('surf', 'carve', 'wipeout');
+  setRunnerRideX(0);
   $('runnerGiryong')?.classList.remove('swim', 'sink', 'dash');
   $('runnerLane')?.classList.remove('playing');
+  $('runnerStage')?.classList.remove('playing', 'surf-fast', 'surf-slow');
+  $('runnerStage')?.style.setProperty('--surf-speed', '1');
   $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
   $('runnerFx')?.replaceChildren();
   if ($('runnerCue')) $('runnerCue').hidden = true;
-  setRunnerStatus('idle', '시작을 누르면 음표가 노란 TAP선으로 옵니다');
+  const stageBpm = getRunnerStage().bpm;
+  setRunnerHudTempo(stageBpm, 1, RUNNER_WAVES);
+  setRunnerStatus('idle', '시작을 누르면 노란 줄이 음표를 지나갑니다. 파도마다 리듬과 기본박이 바뀝니다');
   $('resultCard').style.display = 'none';
   $('runnerCard').style.display = 'block';
 }
@@ -1922,7 +1938,7 @@ function showRunnerResult(result, { cleared, title, bpm }) {
   $('resultTitle').textContent = cleared ? '서핑 완주!' : '서핑 종료';
   $('resultBody').innerHTML = `
     <div class="result-score">${result.score.toLocaleString()}</div>
-    <p class="result-clear-msg">${title} · ${bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
+    <p class="result-clear-msg">${title} · ${result.startBpm ?? bpm}→${result.bpm ?? bpm} BPM · 정확도 ${runnerGame?.accuracy() ?? 0}%</p>
     <div class="result-grid">
       <span>PERFECT ${result.perfect}</span>
       <span>GREAT ${result.great}</span>
@@ -2000,27 +2016,62 @@ function initRunner() {
     startBtn.disabled = true;
     tapBtn.disabled = false;
     setGiryongMood('focus');
+    $('runnerStage')?.classList.add('playing');
+    $('runnerStage')?.style.setProperty('--surf-speed', '1');
 
     runnerGame = new RhythmRunnerGame({
       bpm,
       measures,
+      playlist: stage.playlist,
       onCountIn: showTrainCountIn,
       onPrep: showRunnerPrep,
-      onCursor: ({ phase, progress, activePos }) => {
-        setTrainCursor({ phase, progress, activePos });
-        $('runnerLane')?.classList.toggle('playing', phase === 'play');
-        $('runnerLane')?.classList.toggle('count-in', phase === 'count-in' || phase === 'prep');
-        if (phase === 'play') {
-          $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, progress * 100))}%`;
-          $('runnerLaneScroll')?.style.setProperty('--run-offset', `${progress * 62}%`);
+      onWaveStart: (wave, total, nextBpm, baseBpm, waveMeasures, title) => {
+        const prevBpm = runnerWaveInfo.bpm;
+        runnerWaveInfo.baseBpm = baseBpm;
+        setRunnerHudTempo(nextBpm, wave, total);
+        if (waveMeasures) {
+          $('runnerScorePreview').innerHTML = renderTrainScoreHtml(waveMeasures, '4/4', { idPrefix: 'runner' });
+        }
+        resetTrainScoreHighlights();
+        const speed = Math.max(0.55, Math.min(2.6, nextBpm / Math.max(60, baseBpm)));
+        $('runnerStage')?.style.setProperty('--surf-speed', String(speed));
+        $('runnerStage')?.classList.toggle('surf-fast', nextBpm > baseBpm + 4);
+        $('runnerStage')?.classList.toggle('surf-slow', nextBpm < baseBpm - 4);
+        if (wave > 1) {
+          const flash = $('runnerJudgeFlash');
+          const faster = nextBpm > prevBpm;
+          const slower = nextBpm < prevBpm;
+          const msg = faster
+            ? `빨라져요! ${prevBpm} → ${nextBpm} BPM`
+            : slower
+              ? `느려져요! ${prevBpm} → ${nextBpm} BPM`
+              : `${nextBpm} BPM`;
+          if (flash) {
+            flash.textContent = msg;
+            flash.className = 'judge-flash show prep';
+          }
+          setRunnerStatus('count-in', `${title ?? ''} · 기본박 ${nextBpm} BPM`.replace(/^ · /, ''));
+        }
+      },
+      onCursor: (state) => {
+        setTrainCursor(state);
+        $('runnerLane')?.classList.toggle('playing', state.phase === 'play');
+        $('runnerLane')?.classList.toggle('count-in', state.phase === 'count-in' || state.phase === 'prep');
+        if (state.phase === 'play') {
+          const overall = ((runnerWaveInfo.index - 1) + state.progress) / runnerWaveInfo.total;
+          $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, overall * 100))}%`;
+          setRunnerRideX(overall);
           const noteNow = $('runnerScorePreview')?.querySelector('.train-hit-slot.playhead');
           setRunnerStatus(
             'play',
-            noteNow ? '지금 TAP! · 음표가 노란선에 닿았습니다' : '쉼표 · 기다렸다가 다음 음에서 TAP',
+            noteNow ? '지금 TAP! · 노란 줄이 음표 위에 있어요' : '쉼표 · 치지 마세요',
           );
-        } else if (phase === 'count-in' || phase === 'ready' || phase === 'prep') {
-          $('runnerLaneScroll')?.style.setProperty('--run-offset', '0%');
-          $('runnerProgressBar').style.width = '0%';
+        } else if (state.phase === 'count-in' || state.phase === 'ready' || state.phase === 'prep') {
+          const overall = (runnerWaveInfo.index - 1) / runnerWaveInfo.total;
+          $('runnerProgressBar').style.width = `${Math.max(0, Math.min(100, overall * 100))}%`;
+          setRunnerRideX(overall);
+        } else {
+          setRunnerRideX(0);
         }
       },
       onJump: () => {
@@ -2043,7 +2094,7 @@ function initRunner() {
         tapBtn.disabled = true;
         startBtn.disabled = false;
         setRunnerStatus('idle', '목숨이 끝났어요. 다시 서핑 시작해 보세요');
-        showRunnerResult(result, { cleared: false, title: stage.title, bpm });
+        showRunnerResult(result, { cleared: false, title: stage.title, bpm: result.bpm ?? bpm });
       },
       onEnd: (result) => {
         tapBtn.disabled = true;
@@ -2052,7 +2103,7 @@ function initRunner() {
         showRunnerResult(result, {
           cleared: (runnerGame?.lives ?? 0) > 0,
           title: stage.title,
-          bpm,
+          bpm: result.bpm ?? bpm,
         });
       },
     });

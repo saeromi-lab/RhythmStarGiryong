@@ -1,6 +1,7 @@
 /** 패턴·슬롯을 화면용 8분음표 칸 그리드로 변환 */
 
 import { slotGroupSymbol, METERS } from './fill-quiz.js';
+import { noteGlyphHtml, restGlyphHtml } from './note-glyph.js';
 
 function restGroupSymbol(eighths) {
   if (eighths >= 4) return '𝄻';
@@ -9,7 +10,7 @@ function restGroupSymbol(eighths) {
 }
 
 function renderGroupCell(group, { hitIdx, posIdx, compact = false } = {}) {
-  const sym = group.t === 'n' ? slotGroupSymbol(group.e) : restGroupSymbol(group.e);
+  const sym = group.t === 'n' ? noteGlyphHtml(group.e) : restGlyphHtml(group.e);
   const cls = [
     'measure-slot',
     group.t === 'n' ? 'filled' : 'rest',
@@ -63,9 +64,9 @@ function renderSlotParts(slots, { blankFrom = -1, blankLen = 0 } = {}) {
       if (prev?.kind === 'blank') prev.span += len;
       else parts.push({ kind: 'blank', span: len });
     } else if (rest) {
-      parts.push({ kind: 'rest', span: len, symbol: restGroupSymbol(len) });
+      parts.push({ kind: 'rest', span: len, symbol: restGlyphHtml(len) });
     } else {
-      parts.push({ kind: 'note', span: len, symbol: slotGroupSymbol(len) });
+      parts.push({ kind: 'note', span: len, symbol: noteGlyphHtml(len) });
     }
     pos += len;
   }
@@ -156,7 +157,7 @@ export function renderTrainScoreHtml(measures, meterId = '4/4', { idPrefix = 'tr
           <div class="train-score-bars">${barsHtml.join('')}</div>
         </div>
       </div>
-      <div class="train-score-hint">♩ 4분음표 · ♪ 8분음표 · 쉼표는 𝄽 · 폭이 길수록 음이 길어요</div>
+      <div class="train-score-hint">노란 줄이 지금 박 · 폭이 길수록 음이 길어요</div>
     </div>
   `;
 }
@@ -244,7 +245,7 @@ export function renderSlotsGridHtml(slots, meterId = '4/4') {
 /** 박자표 맞히기 — 정답(4/4·6/8)과 칸 수가 보이지 않게 음표만 표시 */
 export function renderMeterGuessHtml(slots) {
   const notes = slots.map((len) => (
-    `<span class="meter-guess-note">${slotGroupSymbol(len)}</span>`
+    `<span class="meter-guess-note">${noteGlyphHtml(len)}</span>`
   )).join('');
   return `
     <div class="meter-guess">

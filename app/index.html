@@ -133,7 +133,7 @@
 
       <div class="card runner-card" id="runnerCard" style="display:none">
         <div class="sec-label">게임으로 복습 · 비트 서핑 (선택)</div>
-        <p class="hint">피아노 타일처럼, <strong>음표가 노란 TAP선에 닿는 순간</strong> 화면을 누르는 게임입니다. 리듬 본편은 <strong>2. 연습</strong>입니다.</p>
+        <p class="hint">노란 줄이 <strong>지금 박</strong>입니다. 음표 위면 TAP, 쉼표는 치지 마세요. 파도마다 리듬이 바뀌고 기본박은 빨라졌다 느려집니다.</p>
         <div class="runner-explain" id="runnerExplain">
           <div class="runner-step">
             <span class="runner-step-num">1</span>
@@ -143,15 +143,21 @@
           <span class="runner-step-arrow" aria-hidden="true">→</span>
           <div class="runner-step">
             <span class="runner-step-num">2</span>
-            <strong>음표가 선으로</strong>
-            <small>오른쪽 → 왼쪽</small>
+            <strong>노란 줄이 왼→오</strong>
+            <small>음표 위면 TAP</small>
           </div>
           <span class="runner-step-arrow" aria-hidden="true">→</span>
           <div class="runner-step">
             <span class="runner-step-num">3</span>
-            <strong>닿으면 TAP</strong>
-            <small>화면 아무 곳이나</small>
+            <strong>파도마다 리듬·BPM</strong>
+            <small>빨라졌다 느려짐</small>
           </div>
+        </div>
+
+        <div class="runner-tempo" id="runnerTempo">
+          <span>기본박</span>
+          <strong id="runnerBpm">80</strong>
+          <span class="runner-wave-lbl" id="runnerWaveLbl">1 / 4 파도</span>
         </div>
 
         <div class="runner-hud">
@@ -190,11 +196,7 @@
               <span class="runner-clam runner-clam-b">🦪</span>
               <span class="runner-coral">🪸</span>
             </div>
-            <div class="runner-lane" id="runnerLane">
-              <div class="runner-hit-line" aria-hidden="true">
-                <span class="runner-hit-glow"></span>
-                <span class="runner-hit-label">TAP선</span>
-              </div>
+              <div class="runner-lane" id="runnerLane">
               <div class="runner-surfer" id="runnerSurfer">
                 <div class="runner-surfboard" aria-hidden="true">
                   <span class="runner-board-deck"></span>
@@ -217,14 +219,14 @@
         </div>
 
         <div class="runner-status" id="runnerStatus" data-phase="idle">
-          <span id="runnerStatusText">시작을 누르면 음표가 노란 TAP선으로 옵니다</span>
+          <span id="runnerStatusText">시작을 누르면 노란 줄이 음표를 지나갑니다. 파도마다 리듬과 기본박이 바뀝니다</span>
         </div>
 
         <div class="judge-flash" id="runnerJudgeFlash"></div>
 
         <div class="arcade-controls">
           <button id="runnerStart" class="primary arcade-btn">서핑 시작</button>
-          <button id="runnerTap" class="tap-btn" disabled>음표가 선에 오면 TAP</button>
+          <button id="runnerTap" class="tap-btn" disabled>노란 줄이 음표 위면 TAP</button>
         </div>
       </div>
 
@@ -240,8 +242,8 @@
           <p class="hint train-style-hint" id="trainStyleHint">메트로놈을 켠 채 악보와 같이 친 다음, 악보 없이 같은 리듬을 기억해서 칩니다</p>
           <ol class="how-steps">
             <li>기본박 4번이 들립니다. <strong>아직 TAP하지 마세요.</strong></li>
-            <li>같이 치기: 노란 커서가 음표(♩♪) 위에 있을 때 TAP합니다.</li>
-            <li>따라 치기: 악보와 커서를 가립니다. 메트로놈만 듣고 방금 리듬을 기억해서 TAP합니다.</li>
+            <li>같이 치기: 노란 줄이 음표 위에 있을 때 TAP합니다.</li>
+            <li>따라 치기: 악보와 노란 줄을 가립니다. 메트로놈만 듣고 방금 리듬을 기억해서 TAP합니다.</li>
           </ol>
 
           <div class="train-tier-row" id="trainTierRow"></div>

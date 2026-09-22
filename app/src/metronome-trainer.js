@@ -32,6 +32,7 @@ export class MetronomeTrainer {
     tapLeadMs = TRAIN_EARLY_MS,
     clickTrack = true,
     tapSound = 'click',
+    judgeWindows = null,
     onCountIn,
     onPrep,
     onCursor,
@@ -50,6 +51,7 @@ export class MetronomeTrainer {
     this.tapLeadMs = tapLeadMs;
     this.clickTrack = clickTrack;
     this.tapSound = tapSound;
+    this.judgeWindows = judgeWindows;
     this.onCountIn = onCountIn ?? (() => {});
     this.onPrep = onPrep ?? (() => {});
     this.onCursor = onCursor ?? (() => {});
@@ -78,6 +80,13 @@ export class MetronomeTrainer {
     this._cursorRaf = null;
     this.wallStart = 0;
     this.audioBase = 0;
+  }
+
+  judgeWindowMs(key) {
+    const custom = this.judgeWindows?.[key];
+    if (typeof custom === 'number') return custom;
+    if (custom?.windowMs != null) return custom.windowMs;
+    return JUDGE[key].windowMs;
   }
 
   nowAudio() {
@@ -324,14 +333,14 @@ export class MetronomeTrainer {
 
     const windowMs = this.binaryJudge
       ? trainPerfectWindowMs(best)
-      : JUDGE.good.windowMs;
+      : this.judgeWindowMs('good');
 
     best.hit = true;
     let key = 'miss';
     if (this.binaryJudge) {
       key = bestDelta <= trainPerfectWindowMs(best) ? 'perfect' : 'miss';
-    } else if (bestDelta <= JUDGE.perfect.windowMs) key = 'perfect';
-    else if (bestDelta <= JUDGE.great.windowMs) key = 'great';
+    } else if (bestDelta <= this.judgeWindowMs('perfect')) key = 'perfect';
+    else if (bestDelta <= this.judgeWindowMs('great')) key = 'great';
     else if (bestDelta <= windowMs) key = 'good';
 
     if (key === 'miss') {

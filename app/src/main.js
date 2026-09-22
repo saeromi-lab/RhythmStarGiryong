@@ -912,6 +912,7 @@ async function startLessonEchoTap() {
     strict: false,
     binaryJudge: true,
     clickTrack: true,
+    tapSound: 'note',
     onCountIn: (beat, total) => {
       showLessonPrep(beat < total ? `기본박 ${beat} / ${total} · 아직 TAP 금지` : '이제 들은 리듬을 TAP!');
     },

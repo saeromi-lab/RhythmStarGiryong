@@ -31,6 +31,7 @@ export class MetronomeTrainer {
     missGraceSec = 0.04,
     tapLeadMs = TRAIN_EARLY_MS,
     clickTrack = true,
+    tapSound = 'click',
     onCountIn,
     onPrep,
     onCursor,
@@ -48,6 +49,7 @@ export class MetronomeTrainer {
     this.missGraceSec = missGraceSec;
     this.tapLeadMs = tapLeadMs;
     this.clickTrack = clickTrack;
+    this.tapSound = tapSound;
     this.onCountIn = onCountIn ?? (() => {});
     this.onPrep = onPrep ?? (() => {});
     this.onCursor = onCursor ?? (() => {});
@@ -118,8 +120,27 @@ export class MetronomeTrainer {
   }
 
   playTap(time = this.audioCtx.currentTime) {
+    if (this.tapSound === 'note') {
+      this.playRhythmNote(time);
+      return;
+    }
     this.playTone(time, { freq: 620, gainVal: 0.11, dur: 0.06 });
     this.playTone(time, { freq: 930, gainVal: 0.035, dur: 0.04 });
+  }
+
+  playRhythmNote(time, accent = false) {
+    if (!this.audioCtx) return;
+    const t = time > this.audioCtx.currentTime - 0.002 ? time : this.audioCtx.currentTime;
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(accent ? 1180 : 980, t);
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    gain.gain.setValueAtTime(accent ? 0.16 : 0.13, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc.start(t);
+    osc.stop(t + 0.1);
   }
 
   beatsPerBar() {

@@ -1687,11 +1687,14 @@ button:disabled {
   font-size: 22px;
   letter-spacing: 0.05em;
   box-shadow: 0 6px 0 #c47d00, 0 8px 16px #0005;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tap-btn:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 #c47d00;
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 #c47d00;
 }
 
 .hint {

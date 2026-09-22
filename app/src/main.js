@@ -81,6 +81,29 @@ function $(id) {
   return document.getElementById(id);
 }
 
+/** TAP은 손을 떼기 전에 소리가 나야 해서 pointerdown을 쓴다. */
+function bindImmediateTap(el, fn) {
+  if (!el) return;
+  let fromPointer = false;
+  el.addEventListener('pointerdown', (e) => {
+    if (el.disabled) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    fromPointer = true;
+    e.preventDefault();
+    e.stopPropagation();
+    fn(e);
+  });
+  el.addEventListener('click', (e) => {
+    if (fromPointer) {
+      fromPointer = false;
+      e.preventDefault();
+      return;
+    }
+    if (el.disabled) return;
+    fn(e);
+  });
+}
+
 function sayGiryong(key, custom) {
   $('giryongSpeech').textContent = custom ?? randomLine(key);
   $('giryongChar').classList.add('bounce');
@@ -1699,7 +1722,7 @@ function initTrain() {
     if (trainer?.running) trainer.judgeTap();
   };
 
-  tapBtn.addEventListener('click', doTrainTap);
+  bindImmediateTap(tapBtn, doTrainTap);
   $('trainFlashCard')?.addEventListener('pointerdown', (e) => {
     if (playMode !== 'train' || !trainer?.running) return;
     e.preventDefault();
@@ -1897,7 +1920,7 @@ function initRunner() {
     updateRunnerStats();
   };
 
-  tapBtn.addEventListener('click', doTap);
+  bindImmediateTap(tapBtn, doTap);
   $('runnerStage')?.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button')) return;
     doTap();
@@ -2089,7 +2112,7 @@ function initLesson() {
   $('lessonListen').addEventListener('click', () => replayLessonAudio(false));
   $('lessonListenSlow').addEventListener('click', () => replayLessonAudio(true));
   $('lessonMetronome')?.addEventListener('click', () => playLessonBasicBeat(false));
-  $('lessonTapBtn')?.addEventListener('click', () => {
+  bindImmediateTap($('lessonTapBtn'), () => {
     if (quizState?.echoPhase !== 'tap' || !lessonTrainer?.running) return;
     lessonTrainer.judgeTap();
   });

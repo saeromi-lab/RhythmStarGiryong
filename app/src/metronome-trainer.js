@@ -94,29 +94,32 @@ export class MetronomeTrainer {
     await resumeAudio(this.audioCtx);
   }
 
-  playClick(time, accent = false) {
+  playTone(time, { freq, gainVal, dur = 0.065 }) {
+    if (!this.audioCtx) return;
+    const t = time > this.audioCtx.currentTime - 0.002 ? time : this.audioCtx.currentTime;
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
-    osc.frequency.value = accent ? 720 : 480;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
     osc.connect(gain);
     gain.connect(this.audioCtx.destination);
-    gain.gain.setValueAtTime(accent ? 0.18 : 0.11, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
-    osc.start(time);
-    osc.stop(time + 0.07);
+    gain.gain.setValueAtTime(gainVal, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
+  }
+
+  playClick(time, accent = false) {
+    this.playTone(time, {
+      freq: accent ? 720 : 480,
+      gainVal: accent ? 0.16 : 0.1,
+      dur: 0.065,
+    });
   }
 
   playTap(time = this.audioCtx.currentTime) {
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = 1320;
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    gain.gain.setValueAtTime(0.1, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-    osc.start(time);
-    osc.stop(time + 0.05);
+    this.playTone(time, { freq: 620, gainVal: 0.11, dur: 0.06 });
+    this.playTone(time, { freq: 930, gainVal: 0.035, dur: 0.04 });
   }
 
   beatsPerBar() {
@@ -215,27 +218,21 @@ export class MetronomeTrainer {
 
     for (let b = 0; b < COUNT_IN_BEATS; b += 1) {
       const t = base + b * this.beatSec;
-      this.scheduleAt(t, () => {
-        this.playClick(this.audioCtx.currentTime, b === 0);
-        this.onCountIn(b + 1, COUNT_IN_BEATS);
-      });
+      this.playClick(t, b === 0);
+      this.scheduleAt(t, () => this.onCountIn(b + 1, COUNT_IN_BEATS));
     }
 
     for (let b = 0; b < this.prepBeats; b += 1) {
       const t = base + (COUNT_IN_BEATS + b) * this.beatSec;
-      this.scheduleAt(t, () => {
-        this.playClick(this.audioCtx.currentTime, false);
-        this.onPrep(b + 1, this.prepBeats);
-      });
+      this.playClick(t, false);
+      this.scheduleAt(t, () => this.onPrep(b + 1, this.prepBeats));
     }
 
     const barBeats = this.beatsPerBar();
     const playClicks = Math.max(1, Math.round(this.totalBeats));
     for (let b = 0; b < playClicks; b += 1) {
       const t = this.rhythmStart + b * this.beatSec;
-      this.scheduleAt(t, () => {
-        if (this.clickTrack) this.playClick(this.audioCtx.currentTime, b % barBeats === 0);
-      });
+      if (this.clickTrack) this.playClick(t, b % barBeats === 0);
     }
 
     let hitIdx = 0;
@@ -284,10 +281,10 @@ export class MetronomeTrainer {
 
   judgeTap() {
     if (!this.running || !this.audioCtx || this.failed) return null;
-    this.playTap();
+    this.playTap(this.audioCtx.currentTime);
     if (this.nowAudio() < this.rhythmStart - 0.2) return null;
 
-    const now = this.nowAudio();
+    const now = this.nowAudio() - 0.035;
     let best = null;
     let bestDelta = Infinity;
 

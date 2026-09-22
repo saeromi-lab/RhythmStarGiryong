@@ -165,7 +165,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 180px;
+  min-height: 200px;
   width: 100%;
   transition: transform 0.3s;
 }
@@ -174,8 +174,14 @@ body {
   animation: bounce 0.4s ease;
 }
 
+.giryong-mascot {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
 .giryong-img {
-  max-height: 180px;
+  max-height: 210px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
@@ -183,17 +189,32 @@ body {
   transition: transform 0.25s ease;
 }
 
-.giryong-char[data-mood='happy'] .giryong-img,
-.giryong-char[data-mood='celebrate'] .giryong-img {
+.giryong-gear {
+  display: none;
+  position: absolute;
+  left: 15%;
+  top: 3.5%;
+  width: 70%;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+}
+
+.giryong-char.has-gear .giryong-gear {
+  display: block;
+}
+
+.giryong-char[data-mood='happy'] .giryong-mascot,
+.giryong-char[data-mood='celebrate'] .giryong-mascot {
   transform: scale(1.05);
 }
 
-.giryong-char[data-mood='sad'] .giryong-img {
+.giryong-char[data-mood='sad'] .giryong-mascot {
   transform: scale(0.95) rotate(-2deg);
   opacity: 0.9;
 }
 
-.giryong-char[data-mood='focus'] .giryong-img {
+.giryong-char[data-mood='focus'] .giryong-mascot {
   transform: scale(0.98);
 }
 

@@ -17,7 +17,7 @@ export const GIRYONG_IMAGES = {
 };
 
 export const GIRYONG_MOOD_IMAGES = {
-  normal: GIRYONG_IMAGES.hero,
+  normal: GIRYONG_IMAGES.happy,
   happy: GIRYONG_IMAGES.happy,
   sad: GIRYONG_IMAGES.sad,
   focus: GIRYONG_IMAGES.logo,

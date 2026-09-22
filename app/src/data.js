@@ -66,7 +66,7 @@ export const JUDGE = {
 
 export const GIRYONG_LINES = {
   welcome: [
-    '우리는 리듬스타기룡이의 시대에 살고있따.',
+    '경기대 붐은 온다.',
   ],
   checkIn: [
     '출석 완료! 이제 TAP으로 박자를 맞춰보자!',

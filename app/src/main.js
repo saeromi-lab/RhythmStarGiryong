@@ -135,14 +135,11 @@ function renderTodayLesson() {
   if (!card) return;
   profile = resetDailyIfNeeded(profile);
   const unit = currentUnit();
-  const points = (unit?.lecturePoints ?? []).map((p) => `<li>${p}</li>`).join('');
   card.innerHTML = `
     <div class="sec-label">오늘 배울 것</div>
     <p class="today-lesson-kicker">${unit?.order ?? 1}과 · ${unit?.meter ?? '4/4'} · ${unit?.bpm ?? 80} BPM</p>
     <h2 class="today-lesson-title">${unit?.title ?? '1과 · 2연음 기초'}</h2>
-    <p class="today-lesson-sub">${unit?.subtitle ?? ''}</p>
-    <p class="today-lesson-text">${unit?.learn ?? ''}</p>
-    ${points ? `<ul class="today-lesson-points">${points}</ul>` : ''}
+    <p class="today-lesson-sub">${unit?.subtitle ?? '기본박을 타고 TAP으로 리듬을 맞춰요'}</p>
     <button type="button" id="todayLessonStart" class="duo-btn duo-btn-green">
       ${profile.dailyLearn ? '다시 보기' : '배우기 시작'}
     </button>
@@ -2220,10 +2217,7 @@ function init() {
   renderLearnCard();
   renderCurriculum();
   renderRank();
-  sayGiryong(
-    profile.placement ? 'welcome' : 'placementStart',
-    profile.placement ? undefined : '처음이면 레벨을 찾아도 되고, 1과부터 바로 시작해도 돼!',
-  );
+  sayGiryong('welcome');
 }
 
 init();

@@ -69,7 +69,7 @@ body {
 }
 
 .app-sub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -208,15 +208,34 @@ body {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
-.speech-bubble {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px 14px;
-  font-size: 13px;
+.giryong-intro {
+  width: 100%;
   text-align: center;
-  line-height: 1.5;
-  max-width: 280px;
+  padding: 4px 8px 0;
+}
+
+.giryong-brand {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.speech-bubble {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.45;
+  max-width: none;
+  color: var(--text);
 }
 
 .profile-bar {
@@ -661,9 +680,10 @@ body {
 
 .learn-sub,
 .today-lesson-sub {
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: #6b5e4a;
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #4a4338;
 }
 
 .learn-points,
@@ -699,9 +719,15 @@ body {
 .learn-card .sec-label,
 .learn-card .hint,
 .today-lesson-card .sec-label,
-.daily-path-card .sec-label,
-.daily-path-hint {
+.daily-path-card .sec-label {
   color: #6b5e4a;
+}
+
+.hint.daily-path-hint {
+  color: #4a4338;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px;
 }
 
 .today-lesson-title {

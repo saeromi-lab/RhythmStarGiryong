@@ -1849,6 +1849,9 @@ function renderRunnerLives(lives) {
 }
 
 let runnerPearls = 0;
+let runnerBonusPearls = [];
+const PEARL_BONUS_PTS = 80;
+const PEARL_LIFE_MS = 2500;
 let runnerWaveInfo = { index: 1, total: RUNNER_WAVES, bpm: 80, baseBpm: 80 };
 
 function setRunnerHudTempo(bpm, wave, total = RUNNER_WAVES) {
@@ -1875,14 +1878,64 @@ function pulseRunnerSurfer(kind = 'carve') {
   setTimeout(() => surfer.classList.remove(kind), kind === 'wipeout' ? 520 : 380);
 }
 
-function spawnRunnerPearlFx() {
-  const fx = $('runnerFx');
-  if (!fx) return;
-  const el = document.createElement('span');
-  el.className = 'runner-pearl-pop';
-  el.innerHTML = `<img src="${GIRYONG_IMAGES.pearlStamp}" alt=""> +1`;
-  fx.appendChild(el);
-  setTimeout(() => el.remove(), 700);
+function clearBonusPearls() {
+  runnerBonusPearls.forEach((p) => p.el.remove());
+  runnerBonusPearls = [];
+}
+
+function spawnComboPearl() {
+  const live = runnerBonusPearls.filter((p) => !p.done);
+  if (live.length >= 3) return;
+  const host = $('runnerLane') || $('runnerStage');
+  if (!host) return;
+  const el = document.createElement('div');
+  el.className = 'runner-bonus-pearl';
+  el.innerHTML = `<img src="${GIRYONG_IMAGES.pearlStamp}" alt="진주">`;
+  const surfer = $('runnerSurfer');
+  el.style.left = surfer?.style.left || '12%';
+  host.appendChild(el);
+  const item = {
+    el,
+    until: performance.now() + PEARL_LIFE_MS,
+    done: false,
+  };
+  runnerBonusPearls.push(item);
+  setTimeout(() => {
+    if (item.done) return;
+    item.done = true;
+    el.classList.add('away');
+    setTimeout(() => el.remove(), 420);
+  }, PEARL_LIFE_MS);
+}
+
+function addRunnerBonusScore(pts) {
+  if (runnerGame?.trainer?.running) runnerGame.trainer.score += pts;
+  else if (runnerGame) runnerGame.session.score += pts;
+}
+
+function tryEatBonusPearls() {
+  const now = performance.now();
+  let eaten = 0;
+  runnerBonusPearls.forEach((p) => {
+    if (p.done || now > p.until) return;
+    p.done = true;
+    p.el.classList.add('eaten');
+    setTimeout(() => p.el.remove(), 380);
+    eaten += 1;
+  });
+  if (!eaten) return 0;
+  const pts = eaten * PEARL_BONUS_PTS;
+  runnerPearls += eaten;
+  $('runnerPearls').textContent = runnerPearls;
+  addRunnerBonusScore(pts);
+  updateRunnerStats();
+  const el = $('runnerJudgeFlash');
+  if (el) {
+    el.textContent = eaten > 1 ? `진주 ${eaten}개! +${pts}` : `진주 GET! +${pts}`;
+    el.className = 'judge-flash show perfect';
+    setTimeout(() => el.classList.remove('show'), 420);
+  }
+  return eaten;
 }
 
 function updateRunnerStats() {
@@ -1915,6 +1968,7 @@ function resetRunnerUI() {
   $('runnerAccuracy').textContent = '100%';
   runnerPearls = 0;
   $('runnerPearls').textContent = '0';
+  clearBonusPearls();
   renderRunnerLives(RUNNER_LIVES);
   $('runnerProgressBar').style.width = '0%';
   $('runnerSurfer')?.classList.remove('surf', 'carve', 'wipeout');
@@ -1978,14 +2032,15 @@ function initRunner() {
       $('runnerJudgeFlash').textContent = '기본박 — 곧 TAP!';
       return;
     }
+    const atePearl = tryEatBonusPearls();
     const key = runnerGame.judgeTap();
     if (key && key !== 'miss') {
       const j = JUDGE[key];
       const mult = 1 + Math.floor(runnerGame.combo / 8) * 0.25;
-      flashRunnerJudge(key, Math.round(j.score * mult));
+      if (!atePearl) flashRunnerJudge(key, Math.round(j.score * mult));
       pulseRunnerSurfer(key === 'perfect' ? 'surf' : 'carve');
     } else if (key === 'miss') {
-      flashRunnerJudge('miss', 0);
+      if (!atePearl) flashRunnerJudge('miss', 0);
       pulseRunnerSurfer('wipeout');
     }
     updateRunnerStats();
@@ -2082,23 +2137,21 @@ function initRunner() {
         updateRunnerStats();
         if (hitIdx != null && key !== 'miss') {
           markTrainScoreHit(hitIdx, key);
-          if (key === 'perfect') {
-            runnerPearls += 1;
-            $('runnerPearls').textContent = runnerPearls;
-            spawnRunnerPearlFx();
-          }
+          if (combo >= 2 && combo % 2 === 0) spawnComboPearl();
         }
       },
       onProgress: () => updateRunnerStats(),
       onFail: (result) => {
         tapBtn.disabled = true;
         startBtn.disabled = false;
+        clearBonusPearls();
         setRunnerStatus('idle', '목숨이 끝났어요. 다시 서핑 시작해 보세요');
         showRunnerResult(result, { cleared: false, title: stage.title, bpm: result.bpm ?? bpm });
       },
       onEnd: (result) => {
         tapBtn.disabled = true;
         startBtn.disabled = false;
+        clearBonusPearls();
         setRunnerStatus('idle', '끝! 다시 하려면 서핑 시작을 누르세요');
         showRunnerResult(result, {
           cleared: (runnerGame?.lives ?? 0) > 0,

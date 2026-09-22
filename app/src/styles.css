@@ -2576,27 +2576,25 @@ body.lesson-open {
 .note-glyph,
 .rest-glyph {
   display: block;
-  height: 38px;
-  width: 28px;
+  height: 2.05em;
+  width: auto;
+  aspect-ratio: 32 / 48;
   overflow: visible;
   flex-shrink: 0;
 }
 
 .measure-slot.compact .note-glyph,
 .measure-slot.compact .rest-glyph {
-  height: 26px;
-  width: 19px;
+  height: 1.7em;
 }
 
 .train-score-card .note-glyph,
 .train-score-card .rest-glyph {
-  height: 42px;
-  width: 30px;
+  height: 2.15em;
 }
 
 .meter-guess-note .note-glyph {
-  height: 34px;
-  width: 24px;
+  height: 1.9em;
 }
 
 .measure-slot.filled {
@@ -3641,6 +3639,73 @@ body.lesson-open {
   100% { opacity: 0; transform: translateY(-36px) scale(0.9); }
 }
 
+.runner-bonus-pearl {
+  position: absolute;
+  bottom: 36px;
+  width: 46px;
+  height: 46px;
+  z-index: 8;
+  pointer-events: none;
+  transform-origin: center bottom;
+  animation: pearlMushroom 0.5s ease-out, pearlWalk 2.4s linear forwards;
+}
+
+.runner-bonus-pearl img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px #0a284099);
+}
+
+.runner-bonus-pearl::after {
+  content: 'TAP!';
+  position: absolute;
+  left: 50%;
+  top: -16px;
+  transform: translateX(-50%);
+  background: #ffc857;
+  color: #5a3d00;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+@keyframes pearlMushroom {
+  0% { transform: translateY(22px) scale(0.15); }
+  40% { transform: translateY(-42px) scale(1.18); }
+  68% { transform: translateY(-6px) scale(0.94); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes pearlWalk {
+  0% { margin-left: 0; }
+  100% { margin-left: 110px; }
+}
+
+.runner-bonus-pearl.eaten {
+  animation: pearlEat 0.34s ease-in forwards;
+}
+
+.runner-bonus-pearl.eaten::after {
+  content: 'GET!';
+}
+
+@keyframes pearlEat {
+  0% { transform: scale(1) translateY(0); opacity: 1; }
+  100% { transform: scale(0.15) translateY(28px); opacity: 0; }
+}
+
+.runner-bonus-pearl.away {
+  animation: pearlAway 0.4s ease-in forwards;
+}
+
+@keyframes pearlAway {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.4) translateY(24px); opacity: 0; }
+}
+
 .runner-surfer {
   position: absolute;
   left: 3%;
@@ -3733,6 +3798,10 @@ body.lesson-open {
   opacity: 0;
   pointer-events: none;
   background: radial-gradient(circle at 30% 60%, #fff 0%, #a8e8ff88 45%, transparent 70%);
+}
+
+.runner-lane.playing .runner-spray {
+  opacity: 0.5;
 }
 
 .runner-surfer.surf .runner-spray,

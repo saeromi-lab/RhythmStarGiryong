@@ -23,7 +23,9 @@ import {
   markDailyActivity,
   getLeaderboard,
   profileSummary,
+  addStudyTime,
 } from './storage.js';
+import { createStudyClock, formatStudyDuration } from './study-clock.js';
 import { RhythmRunnerGame, RUNNER_LIVES, RUNNER_WAVES, buildRunnerPlaylist } from './runner-game.js';
 import {
   QUIZ_LEVELS,
@@ -76,6 +78,7 @@ let playMode = 'learn';
 let quizState = null;
 let lessonSelectedId = null;
 let selectedPath = 'placement';
+let studyClock = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -198,9 +201,49 @@ function renderDailyPath() {
   });
 }
 
+function currentStudyMs() {
+  const pending = studyClock?.pendingMs() ?? 0;
+  return {
+    today: (profile?.studyMsToday ?? 0) + pending,
+    total: (profile?.studyMsTotal ?? 0) + pending,
+    visit: studyClock?.sessionMs() ?? 0,
+  };
+}
+
+function updateStudyTimeUI() {
+  const t = currentStudyMs();
+  const todayEl = $('studyToday');
+  const visitEl = $('studyVisit');
+  const totalEl = $('studyTotal');
+  const headerEl = $('headerStudyTime');
+  const rankToday = $('rankStudyToday');
+  const rankTotal = $('rankStudyTotal');
+  const rankVisit = $('rankStudyVisit');
+  if (todayEl) todayEl.textContent = formatStudyDuration(t.today, { allowSeconds: true });
+  if (visitEl) visitEl.textContent = formatStudyDuration(t.visit, { allowSeconds: true });
+  if (totalEl) totalEl.textContent = formatStudyDuration(t.total, { allowSeconds: t.total < 60000 });
+  if (headerEl) headerEl.textContent = `오늘 ${formatStudyDuration(t.today, { allowSeconds: true })}`;
+  if (rankToday) rankToday.textContent = formatStudyDuration(t.today, { allowSeconds: true });
+  if (rankTotal) rankTotal.textContent = formatStudyDuration(t.total, { allowSeconds: t.total < 60000 });
+  if (rankVisit) rankVisit.textContent = formatStudyDuration(t.visit, { allowSeconds: true });
+}
+
+function initStudyClock() {
+  studyClock = createStudyClock({
+    onChange: updateStudyTimeUI,
+    onFlush: (ms) => {
+      profile = addStudyTime(profile, ms);
+    },
+  });
+  studyClock.start();
+  updateStudyTimeUI();
+}
+
 function renderHeader() {
   const s = profileSummary(profile);
+  const t = currentStudyMs();
   $('headerStats').innerHTML = `
+    <span class="chip" id="headerStudyTime">오늘 ${formatStudyDuration(t.today, { allowSeconds: true })}</span>
     <span class="chip">Lv.${s.level}</span>
     <span class="chip coin">${s.coins} 🪙</span>
     <span class="chip">${s.nickname || '게스트'}</span>
@@ -216,7 +259,7 @@ function renderProfile() {
   $('profileBar').innerHTML = `
     <div class="profile-name">${s.nickname} ${placementChip}</div>
     <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
-    <div class="profile-meta">Lv.${s.level} · ${s.progress}/${s.need} XP · 최고점 ${s.bestScore.toLocaleString()}</div>
+    <div class="profile-meta">Lv.${s.level} · ${s.progress}/${s.need} XP · 오늘 학습 ${formatStudyDuration(currentStudyMs().today, { allowSeconds: true })}</div>
   `;
   $('streakNum').textContent = s.streak;
   renderHeader();
@@ -2343,6 +2386,9 @@ function renderRank() {
     <div class="stat-box"><div class="val">${myIdx >= 0 ? myIdx + 1 : '-'}</div><div class="lbl">내 순위</div></div>
     <div class="stat-box"><div class="val">${profile.bestScore.toLocaleString()}</div><div class="lbl">최고 점수</div></div>
     <div class="stat-box"><div class="val">${profile.totalPlays}</div><div class="lbl">총 연습</div></div>
+    <div class="stat-box"><div class="val" id="rankStudyToday">${formatStudyDuration(currentStudyMs().today, { allowSeconds: true })}</div><div class="lbl">오늘 학습</div></div>
+    <div class="stat-box"><div class="val" id="rankStudyTotal">${formatStudyDuration(currentStudyMs().total, { allowSeconds: currentStudyMs().total < 60000 })}</div><div class="lbl">누적 학습</div></div>
+    <div class="stat-box"><div class="val" id="rankStudyVisit">${formatStudyDuration(currentStudyMs().visit, { allowSeconds: true })}</div><div class="lbl">이번 방문</div></div>
   `;
 }
 
@@ -2378,7 +2424,9 @@ function renderCurriculum() {
 
 function init() {
   profile = ensureNickname();
+  profile = resetDailyIfNeeded(profile);
   profile = syncTodayStamp(profile);
+  saveProfile(profile);
   if (!profile.nickname) {
     profile.nickname = '기룡친구';
     saveProfile(profile);
@@ -2387,6 +2435,7 @@ function init() {
     applyRecommendedLevels(profile.placement.quizLevelId, profile.placement.arcadeLevelId);
   }
   initTabs();
+  initStudyClock();
   renderProfile();
   initCheckIn();
   initPlacementHome();

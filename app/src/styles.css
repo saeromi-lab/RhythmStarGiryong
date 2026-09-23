@@ -710,7 +710,8 @@ body {
 
 .learn-card,
 .today-lesson-card,
-.daily-path-card {
+.daily-path-card,
+.study-time-card {
   background: #fffef8;
   color: #3c3c3c;
   border-color: #ead9a8;
@@ -719,7 +720,28 @@ body {
 .learn-card .sec-label,
 .learn-card .hint,
 .today-lesson-card .sec-label,
-.daily-path-card .sec-label {
+.daily-path-card .sec-label,
+.study-time-card .sec-label,
+.study-time-card .hint {
+  color: #6b5e4a;
+}
+
+.study-time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.study-time-card .stat-box {
+  background: #f4efe3;
+}
+
+.study-time-card .stat-box .val {
+  color: #3c3c3c;
+}
+
+.study-time-card .stat-box .lbl {
   color: #6b5e4a;
 }
 

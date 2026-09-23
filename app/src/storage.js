@@ -26,6 +26,8 @@ const defaultProfile = () => ({
   badges: [],
   trainMaxTier: 1,
   trainClears: {},
+  studyMsToday: 0,
+  studyMsTotal: 0,
   createdAt: new Date().toISOString(),
 });
 
@@ -112,7 +114,17 @@ export function resetDailyIfNeeded(profile) {
     profile.dailyArcade = false;
     profile.dailyQuiz = false;
     profile.dailyCombo10 = false;
+    profile.studyMsToday = 0;
   }
+  return profile;
+}
+
+export function addStudyTime(profile, ms) {
+  if (!ms || ms <= 0) return profile;
+  profile = resetDailyIfNeeded(profile);
+  profile.studyMsToday = (profile.studyMsToday ?? 0) + ms;
+  profile.studyMsTotal = (profile.studyMsTotal ?? 0) + ms;
+  saveProfile(profile);
   return profile;
 }
 

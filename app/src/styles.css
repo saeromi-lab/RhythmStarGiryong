@@ -34,6 +34,7 @@ body {
 .container {
   max-width: 480px;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .brand {
@@ -137,6 +138,9 @@ body {
   border-radius: 16px;
   padding: 1.1rem;
   margin-bottom: 12px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .sec-label {
@@ -1093,20 +1097,21 @@ body {
 }
 
 .measure-slot.compact {
-  min-height: 32px;
-  font-size: 16px;
+  min-height: 28px;
+  font-size: 14px;
 }
 
 .measure-slots-compact {
   gap: 2px;
+  padding: 4px 1px 6px;
 }
 
 .train-hit-slot.playhead,
 .train-rest-slot.playhead {
   background: #fff3c4;
   border-color: var(--accent2);
-  box-shadow: 0 0 0 2px #ffc85788;
-  transform: scale(1.04);
+  box-shadow: inset 0 0 0 2px #ffc85788;
+  transform: none;
   z-index: 1;
 }
 
@@ -1159,13 +1164,15 @@ body {
 }
 
 .train-pattern-card {
-  padding: 10px 8px;
+  padding: 10px 6px;
   border-radius: 12px;
   border: 2px solid var(--border);
   background: #fffef8;
   color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .train-pattern-card .measure-sig,
@@ -1334,8 +1341,11 @@ body {
 .train-score-card {
   border: 2px solid var(--border);
   border-radius: 14px;
-  padding: 14px 12px;
+  padding: 12px 8px;
   background: linear-gradient(180deg, #fffef8, #fff);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .train-score-label {
@@ -1349,11 +1359,13 @@ body {
 .train-score-body {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .train-score-sig {
   margin-top: 18px;
+  width: 2.2em;
 }
 
 .train-score-track {
@@ -1412,13 +1424,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .train-score-bar {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 2.4em minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .train-bar-num {
@@ -1442,8 +1456,8 @@ body {
 .train-hit-slot.active {
   background: #fff3c4;
   border-color: var(--accent2);
-  box-shadow: 0 0 0 2px #ffc85766;
-  transform: scale(1.05);
+  box-shadow: inset 0 0 0 2px #ffc85766;
+  transform: none;
 }
 
 .train-hit-slot.hit {
@@ -2440,8 +2454,16 @@ body.lesson-open {
 
 .lesson-main {
   flex: 1;
-  padding: 8px 20px 100px;
+  padding: 8px 12px 100px;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.lesson-measure {
+  margin: 8px 0 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .lesson-instruction {
@@ -2548,35 +2570,40 @@ body.lesson-open {
   font-size: 26px;
 }
 
-.lesson-measure {
-  margin: 8px 0 16px;
-}
-
 .measure-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 12px 10px;
   border: 2px solid var(--duo-border);
   border-radius: 14px;
   background: #f9f9f9;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .measure-sig {
   flex-shrink: 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--duo-text);
-  min-width: 48px;
+  min-width: 0;
+  width: 2.4em;
+  text-align: center;
 }
 
 .measure-slots {
-  display: flex;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(var(--slots, 8), minmax(0, 1fr));
+  gap: 3px;
   flex: 1;
-  align-items: flex-end;
+  min-width: 0;
+  width: 100%;
+  align-items: end;
   border-bottom: 2px solid #cfcfcf;
-  padding: 6px 4px 8px;
+  padding: 6px 2px 8px;
+  box-sizing: border-box;
 }
 
 .measure-slot {
@@ -2584,7 +2611,9 @@ body.lesson-open {
   align-items: flex-end;
   justify-content: center;
   min-height: 40px;
-  min-width: 22px;
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
   border-radius: 8px;
   font-size: 28px;
   font-weight: 700;
@@ -2592,27 +2621,31 @@ body.lesson-open {
   color: #1a1a1a;
   background: transparent;
   border: none;
-  flex: 1 1 0;
+  grid-column: span var(--span, 1);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .note-glyph,
 .rest-glyph {
   display: block;
-  height: 2.05em;
   width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 2.05em;
   aspect-ratio: 32 / 48;
   overflow: visible;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .measure-slot.compact .note-glyph,
 .measure-slot.compact .rest-glyph {
-  height: 1.7em;
+  max-height: 1.55em;
 }
 
 .train-score-card .note-glyph,
 .train-score-card .rest-glyph {
-  height: 2.15em;
+  max-height: 2.05em;
 }
 
 .meter-guess-note .note-glyph {
@@ -2655,14 +2688,19 @@ body.lesson-open {
 .rhythm-grid-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .rhythm-grid-wrap .measure-sig {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
-  min-width: 36px;
+  min-width: 0;
+  width: 2.2em;
 }
 
 .meter-guess {
@@ -2713,6 +2751,7 @@ body.lesson-open {
   flex-direction: column;
   gap: 6px;
   flex: 1;
+  min-width: 0;
 }
 
 .rhythm-grid-option {
@@ -3494,8 +3533,8 @@ body.lesson-open {
 .runner-score-inline .train-hit-slot.playhead {
   background: #ffc85755;
   border-color: #ffc857;
-  box-shadow: 0 0 12px #ffc857aa;
-  transform: scale(1.08);
+  box-shadow: inset 0 0 0 2px #ffc857aa;
+  transform: none;
 }
 
 .runner-scroll {

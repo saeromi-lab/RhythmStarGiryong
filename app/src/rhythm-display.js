@@ -3,6 +3,11 @@
 import { slotGroupSymbol, METERS } from './fill-quiz.js';
 import { noteGlyphHtml, restGlyphHtml } from './note-glyph.js';
 
+function slotSpanStyle(span) {
+  const n = Math.max(1, Number(span) || 1);
+  return `--span:${n};grid-column:span ${n}`;
+}
+
 function restGroupSymbol(eighths) {
   if (eighths >= 4) return '𝄻';
   if (eighths === 2) return '𝄽';
@@ -18,7 +23,7 @@ function renderGroupCell(group, { hitIdx, posIdx, compact = false } = {}) {
     compact ? 'compact' : '',
   ].filter(Boolean).join(' ');
   const hitAttr = group.t === 'n' ? ` data-hit="${hitIdx}"` : '';
-  return `<span class="${cls}" style="flex:${group.e}" data-pos="${posIdx}"${hitAttr}>${sym}</span>`;
+  return `<span class="${cls}" style="${slotSpanStyle(group.e)}" data-pos="${posIdx}"${hitAttr}>${sym}</span>`;
 }
 
 function renderMeasureGroups(groups, meter, { compact = false, startHit = 0, startPos = 0 } = {}) {
@@ -72,10 +77,10 @@ function renderSlotParts(slots, { blankFrom = -1, blankLen = 0 } = {}) {
   }
   return parts.map((part) => {
     if (part.kind === 'blank') {
-      return `<span class="measure-slot blank" style="flex:${part.span}">□</span>`;
+      return `<span class="measure-slot blank" style="${slotSpanStyle(part.span)}">□</span>`;
     }
     const cls = part.kind === 'rest' ? 'rest' : 'filled';
-    return `<span class="measure-slot ${cls}" style="flex:${part.span}">${part.symbol}</span>`;
+    return `<span class="measure-slot ${cls}" style="${slotSpanStyle(part.span)}">${part.symbol}</span>`;
   }).join('');
 }
 

@@ -73,15 +73,21 @@ export function slotsToNotation(slots) {
   return slots.map((s) => slotGroupSymbol(s)).join(' ');
 }
 
+function slotSpanStyle(span) {
+  const n = Math.max(1, Number(span) || 1);
+  return `--span:${n};grid-column:span ${n}`;
+}
+
 export function renderFillOptionHtml(fillSlots) {
+  const total = fillSlots.reduce((s, len) => s + Math.abs(len), 0) || 8;
   const cells = fillSlots.map((len) => (
-    `<span class="measure-slot filled" style="flex:${len}">${noteGlyphHtml(len)}</span>`
+    `<span class="measure-slot filled" style="${slotSpanStyle(len)}">${noteGlyphHtml(len)}</span>`
   )).join('');
 
   return `
     <div class="rhythm-grid-wrap rhythm-grid-option">
       <span class="choice-prefix">□ →</span>
-      <div class="measure-slots">${cells}</div>
+      <div class="measure-slots" style="--slots:${total}">${cells}</div>
     </div>
   `;
 }
@@ -178,9 +184,9 @@ export function renderMeasureHtml(slots, meterId, blankFrom, blankLen) {
   }
   const cells = parts.map((part) => {
     if (part.kind === 'blank') {
-      return `<span class="measure-slot blank" style="flex:${part.span}">□</span>`;
+      return `<span class="measure-slot blank" style="${slotSpanStyle(part.span)}">□</span>`;
     }
-    return `<span class="measure-slot filled" style="flex:${part.span}">${part.symbol}</span>`;
+    return `<span class="measure-slot filled" style="${slotSpanStyle(part.span)}">${part.symbol}</span>`;
   }).join('');
 
   return `

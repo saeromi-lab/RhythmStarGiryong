@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - cursor/beta-beat-surfing-11af
+  workflow_dispatch:
 
 permissions:
   contents: read

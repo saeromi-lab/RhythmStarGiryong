@@ -30,6 +30,9 @@ export const GIRYONG_SOURCE_URL = 'https://www.kyonggi.ac.kr/www/contents.do?key
 
 export const APP_NAME = 'RhythmStarGiryong';
 export const DEPT_NAME = '경기대학교 실용음악학과';
+export const APP_VERSION = '0.1.0';
+export const APP_VERSION_LABEL = 'Beta v0.1.0';
+export const APP_RELEASE_DATE = '2026-09-23';
 
 export const STORAGE_KEYS = {
   profile: 'rsg-profile',

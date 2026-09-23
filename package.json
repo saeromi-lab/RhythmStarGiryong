@@ -1,6 +1,6 @@
 {
   "name": "rhythm-star-giryong",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "경기대학교 실용음악학과 리듬 트레이닝 — 매일 배우고 메트로놈 연습",
   "type": "module",
   "scripts": {

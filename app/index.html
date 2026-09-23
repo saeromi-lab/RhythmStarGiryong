@@ -412,6 +412,7 @@
 
     <footer class="lesson-footer">
       <button type="button" id="lessonBackBtn" class="lesson-back-btn" disabled aria-label="이전 문제">← 이전</button>
+      <button type="button" id="lessonSkipBtn" class="lesson-skip-btn">넘어가기</button>
       <button type="button" id="lessonCheckBtn" class="lesson-check-btn" disabled>확인</button>
     </footer>
 
@@ -419,7 +420,10 @@
       <div class="lesson-feedback-inner">
         <p class="lesson-feedback-title" id="lessonFeedbackTitle">참 잘했어요!</p>
         <p class="lesson-feedback-detail" id="lessonFeedbackDetail"></p>
-        <button type="button" id="lessonContinueBtn" class="lesson-continue-btn">계속하기</button>
+        <div class="lesson-feedback-actions">
+          <button type="button" id="lessonSkipNextBtn" class="lesson-skip-next-btn" hidden>넘어가기</button>
+          <button type="button" id="lessonContinueBtn" class="lesson-continue-btn">계속하기</button>
+        </div>
       </div>
     </div>
   </div>

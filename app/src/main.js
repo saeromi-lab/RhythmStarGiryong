@@ -655,6 +655,8 @@ function renderLessonQuestion() {
   quizState.answered = false;
   $('lessonCheckBtn').disabled = true;
   $('lessonFeedback').hidden = true;
+  const skipNext = $('lessonSkipNextBtn');
+  if (skipNext) skipNext.hidden = true;
 
   const meterText = qType === 'meter'
     ? '박자표 숨김'
@@ -1033,9 +1035,11 @@ function submitLessonAnswer() {
       ? `MISS 없이 따라 쳤어요 · PERFECT ${quizState.echoPerfect ?? 0}${scoreHtml}`
       : `MISS ${quizState.echoMiss ?? 1}번. 정답 리듬은 아래와 같아요.${scoreHtml}`;
     const cont = $('lessonContinueBtn');
+    const skipNext = $('lessonSkipNextBtn');
     if (cont) {
       cont.textContent = correct ? '계속하기' : '다시 따라 치기';
     }
+    if (skipNext) skipNext.hidden = !!correct;
     quizState.echoRetry = !correct;
   } else {
     $('lessonFeedbackDetail').textContent = correct
@@ -1044,6 +1048,8 @@ function submitLessonAnswer() {
     quizState.echoRetry = false;
     const cont = $('lessonContinueBtn');
     if (cont) cont.textContent = '계속하기';
+    const skipNext = $('lessonSkipNextBtn');
+    if (skipNext) skipNext.hidden = true;
   }
   updateLessonProgress();
 }
@@ -1071,10 +1077,47 @@ async function continueLesson() {
     lessonSelectedId = null;
     const cont = $('lessonContinueBtn');
     if (cont) cont.textContent = '계속하기';
+    const skipNext = $('lessonSkipNextBtn');
+    if (skipNext) skipNext.hidden = true;
     renderLessonQuestion();
     await playLessonThenMaybeEcho();
     return;
   }
+  await advanceLesson();
+}
+
+function recordLessonSkip() {
+  if (!quizState || quizState.answered) return;
+  const q = quizState.questions[quizState.index];
+  const alreadyScored = q.type === 'echo' && quizState.echoScored;
+  quizState.answered = true;
+  if (q.type === 'echo') quizState.echoScored = true;
+  if (alreadyScored) return;
+  if (isPlacementMode()) {
+    quizState.answers.push({ levelId: q.levelId, correct: false });
+  } else {
+    quizState.streak = 0;
+    quizState.xp += QUIZ_SCORE.wrong.xp;
+  }
+}
+
+async function skipLessonQuestion() {
+  if (!quizState) return;
+  lessonTrainer?.stop();
+  rhythmPlayer?.stop();
+  hideLessonPrep();
+  recordLessonSkip();
+  quizState.echoRetry = false;
+  const skipNext = $('lessonSkipNextBtn');
+  if (skipNext) skipNext.hidden = true;
+  const cont = $('lessonContinueBtn');
+  if (cont) cont.textContent = '계속하기';
+  $('lessonFeedback').hidden = true;
+  await advanceLesson();
+}
+
+async function advanceLesson() {
+  if (!quizState) return;
   quizState.index += 1;
   quizState.echoScored = false;
   quizState.echoRetry = false;
@@ -2328,6 +2371,8 @@ function initLesson() {
   });
   $('lessonCheckBtn').addEventListener('click', submitLessonAnswer);
   $('lessonBackBtn')?.addEventListener('click', goBackLesson);
+  $('lessonSkipBtn')?.addEventListener('click', skipLessonQuestion);
+  $('lessonSkipNextBtn')?.addEventListener('click', skipLessonQuestion);
   $('lessonContinueBtn').addEventListener('click', continueLesson);
 
   $('lessonCompleteBtn').addEventListener('click', () => {

@@ -2783,7 +2783,7 @@ body.lesson-open {
 
 .duo-choice {
   width: 100%;
-  padding: 16px 18px;
+  padding: 14px 10px;
   border: 2px solid var(--duo-border);
   border-radius: 14px;
   background: #fff;
@@ -2793,6 +2793,9 @@ body.lesson-open {
   cursor: pointer;
   color: var(--duo-text);
   transition: border-color 0.12s, background 0.12s;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .duo-choice:hover:not(:disabled) {
@@ -2935,6 +2938,26 @@ body.lesson-open {
   cursor: not-allowed;
 }
 
+.lesson-skip-btn {
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 14px 10px;
+  border: 2px solid var(--duo-border);
+  border-radius: 14px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--duo-muted);
+  cursor: pointer;
+  box-shadow: 0 4px 0 #cecece;
+}
+
+.lesson-skip-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #cecece;
+}
+
 .lesson-check-btn {
   flex: 1;
   padding: 14px;
@@ -3006,8 +3029,32 @@ body.lesson-open {
   min-height: 0;
 }
 
+.lesson-feedback-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lesson-skip-next-btn {
+  flex: 1;
+  padding: 14px;
+  border: 2px solid var(--duo-border);
+  border-radius: 14px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--duo-text);
+}
+
+.lesson-skip-next-btn[hidden] {
+  display: none !important;
+}
+
 .lesson-continue-btn {
-  width: 100%;
+  flex: 1;
+  width: auto;
+  min-width: 0;
   padding: 14px;
   border: none;
   border-radius: 14px;
